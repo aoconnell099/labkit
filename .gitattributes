@@ -1,0 +1,5 @@
+# Authored on Windows, consumed on Linux. A CRLF file that a build reads is a
+# confusing failure; the whole lab enforces LF.
+* text=auto eol=lf
+*.png binary
+*.woff2 binary

@@ -1,0 +1,280 @@
+/* labkit — the shared substrate. STRUCTURE ONLY; THE PALETTE IS NOT HERE.
+ *
+ * Every colour custom property is stamped onto <html> by applyPalette() in
+ * palette.ts. Hardcoding a hex in this file recreates the second-copy drift that
+ * extraction exists to end — and every value there was computed with a
+ * validator, so a hand-picked one here would not just drift, it would be
+ * unmeasured.
+ *
+ * ⚠️ FONTS ARE NOT HERE EITHER. Consumers self-host their own and declare the
+ *
+/* ⚠️ Not optional, and verify it rather than assuming the media query covers
+   everything. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-state: 0ms; --dur-enter: 0ms; }
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Mobile Safari is a delivery surface — never let the page scroll sideways.
+   Wide content scrolls inside its own container. */
+body { overflow-x: hidden; }
+
+/* ── The ambient floor ─────────────────────────────────────────────────────
+   A single always-on wash so a dark app does not read as flat black.
+
+   ⚠️ It is NEUTRAL and it never changes. One consumer varies an ambient wash by
+   the SIGN of the
+   figure the screen leads with, and that rule is the only thing that makes an
+   unlabelled ambient signal safe. An app that leads with no such figure has
+   nothing for a coloured light to agree with, and one that changed would be
+   making a claim the screen is not making. The default is fixed and quiet. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(120% 70% at 50% -10%, var(--floor), transparent 70%);
+}
+
+/* Figures are tabular. There are few of them here, but a session count that
+   reflows as it changes is the same unreadable thing a balance would be. */
+.fig, .mono {
+  font-family: var(--font-fig);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  letter-spacing: -.01em;
+}
+
+/* Small uppercase labels recede.
+   ⚠️ In a figures-heavy app the label sits beside a large number that carries
+   the meaning.
+   In some apps the label IS the meaning — a state like "AWAITING INVITE" is
+   the content of the row, not a caption beside a big figure. That is why
+   --text-faint must clear 4.5:1; see palette.ts. */
+.lbl {
+  font-size: .64rem;
+  text-transform: uppercase;
+  letter-spacing: .15em;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+
+code, .token {
+  font-family: var(--font-fig);
+  background: var(--surface-inset);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: .82em;
+  word-break: break-all;
+}
+
+button, select, input, textarea { font-family: inherit; }
+
+/* ── Interaction states ────────────────────────────────────────────────────
+   Every interactive element ships all seven: rest, hover, focus-visible,
+   active, disabled, loading, empty/error. These are the two that get dropped
+   most often, so they are global rather than per-component. */
+
+:where(a, button, select, input, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+:where(button, select, input, textarea):disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.is-loading {
+  animation: pulse 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes pulse { 0%, 100% { opacity: .5 } 50% { opacity: .85 } }
+
+/* Empty states say what would appear here and how to make it appear — never
+   just "No data".
+   ⚠️ --text-dim, not --text-faint. This is prose someone has to read; the faint
+   step is for labels whose job is to recede. One port found this independently
+   and it is the right call. */
+.empty {
+  color: var(--text-dim);
+  text-align: center;
+  padding: var(--sp-5) var(--sp-4);
+  font-size: .85rem;
+  line-height: 1.6;
+}
+
+/* ── The state rail ────────────────────────────────────────────────────────
+   Extracted from a provenance rail, and the extraction is the finding.
+
+   In a data app it answers "where did this figure come from, how fresh, how
+   sure". An app with almost no figures turned out to need the same SHAPE of
+   question about an account: what can this account do right now, and since
+   when. Same form, different subject — which is why it is called Rail here
+   and not Provenance. See components/Rail.svelte.
+
+   ⚠️ Three states, TWO hues. The third — attention — is a SEGMENTED tick rather
+   than a third colour, because three status hues at text contrast on a light
+   ground has no solutions. Form, not hue. See the rule below for why segmented
+   rather than hollow. */
+.rail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .66rem;
+  color: var(--text-dim);
+  letter-spacing: .04em;
+}
+.rail .tick {
+  width: 2px;
+  height: 11px;
+  flex: none;
+  background: var(--text-faint);
+}
+.rail .tick.pos { background: var(--tone-pos); }
+.rail .tick.neg { background: var(--tone-neg); }
+/* Attention: SEGMENTED, not hollow, and not a third hue.
+   ⚠️ Measured before settling on this. The first attempt was a hollow tick --
+   4px wide with a 1px inset ring -- which leaves an interior of 2x9 and simply
+   reads as a slightly lighter solid bar at rail scale. "Outline vs fill" is a
+   distinction that needs room these 2px do not have.
+   Dashes keep the EXACT footprint of the solid ticks, so the rail stays aligned,
+   and solid-vs-dashed survives being 2px wide in a way hollow-vs-filled does
+   not. Two consumers reached the same principle independently, with different
+   geometry. */
+.rail .tick.attention {
+  background: repeating-linear-gradient(
+    var(--text-dim) 0 3px, transparent 3px 5px);
+}
+.rail .code {
+  font-family: var(--font-fig);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-size: .6rem;
+}
+
+/* ── Form controls ─────────────────────────────────────────────────────────
+   ⚠️ The originating app had NO form primitives — it is read-mostly, its only
+   control styling is a `.ctl` class for a select and a filter input. An admin
+   portal is the opposite, so these are new here rather than ported, and they
+   are the clearest evidence of what an app shape changes.
+
+   `appearance: none` on select is the point, not decoration. Chrome paints the
+   native dropdown arrow with its own LIGHT chrome as soon as an author
+   background-color is set, and ignores `color-scheme: dark` once you do. The
+   caret is two linear-gradients rather than an SVG data URI specifically so it
+   can reference var(--text-faint) — a data URI would have to bake the stroke
+   colour in as a hex, and the two themes do not share one. */
+.ctl {
+  appearance: none;
+  background-color: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-size: .85rem;
+  width: 100%;
+  transition: border-color var(--dur-state) var(--ease-out);
+}
+.ctl:hover:not(:disabled) { border-color: var(--text-faint); }
+.ctl::placeholder { color: var(--text-faint); }
+select.ctl {
+  padding-right: 26px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-faint) 50%),
+    linear-gradient(135deg, var(--text-faint) 50%, transparent 50%);
+  background-position: right 13px center, right 9px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────────
+   Three weights, and the distinction is about CONSEQUENCE rather than visual
+   hierarchy: `danger` is not "a red button", it is the set of actions that
+   revoke access or stop an account working. */
+.btn {
+  appearance: none;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 550;
+  padding: 7px 13px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform var(--dur-state) var(--ease-out),
+              opacity var(--dur-state) var(--ease-out);
+}
+/* ⚠️ transform and opacity only. Animating background-color or border-color
+   here would be a layout-adjacent repaint on a list of dozens of rows. */
+.btn:hover:not(:disabled) { opacity: .82; }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  /* The accent is chosen for >=4.5:1 against the page surface; on the accent
+     itself the label needs its own ground. Both modes' accents are mid-dark, so
+     white is the reliable side. */
+  color: #fff;
+}
+.btn.neg { color: var(--tone-neg); border-color: var(--tone-neg); }
+.btn.small { font-size: .74rem; padding: 4px 9px; }
+
+/* ── Tables ────────────────────────────────────────────────────────────────
+   Instrument's table: hairline rules, no box, small tracked-out uppercase
+   headers.
+
+   ⚠️ Global rather than a component, and that was measured: several screens
+   want the same PAINT, not the same BEHAVIOUR. Extract a component when two of
+   them want the same interaction. Component styles outrank these (a scoped `td`
+   is more specific than a bare one). */
+table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+th {
+  text-align: left; font-weight: 600; color: var(--text-faint);
+  border-bottom: 1px solid var(--line); padding: 6px 8px 7px;
+  font-size: .62rem; text-transform: uppercase; letter-spacing: .14em;
+  white-space: nowrap;
+}
+td { padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tbody tr:last-child td { border-bottom: none; }
+.r { text-align: right; }
+.strong { font-weight: 620; }
+
+/* Wide content scrolls inside itself, never the page. */
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ── Error and notice ──────────────────────────────────────────────────────
+   ⚠️ Often a REFUSAL with a reason rather than a failure — "that would leave
+   no active administrator", "the ledger would not sum to zero". That is the
+   app working correctly, so it is stated plainly rather than shouted. */
+.notice {
+  font-size: .8rem;
+  line-height: 1.55;
+  padding: var(--sp-3);
+  border-left: 2px solid var(--text-faint);
+  background: var(--surface-inset);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin: 0 0 var(--sp-3);
+}
+.notice.neg { border-left-color: var(--tone-neg); }
+.notice.pos { border-left-color: var(--tone-pos); }
