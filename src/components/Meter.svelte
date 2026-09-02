@@ -62,7 +62,7 @@
   /* Attention is FORM, not a third hue — see palette.ts. A dashed fill reads at
      bar scale where a third colour would not survive light mode. */
   .fill.attn {
-    background: repeating-linear-gradient(90deg,
-                  var(--text-dim) 0 4px, transparent 4px 7px);
+    background: var(--tone-attention, repeating-linear-gradient(90deg,
+                  var(--text-dim) 0 4px, transparent 4px 7px));
   }
 </style>

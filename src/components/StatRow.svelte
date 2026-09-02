@@ -81,13 +81,15 @@
   .val.pos { color: var(--tone-pos); }
   .val.neg { color: var(--tone-neg); }
 
-  /* ⚠️ ATTENTION IS FORM, NOT A THIRD HUE.
-     Three status hues at text contrast on a light ground has zero solutions —
-     see palette.ts. Two consumers reached this independently: one dropped the
-     third tone entirely, one made it a weight change. Weight is kept because
-     dropping it leaves callers with nowhere to put "this needs a human", and
-     they invent a hue. */
-  .val.attn { font-weight: 500; }
+  /* ⚠️ ATTENTION IS FORM BY DEFAULT, AND A HUE ONLY IF ONE WAS MEASURED.
+     Two consumers reached form independently — one dropped the third tone
+     entirely, one made it a weight change — because a third hue fails outright
+     on a warm ground. A third reached for an amber and its numbers PASS on a
+     cool near-white. So the fallback is form, and --tone-attention overrides it.
+     See palette.ts for both sets of numbers.
+     Weight is kept regardless, because dropping the tone leaves callers with
+     nowhere to put "this needs a human" and they invent a hue. */
+  .val.attn { color: var(--tone-attention, inherit); font-weight: 500; }
 
   /* The hero. One per screen — if everything is big, nothing is. */
   .big {

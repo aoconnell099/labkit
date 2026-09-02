@@ -16,20 +16,35 @@
 export type Mode = 'light' | 'dark';
 
 /**
- * ⚠️ TWO HUES. NOT THREE.
+ * ⚠️ TWO HUES BY DEFAULT. A THIRD IS POSSIBLE, BUT IT DEPENDS ON THE GROUND —
+ * and the first version of this comment got that wrong.
  *
- * Three status hues at text contrast on a light ground has **zero solutions** —
- * green, clay and amber sit too close in lightness, and green-vs-red is the
- * deuteranopia collision. Two apps discovered this independently, and both
- * solved it the same way: the third state carries **form** instead of hue.
+ * It said "three has zero solutions", which is true on a WARM ground and false
+ * on a cool one. Measured, with the same amber against each:
  *
- * Do not add an amber. The search has been run.
+ *   cool near-white #f7f8fa   normal ΔE 15.0 (floor 15) · deutan 8.6 (floor 8)
+ *                             -> passes, sitting exactly on BOTH floors
+ *   warm cream      #f2ece0   normal ΔE 14.2 (floor 15) · deutan 9.9
+ *                             -> fails; two hues plus form is the only option
+ *
+ * So `attention` is OPTIONAL. Leave it undefined and the third state carries
+ * FORM — a segmented tick, a dashed fill, a weight change — which survives
+ * colour blindness, greyscale and print, and needs no ground at all. Supply it
+ * only if you have MEASURED a passing third against your own surface.
+ *
+ * ⚠️ If you do supply one, there is nothing spare. Do not nudge any of the three
+ * in isolation; re-run the check across the set.
  */
 export interface StatusPalette {
   /** The good direction. Money in, an active account, a healthy check. */
   pos: string;
   /** The bad direction. Money out, a stopped account, a failure. */
   neg: string;
+  /** Needs a human — stale, estimated, awaiting review.
+   *  ⚠️ OPTIONAL, and omitting it is the safe default: the state then carries
+   *  form instead of hue. Supply it only against a ground where you have
+   *  measured a third hue clearing the separation floors. */
+  attention?: string;
 }
 
 /**
@@ -133,6 +148,13 @@ export function applyPalette(
   //     :root { --money-in: var(--tone-pos); }
   s.setProperty('--tone-pos', st.pos);
   s.setProperty('--tone-neg', st.neg);
+
+  // ⚠️ REMOVED when absent, not left stale. The CSS uses
+  // `var(--tone-attention, <form fallback>)`, so an undefined token is what
+  // selects the segmented treatment — leaving a previous mode's value behind
+  // would silently keep a hue the current palette never asked for.
+  if (st.attention) s.setProperty('--tone-attention', st.attention);
+  else s.removeProperty('--tone-attention');
 
   // See the note above — the token alone is not enough.
   s.background = ink.surface;

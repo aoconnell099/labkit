@@ -202,8 +202,12 @@ button, select, input, textarea { font-family: inherit; }
    not. Two consumers reached the same principle independently, with different
    geometry. */
 .rail .tick.attention {
-  background: repeating-linear-gradient(
-    var(--text-dim) 0 3px, transparent 3px 5px);
+  /* ⚠️ The var() FALLBACK is the whole mechanism. An app that has measured a
+     passing third hue sets --tone-attention and gets a solid tick; an app that
+     has not gets the segmented one. Form is the default because a third hue
+     fails outright on a warm ground — see palette.ts for the numbers. */
+  background: var(--tone-attention, repeating-linear-gradient(
+    var(--text-dim) 0 3px, transparent 3px 5px));
 }
 .rail .code {
   font-family: var(--font-fig);
