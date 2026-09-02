@@ -28,3 +28,5 @@ export {
 } from './palette';
 
 export { resolveMode, storedPreference, setPreference } from './theme';
+
+export { contrast, auditPalette, type ContrastCheck } from './contrast';

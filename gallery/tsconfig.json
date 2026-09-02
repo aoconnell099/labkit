@@ -1,0 +1,15 @@
+{
+  "extends": "@tsconfig/svelte/tsconfig.json",
+  "compilerOptions": {
+    "target": "es2023",
+    "module": "esnext",
+    "types": ["svelte", "vite/client"],
+    "noEmit": true,
+    "allowJs": true,
+    "checkJs": true,
+    "moduleDetection": "force",
+    "verbatimModuleSyntax": false,
+    "paths": { "labkit": ["../src/index.ts"] }
+  },
+  "include": ["src/**/*.ts", "src/**/*.svelte", "../src/**/*.ts", "../src/**/*.svelte"]
+}

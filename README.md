@@ -71,8 +71,17 @@ both modes. It exists because drift between apps is invisible one repo at a time
 and obvious side by side — and because it is the only place all seven
 interaction states can be seen at once.
 
+```bash
+cd gallery && npm install && npm run dev    # http://127.0.0.1:5178/labkit/
+```
+
 It imports the real components. A gallery built from copies is a mockup that
 drifts, and gets believed because it looks authoritative.
+
+It also earns its keep immediately: the first render showed two of the three
+example palettes rendering identically, because they shared every value. Reading
+the source would not have caught it. There is now a check on the page for that
+exact mistake, and each frame prints its own measured contrast ratios.
 
 ## Licence
 
