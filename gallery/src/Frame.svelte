@@ -20,6 +20,32 @@
   let el: HTMLDivElement;
   $effect(() => { if (el) applyPalette(mode, palette, el); });
 
+  /** ⚠️ EVERY TOKEN THE KIT PROMISES, RESOLVED FROM THE LIVE ELEMENT.
+   *
+   *  Added after tokens.css shipped with its entire `:root` block missing — the
+   *  spacing scale, radii, easing and font fallbacks, all gone, deleted by a
+   *  careless string edit during extraction. Nothing failed. svelte-check was
+   *  clean, the gallery rendered, and it looked plausible, because an undefined
+   *  custom property does not warn: it silently falls back and the declaration
+   *  is dropped.
+   *
+   *  A gallery that only renders components cannot see that. This asks the
+   *  browser what each token actually resolves to. */
+  const EXPECTED = [
+    '--sp-1', '--sp-2', '--sp-3', '--sp-4', '--sp-5', '--sp-6',
+    '--radius-sm', '--radius', '--ease-out', '--ease-in',
+    '--dur-state', '--dur-enter', '--font-ui', '--font-fig',
+    '--bg', '--surface', '--surface-inset', '--line',
+    '--text', '--text-dim', '--text-faint',
+    '--accent', '--tone-pos', '--tone-neg', '--floor',
+  ];
+  let missing = $state<string[]>([]);
+  $effect(() => {
+    if (!el) return;
+    const cs = getComputedStyle(el);
+    missing = EXPECTED.filter((t) => !cs.getPropertyValue(t).trim());
+  });
+
   // ⚠️ Printed on screen, not asserted in a comment. A token at 2.64:1 looked
   // like a design decision for months; a number next to it does not.
   const audit = $derived(auditPalette(palette).checks.filter((c) => c.mode === mode));
@@ -45,6 +71,13 @@
   </header>
 
   <div class="body">
+    {#if missing.length}
+      <p class="notice neg">
+        {missing.length} token(s) undefined: {missing.join(', ')} — every rule
+        using them was silently dropped.
+      </p>
+    {/if}
+
     <Section title="The palette" note="The values themselves. Added after the first render, when two frames turned out to be indistinguishable on screen because they share an ink ramp and differ only in an accent that barely appears in a component.">
       <div class="swatches">
         {#each swatches as sw (sw.name)}

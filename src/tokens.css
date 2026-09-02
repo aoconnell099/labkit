@@ -7,6 +7,39 @@
  * unmeasured.
  *
  * ⚠️ FONTS ARE NOT HERE EITHER. Consumers self-host their own and declare the
+ * @font-face rules, because a webfont is an asset with a licence and a byte
+ * cost, and a shared package is the wrong place to make that choice for
+ * somebody. labkit only expects --font-ui and --font-fig to exist.
+ *
+ * ⚠️ The BOOT GROUND belongs in the consumer's index.html, not here — it has to
+ * paint before any stylesheet loads. See palette.ts for the bug that comes from
+ * getting the interaction between the two wrong. */
+
+:root {
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 18px;
+  --sp-5: 26px;
+  --sp-6: 38px;
+
+  --radius-sm: 5px;
+  --radius: 8px;
+
+  /* One easing for entrances, one for exits — no bespoke curves per component.
+     Transitions go on transform and opacity ONLY. */
+  --ease-out: cubic-bezier(.22, .61, .36, 1);
+  --ease-in: cubic-bezier(.55, .06, .68, .19);
+  --dur-state: 180ms;
+  --dur-enter: 500ms;
+
+  /* Fallbacks are the nearest metric match on each platform, so the swap on
+     first load shifts as little as possible. */
+  /* ⚠️ Fallbacks only. The consumer overrides these with its own self-hosted
+     faces; labkit must render sanely if it does not. */
+  --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-fig: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
  *
 /* ⚠️ Not optional, and verify it rather than assuming the media query covers
    everything. */
