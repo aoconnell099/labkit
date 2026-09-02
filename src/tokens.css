@@ -38,7 +38,15 @@
   /* ⚠️ Fallbacks only. The consumer overrides these with its own self-hosted
      faces; labkit must render sanely if it does not. */
   --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* ⚠️ Set this to var(--font-ui) if your figures do NOT want a monospace face.
+     That is a real choice, not a fallback: one consumer ships only a sans,
+     because every digit in its face is the same width — read out of the font
+     binary, not assumed — so a column of amounts aligns on metrics alone. A kit
+     that forced a mono here would silently reverse that measured decision. */
   --font-fig: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  /* Tracking for figures. Face-dependent, so it is a token: a mono wants a
+     little negative tracking, a sans set at the same value looks cramped. */
+  --fig-tracking: -.01em;
 }
  *
 /* ⚠️ Not optional, and verify it rather than assuming the media query covers
@@ -92,7 +100,7 @@ body::before {
   font-family: var(--font-fig);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  letter-spacing: -.01em;
+  letter-spacing: var(--fig-tracking);
 }
 
 /* Small uppercase labels recede.

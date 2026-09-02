@@ -34,7 +34,7 @@
   const EXPECTED = [
     '--sp-1', '--sp-2', '--sp-3', '--sp-4', '--sp-5', '--sp-6',
     '--radius-sm', '--radius', '--ease-out', '--ease-in',
-    '--dur-state', '--dur-enter', '--font-ui', '--font-fig',
+    '--dur-state', '--dur-enter', '--font-ui', '--font-fig', '--fig-tracking',
     '--bg', '--surface', '--surface-inset', '--line',
     '--text', '--text-dim', '--text-faint',
     '--accent', '--tone-pos', '--tone-neg', '--floor',
