@@ -19,6 +19,17 @@ decision, but one app's).
 npm install github:aoconnell099/labkit
 ```
 
+⚠️ **A git dependency has no version range, so the LOCKFILE is the version.**
+`npm install` records the resolved commit and every later build uses it — which
+is what you want for reproducibility, but it means labkit updates do not reach an
+app until someone re-runs the install there and commits the new lock. Two
+consumers were a commit apart within an hour of the first release, and the
+deployed CSS was the tell. To update:
+
+```bash
+npm install labkit@github:aoconnell099/labkit   # then commit the lockfile
+```
+
 ```js
 import 'labkit/tokens.css';
 import { Section, StatRow, Rail, applyPalette } from 'labkit';
