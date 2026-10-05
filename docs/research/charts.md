@@ -113,7 +113,7 @@ three rows above. It is my synthesis, not something any one source says:
 | ECharts handbook: decals | Decals are patterns laid over fills so series can be told apart without colour. They are switched on under `aria` and can be customised per pattern. In the handbook's words, "Apache ECharts 5 adds support for decal patterns as a secondary representation of color to further differentiate data." Which series types support decals, and that lines need an area fill for them to show, comes from search results and a third-party mirror, not the handbook. That part is *unverified*. | **Take** | This is labkit's "third state carries form" rule, ready-made. When `attention` is absent, the third state can be a decal on the fill rather than a third hue. It also makes a categorical scale, if an app earns one, survive greyscale and print. | https://echarts.apache.org/handbook/en/best-practices/aria/ | 2026-10-04 |
 | Datawrapper: choosing colours | Test with a colour-blindness simulator before publishing, and make ramps vary in lightness, not only hue. | **Take** | labkit's validator already checks CVD separation. The generator should run it over whatever palette it emits, including any app-supplied categorical slot. | https://www.datawrapper.de/academy/what-to-consider-when-choosing-colors-for-data-visualization | 2026-10-04 |
 | Carbon: chart accessibility | I could not find a Carbon page for chart accessibility (404, see below). Carbon's colour page says only that its palette was designed for accessibility, with no ratios. | **Skip** (nothing to take) | No content was read, so nothing is claimed. | https://carbondesignsystem.com/data-visualization/color-palettes/ | 2026-10-04 |
-| WCAG non-text contrast (added: it is the threshold `contrast.ts` alludes to) | Marks such as bars, lines and points are graphical objects, which WCAG 2.1 SC 1.4.11 holds to 3:1 against what is next to them. **Not read live in this session.** This is from memory and *unverified*. | **Take**, pending verification | It is the floor a generated chart palette should be checked at for *marks*. Text in the chart (labels, annotations) stays at labkit's 4.5:1. | https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html (not fetched) | not read |
+| WCAG non-text contrast (added: it is the threshold `contrast.ts` alludes to) | Marks such as bars, lines and points are graphical objects, which WCAG 2.1 SC 1.4.11 holds to 3:1 against what is next to them. In the page's words, parts of graphics required to understand the content need "a contrast ratio of at least 3:1 against adjacent color(s)". | **Take** | It is the floor a generated chart palette should be checked at for *marks*. Text in the chart (labels, annotations) stays at labkit's 4.5:1. | https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html | 2026-10-04 |
 
 **Not covered by any source read here:** keyboard navigation through data points,
 and a table alternative for screen readers. A labkit chart sitting inside a
@@ -149,8 +149,7 @@ No fetched page contained instructions aimed at the agent.
    names and calls `setTheme` when `theme.ts` toggles. It generates from the
    object rather than the CSS because canvas probably cannot resolve `var()`
    (*unverified*, §1). Before it returns, the generator runs the validator on
-   what it emits: 4.5:1 for anything that paints text, 3:1 for marks (the 3:1
-   figure is pending verification), plus CVD separation for any fill set. If
+   what it emits: 4.5:1 for anything that paints text, 3:1 for marks, plus CVD separation for any fill set. If
    that fails, it throws instead of returning a theme that drifts. ECharts 6
    building its own default theme from tokens is the precedent.
 
