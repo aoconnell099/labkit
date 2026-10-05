@@ -47,11 +47,15 @@ values. labkit owns the *shape*, not the choices.
    the surface. Re-run it before changing a value, and read the value back out
    of the file afterwards rather than trusting what you meant to type.
 
-2. **Two status hues, never three.** Three status hues at text contrast on a
-   light ground has *zero* solutions: green, clay and amber collide in lightness,
-   and green-vs-red is the deuteranopia pair. The third state carries **form** —
-   a segmented tick, a dashed fill, a weight change. Two of the three source apps
-   discovered this separately. Do not go looking for an amber.
+2. **Two status hues by default; a third only where it measures.** Three status
+   hues at text contrast on a light ground often have *no* solution: green, clay
+   and amber collide in lightness, and green-vs-red is the deuteranopia pair.
+   `src/palette.ts` allows an optional third hue (`attention`) only where it
+   measures as passing on the ground in use — it passes on a cool near-white and
+   fails on a warm cream. Where it does not pass, the third state carries
+   **form** — a segmented tick, a dashed fill, a weight change. Two of the three
+   source apps discovered this separately. Measure before going looking for an
+   amber.
 
 3. **Tone names belong to no domain.** The same pigment was called `--money-in`,
    `--ok` and `--pos` by the three apps. A token named `--money-in` marking an
