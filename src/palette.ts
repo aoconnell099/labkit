@@ -120,6 +120,12 @@ export const DEFAULT_PALETTE: Palette = {
  * (0,1,0) outranks `html, body` (0,0,1), so the hardcoded hex won permanently —
  * invisible across five dark screens, and on the one light screen it painted
  * most of a short viewport near-black. **Port a light screen early.**
+ *
+ * ⚠️ `color` too, for the same reason one level down. `html, body { color:
+ * var(--text) }` only covers a palette stamped on the document. Stamped on a
+ * subtree (the gallery's frames), anything without its own colour rule — the
+ * contrast table's cells — inherited the PAGE's ink: near-black on a dark
+ * frame (labkit #21). `color-scheme` does not reset an inherited colour.
  */
 export function applyPalette(
   mode: Mode,
@@ -158,5 +164,6 @@ export function applyPalette(
 
   // See the note above — the token alone is not enough.
   s.background = ink.surface;
+  s.color = ink.text;
   s.colorScheme = mode;
 }
