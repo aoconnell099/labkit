@@ -107,7 +107,7 @@ MIT.
 `preview.json` tells the desktop worker how to build this repo for review by looking
 (lab-harness #86, ideas `plans/49`): a worker PR that passes its Verifier gets the gallery
 built from that exact commit and a link on the PR, served sandboxed at
-`https://homelab.tailc8c31a.ts.net:8125/p/<token>/`. The build uses `--base ./` because the
+the lab's private previews site (its address is in the private homelab repo). The build uses `--base ./` because the
 gallery's own base is `/labkit/`, which would point every asset outside the preview.
 Checked 2026-10-08: it renders in the sandbox with no errors (`theme.ts` already wraps
 `localStorage`, which a sandboxed page can't use).
