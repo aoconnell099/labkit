@@ -1,0 +1,6 @@
+{
+  "build": "npm ci && cd gallery && npm ci && npx vite build --base ./",
+  "out": "gallery/dist",
+  "entry": "index.html",
+  "max_mb": 50
+}
