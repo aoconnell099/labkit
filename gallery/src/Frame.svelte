@@ -100,7 +100,7 @@
           {#each audit as c (c.token)}
             <tr>
               <td class="mono">{c.token}</td>
-              <td class="r mono">{c.ratio.toFixed(2)}:1</td>
+              <td class="r mono ratio">{c.ratio.toFixed(2)}:1</td>
               <td class="r mono">{c.required}</td>
               <td class="r"><Rail code={c.passes ? 'PASS' : 'FAIL'}
                                   tone={c.passes ? 'pos' : 'neg'} /></td>
@@ -223,5 +223,7 @@
     box-shadow: 0 0 0 1px var(--line);
   }
   .val { font-size: .68rem; color: var(--text-dim); }
+  /* The measured number is what the table is for; it reads first. */
+  .ratio { font-weight: 700; }
   .row-btn { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 </style>
