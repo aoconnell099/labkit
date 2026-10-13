@@ -41,6 +41,8 @@ https://www.w3.org/TR/css-syntax-3/#consume-qualified-rule (read 2026-10-04).
 This is a reading of the spec; it has **not** been confirmed in a browser in this
 session. Fixing it is a build task, not part of this ticket — it is flagged here
 because every reduced-motion decision below depends on that block working.
+**Fixed by #13** (2026-10-12): the stray line is deleted. A browser check of
+`--dur-state` under emulated reduced motion is still owed — see that PR.
 
 ## Sources
 
@@ -106,3 +108,9 @@ because every reduced-motion decision below depends on that block working.
    the same way README rule 2 handles colour. View Transitions animate whole
    views, which is routing, so labkit primitives don't use them; an app that does
    must gate them on reduced motion itself.
+
+## Checked in a browser (2026-10-13)
+
+With the stray `*` gone, the media block applies. In headless Chromium with
+reduced motion emulated, a primitive's transition reports 0ms; without the
+emulation, it reports 180ms. Before the fix, it reported 180ms either way.
