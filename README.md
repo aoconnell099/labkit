@@ -109,5 +109,9 @@ MIT.
 built from that exact commit and a link on the PR, served sandboxed at
 the lab's private previews site (its address is in the private homelab repo). The build uses `--base ./` because the
 gallery's own base is `/labkit/`, which would point every asset outside the preview.
+Before `vite build` it runs `npm run check` (svelte-check) at the root and in `gallery/`,
+so a preview exists only when the types check, and a failure shows on the PR as the
+build's last lines. The PR checker may not install packages, so this is where labkit's
+type checks run (#24).
 Checked 2026-10-08: it renders in the sandbox with no errors (`theme.ts` already wraps
 `localStorage`, which a sandboxed page can't use).
