@@ -120,6 +120,7 @@ Checked 2026-10-08: it renders in the sandbox with no errors (`theme.ts` already
 scenes open the gallery with the system's reduce-motion setting on and off, and read the
 motion tokens off a real button and field: with it on, `--dur-state` is `0ms` and every
 transition at most 1 ms; with it off, `--dur-state` is `180ms`. The fix in #26 (a stray `*`
-had swallowed the whole reduced-motion block) is checked this way on every PR, by the
-builder and by the PR checker alike. Read the tokens from an element, as here: an undefined
+had swallowed the whole reduced-motion block) is checked this way on each worker PR once its
+preview is built, and by the worker and the PR checker themselves when a ticket runs on the
+desktop worker. Read the tokens from an element, as here: an undefined
 custom property doesn't warn, it silently falls back.

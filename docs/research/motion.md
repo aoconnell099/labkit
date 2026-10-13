@@ -116,4 +116,4 @@ reduced motion emulated, `--dur-state` reads 0ms on a button, and its transition
 take 1ms (the `*` rule's `transition-duration: 1ms !important` backstop, not 0);
 without the emulation, `--dur-state` is 180ms and the transitions take 180ms.
 Before the fix, the token read 180ms either way. `render.json` checks all of this
-on every PR (see the README's Previews section).
+on worker PRs (see the README's Previews section for when).
