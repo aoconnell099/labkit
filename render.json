@@ -1,0 +1,27 @@
+{
+  "settle_ms": 1000,
+  "scenes": [
+    {
+      "name": "motion tokens",
+      "reduced_motion": true,
+      "steps": [
+        {"wait_for": ".btn"},
+        {"note": "getComputedStyle(document.querySelector('.btn')).getPropertyValue('--dur-state').trim()", "as": "token"},
+        {"note": "getComputedStyle(document.querySelector('.btn')).transitionDuration", "as": "btn"},
+        {"expect": "notes.token === '0ms'", "says": "the state duration token is 0ms"},
+        {"expect": "notes.btn.split(', ').every(d => parseFloat(d) <= 0.001)", "says": "a button's transitions take at most 1ms"},
+        {"expect": "parseFloat(getComputedStyle(document.querySelector('.ctl')).transitionDuration) <= 0.001", "says": "a field's transition takes at most 1ms"}
+      ]
+    },
+    {
+      "name": "motion tokens",
+      "steps": [
+        {"wait_for": ".btn"},
+        {"note": "getComputedStyle(document.querySelector('.btn')).getPropertyValue('--dur-state').trim()", "as": "token"},
+        {"note": "getComputedStyle(document.querySelector('.btn')).transitionDuration", "as": "btn"},
+        {"expect": "notes.token === '180ms'", "says": "the state duration token is 180ms"},
+        {"expect": "notes.btn.split(', ').every(d => d === '0.18s')", "says": "a button's transitions take 180ms"}
+      ]
+    }
+  ]
+}
