@@ -112,5 +112,8 @@ because every reduced-motion decision below depends on that block working.
 ## Checked in a browser (2026-10-13)
 
 With the stray `*` gone, the media block applies. In headless Chromium with
-reduced motion emulated, a primitive's transition reports 0ms; without the
-emulation, it reports 180ms. Before the fix, it reported 180ms either way.
+reduced motion emulated, `--dur-state` reads 0ms on a button, and its transitions
+take 1ms (the `*` rule's `transition-duration: 1ms !important` backstop, not 0);
+without the emulation, `--dur-state` is 180ms and the transitions take 180ms.
+Before the fix, the token read 180ms either way. `render.json` checks all of this
+on worker PRs (see the README's Previews section for when).
