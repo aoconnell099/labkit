@@ -1,16 +1,16 @@
 /* labkit — the shared substrate. STRUCTURE ONLY; THE PALETTE IS NOT HERE.
- *
+
  * Every colour custom property is stamped onto <html> by applyPalette() in
  * palette.ts. Hardcoding a hex in this file recreates the second-copy drift that
  * extraction exists to end — and every value there was computed with a
  * validator, so a hand-picked one here would not just drift, it would be
  * unmeasured.
- *
+
  * ⚠️ FONTS ARE NOT HERE EITHER. Consumers self-host their own and declare the
  * @font-face rules, because a webfont is an asset with a licence and a byte
  * cost, and a shared package is the wrong place to make that choice for
  * somebody. labkit only expects --font-ui and --font-fig to exist.
- *
+
  * ⚠️ The BOOT GROUND belongs in the consumer's index.html, not here — it has to
  * paint before any stylesheet loads. See palette.ts for the bug that comes from
  * getting the interaction between the two wrong. */
@@ -48,7 +48,7 @@
      little negative tracking, a sans set at the same value looks cramped. */
   --fig-tracking: -.01em;
 }
- *
+
 /* ⚠️ Not optional, and verify it rather than assuming the media query covers
    everything. */
 @media (prefers-reduced-motion: reduce) {

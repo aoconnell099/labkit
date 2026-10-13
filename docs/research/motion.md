@@ -41,6 +41,8 @@ https://www.w3.org/TR/css-syntax-3/#consume-qualified-rule (read 2026-10-04).
 This is a reading of the spec; it has **not** been confirmed in a browser in this
 session. Fixing it is a build task, not part of this ticket — it is flagged here
 because every reduced-motion decision below depends on that block working.
+**Fixed by #13** (2026-10-12): the stray line is deleted. A browser check of
+`--dur-state` under emulated reduced motion is still owed — see that PR.
 
 ## Sources
 
