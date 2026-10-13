@@ -108,3 +108,9 @@ because every reduced-motion decision below depends on that block working.
    the same way README rule 2 handles colour. View Transitions animate whole
    views, which is routing, so labkit primitives don't use them; an app that does
    must gate them on reduced motion itself.
+
+## Checked in a browser (2026-10-13)
+
+With the stray `*` gone, the media block applies. In headless Chromium with
+reduced motion emulated, a primitive's transition reports 0ms; without the
+emulation, it reports 180ms. Before the fix, it reported 180ms either way.
