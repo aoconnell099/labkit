@@ -1,5 +1,5 @@
 <script lang="ts">
-  /** One palette, one mode, every primitive.
+  /** One palette (or theme), one mode, every primitive.
    *
    *  ⚠️ The palette is applied to THIS ELEMENT, not to :root. That is the whole
    *  trick that lets three palettes render on one page — and it is why
@@ -8,17 +8,30 @@
    *  exactly the blind spot it exists to remove.
    */
   import { Section, StatRow, Rail, Meter, Field, applyPalette, auditPalette,
-           type Mode, type Palette } from 'labkit';
+           applyTheme, auditTheme, modePalette,
+           type Mode, type Palette, type Theme, type MotionLevel } from 'labkit';
 
-  let { name, character, palette, mode }: {
+  /** Either a palette or a theme. A theme frame also wears the theme's type,
+   *  surfaces and motion, at the motion level the page picked. */
+  let { name, character, palette, theme, mode, level = 'full' }: {
     name: string;
     character: string;
-    palette: Palette;
+    palette?: Palette;
+    theme?: Theme;
     mode: Mode;
+    level?: MotionLevel;
   } = $props();
 
   let el: HTMLDivElement;
-  $effect(() => { if (el) applyPalette(mode, palette, el); });
+  $effect(() => {
+    if (!el) return;
+    if (theme) applyTheme(theme, mode, level, el);
+    else if (palette) applyPalette(mode, palette, el);
+  });
+
+  /** This frame's colours. ⚠️ A theme's are only there for a mode it ships;
+   *  the page never asks for another, and applyTheme refuses one. */
+  const values = $derived(theme ? theme.modes[mode]! : modePalette(palette!, mode));
 
   /** ⚠️ EVERY TOKEN THE KIT PROMISES, RESOLVED FROM THE LIVE ELEMENT.
    *
@@ -38,6 +51,7 @@
     '--bg', '--surface', '--surface-inset', '--line',
     '--text', '--text-dim', '--text-faint',
     '--accent', '--tone-pos', '--tone-neg', '--floor',
+    '--font-display', '--enter-y', '--enter-scale', '--glass', '--grain', '--glow',
   ];
   let missing = $state<string[]>([]);
   $effect(() => {
@@ -48,29 +62,35 @@
 
   // ⚠️ Printed on screen, not asserted in a comment. A token at 2.64:1 looked
   // like a design decision for months; a number next to it does not.
-  const audit = $derived(auditPalette(palette).checks.filter((c) => c.mode === mode));
+  const audit = $derived(
+    (theme ? auditTheme(theme) : auditPalette(palette)).checks.filter((c) => c.mode === mode)
+  );
 
   const swatches = $derived([
-    { name: 'surface', value: palette.ink[mode].surface },
-    { name: 'raised', value: palette.ink[mode].surfaceRaised },
-    { name: 'inset', value: palette.ink[mode].surfaceInset },
-    { name: 'line', value: palette.ink[mode].line },
-    { name: 'text', value: palette.ink[mode].text },
-    { name: 'text-dim', value: palette.ink[mode].textDim },
-    { name: 'text-faint', value: palette.ink[mode].textFaint },
-    { name: 'tone-pos', value: palette.status[mode].pos },
-    { name: 'tone-neg', value: palette.status[mode].neg },
-    { name: 'accent', value: palette.accent[mode] },
+    { name: 'surface', value: values.ink.surface },
+    { name: 'raised', value: values.ink.surfaceRaised },
+    { name: 'inset', value: values.ink.surfaceInset },
+    { name: 'line', value: values.ink.line },
+    { name: 'text', value: values.ink.text },
+    { name: 'text-dim', value: values.ink.textDim },
+    { name: 'text-faint', value: values.ink.textFaint },
+    { name: 'tone-pos', value: values.status.pos },
+    { name: 'tone-neg', value: values.status.neg },
+    { name: 'accent', value: values.accent },
   ]);
 </script>
 
-<div class="frame" bind:this={el}>
+<div class="frame" bind:this={el} data-mode={mode} data-theme={theme?.name}>
   <header class="fh">
-    <span class="lbl">{name} &middot; {mode}</span>
+    <span class="lbl">{name} &middot; {mode}{theme ? ` · theme · motion ${level}` : ''}</span>
     <span class="lbl ch">{character}</span>
   </header>
 
-  <div class="body">
+  <!-- Keyed on the level so a theme frame plays its entrance again when the
+       level changes: the difference between full and calm is something to
+       see, not only to read off a token. -->
+  {#key level}
+  <div class="body" class:enter={!!theme}>
     {#if missing.length}
       <p class="notice neg">
         {missing.length} token(s) undefined: {missing.join(', ')} — every rule
@@ -184,7 +204,18 @@
       <p class="notice pos">Done. Every other session was signed out.</p>
       <p class="notice neg">That would leave no active administrator.</p>
     </Section>
+
+    {#if theme}
+      <Section title="Surface" note="A .surface panel wearing this theme's glass, grain and glow. All three at 0 is a plain raised panel.">
+        <div class="surface demo">
+          glass <span class="mono">{theme.surfaces.glass}px</span> &middot;
+          grain <span class="mono">{theme.surfaces.grain}</span> &middot;
+          glow <span class="mono">{theme.surfaces.glow}</span>
+        </div>
+      </Section>
+    {/if}
   </div>
+  {/key}
 </div>
 
 <style>
@@ -226,4 +257,5 @@
   /* The measured number is what the table is for; it reads first. */
   .ratio { font-weight: 700; }
   .row-btn { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .demo { padding: 14px 16px; font-size: .8rem; color: var(--text-dim); }
 </style>

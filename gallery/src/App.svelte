@@ -7,11 +7,31 @@
    *  between two palettes is invisible sequentially and obvious in parallel.
    */
   import Frame from './Frame.svelte';
-  import { EXAMPLES } from './palettes';
-  import { auditPalette } from 'labkit';
+  import { EXAMPLES, THEMES } from './palettes';
+  import { auditPalette, auditTheme, shippedModes, type Mode, type MotionLevel,
+           type ContrastCheck } from 'labkit';
 
   let showBoth = $state(false);
   let narrow = $state(false);
+  let level = $state<MotionLevel>('full');
+  const LEVELS: MotionLevel[] = ['full', 'calm', 'off'];
+
+  /** The modes a theme frame is shown in. ⚠️ Only modes the theme ships:
+   *  "show both modes" adds the other one only if it exists, so a dark-only
+   *  theme is never offered a light ground it was not designed for. */
+  function themeModes(primary: Mode, shipped: Mode[]): Mode[] {
+    return showBoth ? [primary, ...shipped.filter((m) => m !== primary)] : [primary];
+  }
+
+  /** For the render check (render.json): each shown theme's contrast failures,
+   *  per mode it ships. A mode it does not ship has no key at all. */
+  (window as unknown as { labkitAudit: () => unknown }).labkitAudit = () =>
+    Object.fromEntries(THEMES.map(({ theme }) => {
+      const failures = auditTheme(theme).failures;
+      const perMode: Partial<Record<Mode, ContrastCheck[]>> = {};
+      for (const m of shippedModes(theme)) perMode[m] = failures.filter((f) => f.mode === m);
+      return [theme.name, perMode];
+    }));
 
   // ⚠️ Surfaced at the top, not buried in a frame. If any shipped example fails
   // its own contrast bar, that is the first thing a reader should learn.
@@ -27,11 +47,14 @@
     )
   );
 
-  const failures = $derived(
-    EXAMPLES.flatMap((e) =>
+  const failures = $derived([
+    ...EXAMPLES.flatMap((e) =>
       auditPalette(e.palette).failures.map((f) => `${e.name} ${f.mode} ${f.token} ${f.ratio}:1`)
-    )
-  );
+    ),
+    ...THEMES.flatMap(({ theme }) =>
+      auditTheme(theme).failures.map((f) => `${theme.name} theme ${f.mode} ${f.token} ${f.ratio}:1`)
+    ),
+  ]);
 </script>
 
 <div class="page">
@@ -43,7 +66,7 @@
     </p>
 
     <div class="controls">
-      <label><input type="checkbox" bind:checked={showBoth} /> show both modes</label>
+      <label><input type="checkbox" id="show-both" bind:checked={showBoth} /> show both modes</label>
       <label>
         <input type="checkbox" bind:checked={narrow} />
         <!-- ⚠️ Squeezing a container does NOT fire viewport media queries, so
@@ -78,6 +101,28 @@
       {/if}
     {/each}
   </div>
+
+  <section class="themes">
+    <h2>Themes</h2>
+    <p>
+      A theme is a palette for each mode it ships, plus type, surfaces and
+      motion. It may ship one mode only, and then the gallery shows only that one.
+    </p>
+    <fieldset class="controls">
+      <legend>motion</legend>
+      {#each LEVELS as l (l)}
+        <label><input type="radio" name="motion" id={`motion-${l}`} value={l} bind:group={level} /> {l}</label>
+      {/each}
+    </fieldset>
+    <div class="grid" class:narrow>
+      {#each THEMES as t (t.theme.name)}
+        {#each themeModes(t.primary, shippedModes(t.theme)) as m (m)}
+          <Frame name={t.theme.name} character={t.theme.character} theme={t.theme}
+                 mode={m} {level} />
+        {/each}
+      {/each}
+    </div>
+  </section>
 </div>
 
 <style>
@@ -106,4 +151,8 @@
      to min-width:auto and will otherwise force a column wider than the page. */
   .grid > :global(*) { min-width: 0; }
   .grid.narrow { grid-template-columns: repeat(auto-fit, 390px); }
+  .themes { margin-top: 36px; }
+  h2 { font-size: 1.1rem; margin: 0 0 6px; font-weight: 600; }
+  .themes p { margin: 0 0 10px; opacity: .75; max-width: 62ch; }
+  fieldset.controls { border: 1px solid #8886; border-radius: 6px; padding: 6px 12px 8px; }
 </style>

@@ -11,6 +11,8 @@
  *     import { Section, StatRow, Rail, applyPalette } from 'labkit';
  *
  *     applyPalette('dark', MY_PALETTE);
+ *     // or a whole theme: colours, type, surfaces and motion
+ *     applyTheme(MY_THEME, 'dark', 'full');
  */
 export { default as Section } from './components/Section.svelte';
 export { default as StatRow } from './components/StatRow.svelte';
@@ -25,8 +27,22 @@ export {
   type Palette,
   type InkPalette,
   type StatusPalette,
+  modePalette,
+  type ModePalette,
 } from './palette';
 
-export { resolveMode, storedPreference, setPreference } from './theme';
+export { resolveMode, storedPreference, setPreference } from './mode';
 
 export { contrast, auditPalette, type ContrastCheck } from './contrast';
+
+export {
+  applyTheme,
+  auditTheme,
+  shippedModes,
+  type Theme,
+  type ThemeType,
+  type ThemeSurfaces,
+  type ThemeMotion,
+  type EnterKind,
+  type MotionLevel,
+} from './themes';

@@ -1,7 +1,7 @@
 /* labkit — the shared substrate. STRUCTURE ONLY; THE PALETTE IS NOT HERE.
 
  * Every colour custom property is stamped onto <html> by applyPalette() in
- * palette.ts. Hardcoding a hex in this file recreates the second-copy drift that
+ * palette.ts (or applyTheme() in themes.ts, through the same code). Hardcoding a hex in this file recreates the second-copy drift that
  * extraction exists to end — and every value there was computed with a
  * validator, so a hand-picked one here would not just drift, it would be
  * unmeasured.
@@ -27,11 +27,30 @@
   --radius: 8px;
 
   /* One easing for entrances, one for exits — no bespoke curves per component.
-     Transitions go on transform and opacity ONLY. */
-  --ease-out: cubic-bezier(.22, .61, .36, 1);
-  --ease-in: cubic-bezier(.55, .06, .68, .19);
-  --dur-state: 180ms;
-  --dur-enter: 500ms;
+     Transitions go on transform and opacity ONLY.
+     ⚠️ A theme's motion lands in --motion-*, and the live tokens below are
+     derived from it — here, and again per motion level further down. See
+     themes.ts for why applyTheme never sets --dur-state itself. */
+  --motion-ease-out: cubic-bezier(.22, .61, .36, 1);
+  --motion-ease-in: cubic-bezier(.55, .06, .68, .19);
+  --motion-dur-state: 180ms;
+  --motion-dur-enter: 500ms;
+  /* Entrance distance. 0 is a plain fade, the default. */
+  --motion-enter-y: 0px;
+  --motion-enter-scale: 1;
+
+  --ease-out: var(--motion-ease-out);
+  --ease-in: var(--motion-ease-in);
+  --dur-state: var(--motion-dur-state);
+  --dur-enter: var(--motion-dur-enter);
+  --enter-y: var(--motion-enter-y);
+  --enter-scale: var(--motion-enter-scale);
+
+  /* Surfaces: glass blur (a px count), grain and glow (0 to 1). All 0 unless a
+     theme sets them — see .surface. Unitless so the CSS can scale them. */
+  --glass: 0;
+  --grain: 0;
+  --glow: 0;
 
   /* Fallbacks are the nearest metric match on each platform, so the swap on
      first load shifts as little as possible. */
@@ -47,12 +66,65 @@
   /* Tracking for figures. Face-dependent, so it is a token: a mono wants a
      little negative tracking, a sans set at the same value looks cramped. */
   --fig-tracking: -.01em;
+  /* Headings that want the theme's display face. applyTheme sets it; the
+     fallback is the UI stack. */
+  --font-display: var(--font-ui);
+}
+
+/* ── Motion levels ─────────────────────────────────────────────────────────
+   applyTheme() puts data-motion on the element it stamps.
+
+   full  the theme's motion as given.
+   calm  state changes and fades keep the theme's durations; entrances move no
+         distance; infinite animations stop. For someone who wants the page to
+         feel alive without things travelling across it.
+   off   what the reduced-motion block below does.
+
+   ⚠️ Each level re-derives the live tokens ON the element, because a custom
+   property's var() is resolved where it is declared: a frame that sets
+   --motion-dur-state does not change a --dur-state its parent already
+   resolved. */
+[data-motion="full"], [data-motion="calm"] {
+  --ease-out: var(--motion-ease-out);
+  --ease-in: var(--motion-ease-in);
+  --dur-state: var(--motion-dur-state);
+  --dur-enter: var(--motion-dur-enter);
+  --enter-y: var(--motion-enter-y);
+  --enter-scale: var(--motion-enter-scale);
+}
+[data-motion="calm"] { --enter-y: 0px; --enter-scale: 1; }
+/* Loops run once. Loading keeps a still, dimmed look in place of the pulse,
+   so it still reads as "working". */
+[data-motion="calm"], [data-motion="calm"] *,
+[data-motion="calm"] *::before, [data-motion="calm"] *::after {
+  animation-iteration-count: 1 !important;
+}
+[data-motion="calm"] .is-loading, .is-loading[data-motion="calm"] {
+  animation: none;
+  opacity: .65;
+}
+[data-motion="off"] {
+  --dur-state: 0ms; --dur-enter: 0ms; --enter-y: 0px; --enter-scale: 1;
+}
+[data-motion="off"], [data-motion="off"] *,
+[data-motion="off"] *::before, [data-motion="off"] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+  scroll-behavior: auto !important;
 }
 
 /* ⚠️ Not optional, and verify it rather than assuming the media query covers
-   everything. */
+   everything.
+   ⚠️ It comes AFTER the motion levels and names [data-motion] as well as
+   :root: the system setting forces `off` under every level, and a level's
+   rule has the same specificity, so source order is what makes this win.
+   These declarations repeat [data-motion="off"]'s because CSS cannot join a
+   media query and a selector in one rule; change one, change both. */
 @media (prefers-reduced-motion: reduce) {
-  :root { --dur-state: 0ms; --dur-enter: 0ms; }
+  :root, [data-motion] {
+    --dur-state: 0ms; --dur-enter: 0ms; --enter-y: 0px; --enter-scale: 1;
+  }
   *, *::before, *::after {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
@@ -149,6 +221,45 @@ button, select, input, textarea { font-family: inherit; }
   pointer-events: none;
 }
 @keyframes pulse { 0%, 100% { opacity: .5 } 50% { opacity: .85 } }
+
+/* ── Entrances ─────────────────────────────────────────────────────────────
+   One entrance for everything, shaped by the theme: a fade, plus the
+   distance its `enter` kind gives (--enter-y, --enter-scale). Under calm and
+   off the distance is 0, so it is a plain fade, or nothing. */
+.enter { animation: labkit-enter var(--dur-enter) var(--ease-out) both; }
+@keyframes labkit-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--enter-y)) scale(var(--enter-scale));
+  }
+}
+
+/* ── Surfaces ──────────────────────────────────────────────────────────────
+   A raised panel that wears the theme's glass, grain and glow. With all three
+   at 0, the default, it is a plain raised panel: opaque, no blur, no shadow.
+   ⚠️ No hex here either. Glass thins the panel's own --surface; glow is the
+   theme's --accent; grain is a colourless noise. */
+.surface {
+  position: relative;
+  isolation: isolate;
+  background: color-mix(in srgb, var(--surface) calc(100% - min(var(--glass), 20) * 2%), transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  backdrop-filter: blur(calc(var(--glass) * 1px));
+  box-shadow: 0 0 calc(var(--glow) * 40px)
+    color-mix(in srgb, var(--accent) calc(var(--glow) * 50%), transparent);
+}
+.surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: calc(var(--grain) * .35);
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
 
 /* Empty states say what would appear here and how to make it appear — never
    just "No data".

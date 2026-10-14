@@ -70,14 +70,52 @@ values. labkit owns the *shape*, not the choices.
 
 | | |
 |---|---|
-| `tokens.css` | spacing, motion, focus rings, table paint, form controls, buttons, the rail |
+| `tokens.css` | spacing, motion and the three motion levels, the `.enter` entrance, the `.surface` panel, focus rings, table paint, form controls, buttons, the rail |
 | `Section` | a titled region with a hairline, optional meta and method footer |
 | `StatRow` | label / figure / caveat, with a `big` hero mode |
 | `Rail` | a tick, a short code, a qualifier |
 | `Meter` | a progress mark — takes a **tone**, never a value-to-colour rule |
 | `Field` | a labelled control with its hint and an announced error |
 | `palette.ts` | the palette shape, a validated default, and `applyPalette` |
-| `theme.ts` | an explicit light/dark choice, persisted |
+| `contrast.ts` | `contrast` and `auditPalette`: every text token against its surface |
+| `themes.ts` | `Theme`, `applyTheme` and `auditTheme`: a palette per mode plus type, surfaces and motion |
+| `mode.ts` | an explicit light/dark choice, persisted (renamed in #28, when "theme" came to mean an art theme; the storage key is still `labkit.theme`) |
+
+### Themes
+
+A **`Theme`** extends what a palette holds. It has a name and a one-line
+character; `modes`, holding a palette's values (ink, status, accent, floor) for
+**each mode it ships**, which may be dark only, light only, or both; `type`, the
+font stacks for `--font-ui`, `--font-fig` and an optional `--font-display` (stacks
+only: labkit ships no font files); `surfaces`, `glass` (blur in px), `grain` and
+`glow` (0 to 1), each 0 meaning none; and `motion`: `durState` and `durEnter` in
+ms, `easeOut` and `easeIn` as `cubic-bezier(...)`, and `enter`, one of `fade`,
+`rise` or `scale`.
+
+```js
+applyTheme(MY_THEME, 'dark', 'full');          // or (theme, mode, level, element)
+expect(auditTheme(MY_THEME).failures).toEqual([]);
+```
+
+**`applyTheme(theme, mode, level, root)`** throws for a mode the theme does not
+ship. It stamps the colours through the same code as `applyPalette`, sets the
+type and surface tokens, puts the motion in `--motion-*`, and sets `data-motion`
+on the element. **`auditTheme(theme)`** runs `auditPalette`'s checks (one shared
+function) on each mode the theme ships, and only those.
+
+**Three motion levels**, set by `data-motion`:
+
+- `full`: the theme's motion as given.
+- `calm`: state changes and fades keep the theme's durations, entrances move no
+  distance, and infinite animations stop (`.is-loading` included: it holds still,
+  dimmed).
+- `off`: what the reduced-motion block does: durations 0, every animation and
+  transition at 1 ms.
+
+The system's reduce-motion setting forces `off` under every level.
+
+`.surface` is a raised panel wearing the theme's glass, grain and glow. With all
+three at 0, the default, it is plain and opaque.
 
 ## Gallery
 
@@ -113,14 +151,24 @@ Before `vite build` it runs `npm run check` (svelte-check) at the root and in `g
 so a preview exists only when the types check, and a failure shows on the PR as the
 build's last lines. The PR checker may not install packages, so this is where labkit's
 type checks run (#24).
-Checked 2026-10-08: it renders in the sandbox with no errors (`theme.ts` already wraps
-`localStorage`, which a sandboxed page can't use).
+Checked 2026-10-08: it renders in the sandbox with no errors (`mode.ts`, under its old
+name, already wrapped `localStorage`, which a sandboxed page can't use).
 
-`render.json` is the play script for the lab's render check (lab-harness #155). Its two
-scenes open the gallery with the system's reduce-motion setting on and off, and read the
-motion tokens off a real button and field: with it on, `--dur-state` is `0ms` and every
-transition at most 1 ms; with it off, `--dur-state` is `180ms`. The fix in #26 (a stray `*`
-had swallowed the whole reduced-motion block) is checked this way on each worker PR once its
-preview is built, and by the worker and the PR checker themselves when a ticket runs on the
-desktop worker. Read the tokens from an element, as here: an undefined
-custom property doesn't warn, it silently falls back.
+`render.json` is the play script for the lab's render check (lab-harness #155). Its first
+two scenes, "motion tokens", open the gallery with the system's reduce-motion setting on
+and off, and read the motion tokens off a real button and field: with it on, `--dur-state`
+is `0ms` and every transition at most 1 ms; with it off, `--dur-state` is `180ms`. The fix
+in #26 (a stray `*` had swallowed the whole reduced-motion block) is checked this way on
+each worker PR once its preview is built, and by the worker and the PR checker themselves
+when a ticket runs on the desktop worker. Read the tokens from an element, as here: an
+undefined custom property doesn't warn, it silently falls back.
+
+The theme scenes (#28) run at phone width against the gallery's dark-only Cool dark theme
+and its motion picker. "dark-only theme" ticks "show both modes" and finds the palettes
+doubled but no light frame for the theme. "theme audit" calls `window.labkitAudit()`, which
+the gallery exposes: each shown theme's contrast failures, keyed by the modes it ships,
+and expects none. "full motion" and "calm motion" pause the frame's entrance at its first
+frame and read its transform: 12 px down under `full` (so the check can see a distance), none
+under `calm`, where the loading pulse also has no running animation and `--dur-state` stays
+`180ms`; `off` makes it `0ms`. "theme motion levels" runs with reduce motion on and finds
+`--dur-state` at `0ms` under all three levels.

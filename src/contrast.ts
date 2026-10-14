@@ -21,7 +21,7 @@
  * cannot tell apart. Run the real thing when choosing values; run this to stop
  * them regressing.
  */
-import { DEFAULT_PALETTE, type Mode, type Palette } from './palette';
+import { DEFAULT_PALETTE, modePalette, type Mode, type ModePalette, type Palette } from './palette';
 
 /** sRGB channel -> linear. The 0.03928 kink is the spec's, not a rounding. */
 function channel(c: number): number {
@@ -70,33 +70,39 @@ export function auditPalette(palette: Palette = DEFAULT_PALETTE): {
   const checks: ContrastCheck[] = [];
 
   for (const mode of ['light', 'dark'] as Mode[]) {
-    const ink = palette.ink[mode];
-    const st = palette.status[mode];
-
-    const against = ink.surface;
-    const text: [string, string, number][] = [
-      ['text', ink.text, 4.5],
-      ['textDim', ink.textDim, 4.5],
-      // ⚠️ Yes, the faint step too. In some apps the small uppercase label IS
-      // the content of the row, not a caption beside a big figure.
-      ['textFaint', ink.textFaint, 4.5],
-      ['status.pos', st.pos, 4.5],
-      ['status.neg', st.neg, 4.5],
-      // A focus ring is a non-text UI element, so 3:1 — but it must still be
-      // visible, and an accent that reads as grey is not a focus ring.
-      ['accent', palette.accent[mode], 3],
-    ];
-
-    for (const [token, value, required] of text) {
-      const ratio = contrast(value, against);
-      checks.push({
-        mode, token, against,
-        ratio: Math.round(ratio * 100) / 100,
-        required,
-        passes: ratio >= required,
-      });
-    }
+    checks.push(...auditMode(mode, modePalette(palette, mode)));
   }
 
   return { checks, failures: checks.filter((c) => !c.passes) };
+}
+
+/** One mode's checks. The one implementation behind `auditPalette` and
+ *  `auditTheme`, so a theme is held to exactly the bar a palette is. */
+export function auditMode(mode: Mode, values: ModePalette): ContrastCheck[] {
+  const ink = values.ink;
+  const st = values.status;
+
+  const against = ink.surface;
+  const text: [string, string, number][] = [
+    ['text', ink.text, 4.5],
+    ['textDim', ink.textDim, 4.5],
+    // ⚠️ Yes, the faint step too. In some apps the small uppercase label IS
+    // the content of the row, not a caption beside a big figure.
+    ['textFaint', ink.textFaint, 4.5],
+    ['status.pos', st.pos, 4.5],
+    ['status.neg', st.neg, 4.5],
+    // A focus ring is a non-text UI element, so 3:1 — but it must still be
+    // visible, and an accent that reads as grey is not a focus ring.
+    ['accent', values.accent, 3],
+  ];
+
+  return text.map(([token, value, required]) => {
+    const ratio = contrast(value, against);
+    return {
+      mode, token, against,
+      ratio: Math.round(ratio * 100) / 100,
+      required,
+      passes: ratio >= required,
+    };
+  });
 }
