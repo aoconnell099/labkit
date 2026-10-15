@@ -9,7 +9,10 @@
     "checkJs": true,
     "moduleDetection": "force",
     "verbatimModuleSyntax": false,
-    "paths": { "labkit": ["../src/index.ts"] }
+    "paths": {
+      "labkit": ["../src/index.ts"],
+      "labkit/effects": ["../src/effects/index.ts"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.svelte", "../src/**/*.ts", "../src/**/*.svelte"]
 }
