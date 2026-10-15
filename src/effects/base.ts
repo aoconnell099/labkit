@@ -93,6 +93,12 @@ export abstract class LabkitEffect extends HTMLElement {
     return this.#frames;
   }
 
+  /** Draw one frame now, where the loop stands, running or not: for a piece
+   *  whose look changes on something the base does not watch. */
+  protected redraw(): void {
+    this.#frame(this.#elapsed);
+  }
+
   /** Build the scene on a fresh renderer (called each time it comes on screen). */
   protected abstract create(renderer: WebGLRenderer): void;
   /** Take new settings: colours, glow, pace. Called after create, and on change. */

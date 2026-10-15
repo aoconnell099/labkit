@@ -24,9 +24,10 @@
    *  piece holds a WebGL context while on screen, and a browser keeps only a
    *  handful alive. Reading a theme needs no canvas (labkitEffectRead), so the
    *  render check still covers all of them. The planet orb is shown twice: in
-   *  the theme's accent, and in a tint of its own, as an app would set it. */
+   *  the theme's accent, and in a tint of its own, as an app would set it. The
+   *  orbit rings frame the filament orb, as an app would place them. */
   const PIECES = { filament: 'labkit-filament-orb', planet: 'labkit-planet-orb',
-                   tinted: 'labkit-planet-orb' } as const;
+                   tinted: 'labkit-planet-orb', rings: 'labkit-orbit-rings' } as const;
   const TINT = '#3cc6a0';
   type Piece = keyof typeof PIECES;
   let effectTheme = $state(CHOSEN[0].theme.name);
@@ -218,8 +219,10 @@
         </select>
       </label>
       <div class="effect-panel" bind:this={effectPanel} data-effect-theme={effectTheme}>
-        <labkit-filament-orb data-piece="filament"></labkit-filament-orb>
-        <span class="lbl">filament orb &middot; {effectTheme} &middot; motion {level}</span>
+        <labkit-orbit-rings data-piece="rings">
+          <labkit-filament-orb data-piece="filament"></labkit-filament-orb>
+        </labkit-orbit-rings>
+        <span class="lbl">filament orb in orbit rings &middot; {effectTheme} &middot; motion {level}</span>
         <div class="planets">
           <figure>
             <labkit-planet-orb data-piece="planet"></labkit-planet-orb>
@@ -285,7 +288,7 @@
     border-radius: 10px;
     background: var(--surface);
   }
-  .effect-panel labkit-filament-orb { width: min(100%, 320px); }
+  .effect-panel labkit-orbit-rings { width: min(100%, 400px); }
   .planets { display: flex; gap: 16px; justify-content: center; width: 100%; }
   .planets figure { margin: 0; display: grid; justify-items: center; gap: 6px; flex: 0 1 150px; }
   .planets labkit-planet-orb { width: 100%; }
