@@ -389,10 +389,11 @@ There are ten scenes, the most the tool allows: "motion tokens" twice, "dark-onl
 and audit", "full motion", "calm motion", "chosen themes: reduced motion", "chosen themes:
 audit", "chosen themes: calm" (merged down to these eight in #38), then "effects" and
 "effects: reduced motion" (#39). A new effect adds its steps to the two effects scenes.
-The tool also caps the waits and holds of the whole file at 120 s, summed over every
-scene: each `wait_ms`, `hold` and `touch` counts its `ms`, and each `wait_for` or
-`wait_until` its `ms`, or 10 s when it has none, so give every wait an `ms`. The ten use
-104.1 s (the first eight 86.4 s, the effects scenes 17.7 s), leaving 15.9 s. The planet
+The tool also caps the waits and holds of the whole file at 240 s (120 s until
+2026-10-15), summed over every scene: each `wait_ms`, `hold` and `touch` counts its
+`ms`, and each `wait_for` or `wait_until` its `ms`, or 10 s when it has none, so give
+every wait an `ms`. The ten use
+104.1 s (the first eight 86.4 s, the effects scenes 17.7 s), leaving 135.9 s. The planet
 orb (#40) added 4.7 s: its own steps run inside the filament orb's waits, since every
 piece in the panel comes on screen, and changes level, together, and the 4.7 s are a
 wait for new frames before the Film page shot (3 s) and the `off` settle becoming a
