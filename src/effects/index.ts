@@ -8,25 +8,35 @@
  * Usage:
  *     import 'labkit/effects';            // defines the elements, once
  *     // <labkit-filament-orb></labkit-filament-orb> inside a themed element
+ *     // <labkit-planet-orb style="--effect-tint: #2fb5a0"></labkit-planet-orb>
+ *
+ * A piece's colour is the theme's `--accent`; the planet orb takes
+ * `--effect-tint` first, so each app's orb can wear its own colour.
  *
  * three.js is an optional peer dependency: an app that imports this entry
  * installs it.
  */
 import { FilamentOrb } from './filament-orb';
+import { PlanetOrb } from './planet-orb';
 
 export { LabkitEffect, type EffectSettings } from './base';
 export { readPace, readLevel, parseEase, cubicBezier, PERIOD_PER_ENTER,
          type Pace, type Ease } from './pace';
-export { FilamentOrb };
+export { type PlanetSettings } from './planet-orb';
+export { FilamentOrb, PlanetOrb };
 
 /** Guarded, so two copies of the entry in one page don't throw on a second
  *  define. */
 if (!customElements.get('labkit-filament-orb')) {
   customElements.define('labkit-filament-orb', FilamentOrb);
 }
+if (!customElements.get('labkit-planet-orb')) {
+  customElements.define('labkit-planet-orb', PlanetOrb);
+}
 
 declare global {
   interface HTMLElementTagNameMap {
     'labkit-filament-orb': FilamentOrb;
+    'labkit-planet-orb': PlanetOrb;
   }
 }

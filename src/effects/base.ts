@@ -186,7 +186,10 @@ export abstract class LabkitEffect extends HTMLElement {
     const w = Math.max(1, Math.round(this.clientWidth));
     const h = Math.max(1, Math.round(this.clientHeight));
     r.setSize(w, h, false);
-    if (!this.running && this.#current) this.#frame(this.#elapsed);
+    // Resizing clears the canvas, and a ResizeObserver runs after this paint's
+    // animation frames, so waiting for the loop's next tick would show a blank
+    // frame. Draw now, running or not.
+    this.#frame(this.#elapsed);
   }
 
   /** Re-read the theme and the level; start or stop the loop to match. */
