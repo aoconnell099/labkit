@@ -136,10 +136,16 @@ applyTheme(COLD_CORE, 'dark', 'full');
 | Magenta tube | `MAGENTA_TUBE` | glossy black under a hot magenta glow | dark only | state 30 ms, entrance 1200 ms, fade |
 | Rust terminal | `RUST_TERMINAL` | a monospace screen in rust red on near-black | dark only | state 30 ms, entrance 1210 ms, fade |
 | Black glint | `BLACK_GLINT` | absolute black that holds still, with one small red glint | dark only | state 180 ms, entrance 1160 ms, fade |
+| Pen and seal | `PEN_AND_SEAL` | black ink on white paper, drawn by hand | light only | state 180 ms, entrance 500 ms, fade |
+| Candy glass | `CANDY_GLASS` | soft pastel toys under frosted glass | light only | state 180 ms, entrance 1130 ms, fade |
+| Loud wall | `LOUD_WALL` | flat poster red on a bright white wall | light only | state 70 ms, entrance 1200 ms, fade |
+| Film page | `FILM_PAGE` | a white page with thin rules and a serif voice | light only | state 30 ms, entrance 1120 ms, fade |
+| Screen print | `SCREEN_PRINT` | two inks pulled by hand on cream paper | light only | state 60 ms, entrance 1200 ms, fade |
+| Rose mist | `ROSE_MIST` | frosted cards floating over a soft pink wash | light only | state 180 ms, entrance 500 ms, fade |
 
-Each passes `auditTheme` in every mode it ships. All start from the default dark
-status pair, and on these grounds no value had to move (pos / neg, against a bar
-of 4.5):
+Each passes `auditTheme` in every mode it ships. The dark themes start from the
+default dark status pair, and on these grounds no value had to move (pos / neg,
+against a bar of 4.5):
 
 | theme | pos | neg |
 |---|---|---|
@@ -151,13 +157,28 @@ of 4.5):
 | Rust terminal | 8.13:1 | 5.71:1 |
 | Black glint | 8.65:1 | 6.07:1 |
 
+The light themes start from the default light pair. One value moved: on Rose mist's
+pink, the default green measures 3.55:1, so its pos is the same green darkened to
+`#046852`, the smallest step that passes, at 4.52:1. Everything else kept the default:
+
+| theme | pos | neg |
+|---|---|---|
+| Pen and seal | 5.26:1 | 7.80:1 |
+| Candy glass | 4.88:1 | 7.23:1 |
+| Loud wall | 5.12:1 | 7.59:1 |
+| Film page | 5.31:1 | 7.86:1 |
+| Screen print | 5.09:1 | 7.54:1 |
+| Rose mist | 4.52:1 (moved) | 5.26:1 |
+
 Black glint departs from its draft in three values, each for a reason in its file:
 a red accent where the draft had near-white (the primary button's white label
 vanished on it), and a visible line and inset where the draft's measured 1.0:1 on
 black. ⚠️ Banked ember's gold accent is light enough that the primary button's
-white label sits on it at about 2.6:1; the kit does not audit that pairing yet.
+white label sits on it at about 2.6:1, and Candy glass's pink at about 3.3:1; the
+kit does not audit that pairing yet. Rose mist's accent clears its 3:1 bar by the
+least, at 3.04:1.
 
-More themes come in a third batch (#29 was the first, #31 the second).
+That is all thirteen, in three batches (#29, #31 and #32).
 
 ## Gallery
 
@@ -225,7 +246,9 @@ expects it shown and audited in exactly the modes it ships, with 0 failures in e
 checks each theme's own durations land under `full`, then picks `calm` and finds no
 entrance distance. Both batch 1 themes enter with a fade, which moves no distance under
 `full` either, so for them the calm check confirms nothing was added rather than taken
-away; the same holds for every batch 2 theme (#31). Banked ember's state duration is
+away; the same holds for every batch 2 theme (#31) and every batch 3 theme (#32). The
+batch 3 themes ship light only, so the audit scene expects each shown and audited in
+light alone. Banked ember's state duration is
 0 ms under `full`, so its reduced-motion step also finds `--dur-enter` at `0ms`, which
 is the part that changes. The steps call small helpers the gallery puts on `window` (`labkitModesShown`,
 `labkitRatios`, `labkitToken`, `labkitEnterStart`, `labkitShow`) to stay under the

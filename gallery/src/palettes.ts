@@ -15,7 +15,8 @@
  * point of putting the number on the screen.
  */
 import { modePalette, COLD_CORE, STILL_VIOLET, BLUE_HAZE, BANKED_EMBER,
-         MAGENTA_TUBE, RUST_TERMINAL, BLACK_GLINT,
+         MAGENTA_TUBE, RUST_TERMINAL, BLACK_GLINT, PEN_AND_SEAL, CANDY_GLASS,
+         LOUD_WALL, FILM_PAGE, SCREEN_PRINT, ROSE_MIST,
          type Mode, type Palette, type Theme } from 'labkit';
 
 export interface Example {
@@ -178,6 +179,12 @@ const CHOSEN: ThemeExample[] = [
   { theme: MAGENTA_TUBE, primary: 'dark' },
   { theme: RUST_TERMINAL, primary: 'dark' },
   { theme: BLACK_GLINT, primary: 'dark' },
+  { theme: PEN_AND_SEAL, primary: 'light' },
+  { theme: CANDY_GLASS, primary: 'light' },
+  { theme: LOUD_WALL, primary: 'light' },
+  { theme: FILM_PAGE, primary: 'light' },
+  { theme: SCREEN_PRINT, primary: 'light' },
+  { theme: ROSE_MIST, primary: 'light' },
 ];
 
 export const THEMES: ThemeExample[] = [
