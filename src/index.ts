@@ -28,6 +28,7 @@ export {
   type InkPalette,
   type StatusPalette,
   modePalette,
+  onAccentFor,
   type ModePalette,
 } from './palette';
 

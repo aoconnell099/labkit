@@ -21,9 +21,11 @@ export const BANKED_EMBER: Theme = {
       // ground it measures 7.80:1 (pos) and 5.48:1 (neg) against the 4.5 bar.
       // The red is the closer of the two, since the ground leans red itself.
       status: { pos: '#29bb97', neg: '#e06351' },
-      // A gold: 7.33:1 on the ground. ⚠️ Light for an accent: the primary
-      // button's white label sits on it at about 2.6:1.
+      // A gold: 7.33:1 on the ground. ⚠️ Light for an accent: a white label sits
+      // on it at about 2.6:1, so the label is the draft's dark, the ground's own
+      // brown-black.
       accent: '#dd903d',
+      onAccent: '#190e0b',
       floor: 'rgba(25, 14, 11, 0.20)',
     },
   },

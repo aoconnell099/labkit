@@ -22,6 +22,9 @@ export const MAGENTA_TUBE: Theme = {
       status: { pos: '#29bb97', neg: '#e06351' },
       // A hot magenta: 4.89:1 on the ground.
       accent: '#d342b0',
+      // The draft's label on the accent: near-black, since white on this
+      // magenta is the weaker side.
+      onAccent: '#0b090d',
       floor: 'rgba(11, 9, 13, 0.20)',
     },
   },

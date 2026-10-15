@@ -388,10 +388,11 @@ select.ctl {
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  /* The accent is chosen for >=4.5:1 against the page surface; on the accent
-     itself the label needs its own ground. Both modes' accents are mid-dark, so
-     white is the reliable side. */
-  color: #fff;
+  /* The label needs its own colour, set per palette or theme mode (onAccent) and
+     audited at 4.5:1 on the accent. ⚠️ It was a fixed #fff, on the theory that
+     accents are mid-dark: a gold accent left it at about 2.6:1 and a white one
+     blank (labkit #35). */
+  color: var(--on-accent);
 }
 .btn.neg { color: var(--tone-neg); border-color: var(--tone-neg); }
 .btn.small { font-size: .74rem; padding: 4px 9px; }

@@ -23,6 +23,8 @@ export const STILL_VIOLET: Theme = {
       status: { pos: '#29bb97', neg: '#e06351' },
       // A muted indigo: 3.22:1 on the ground, exactly on the 0.10 chroma floor.
       accent: '#535f9d',
+      // The draft's label on the accent, the primary button's text.
+      onAccent: '#eeedf6',
       floor: 'rgba(14, 13, 19, 0.20)',
     },
   },

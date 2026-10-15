@@ -1,16 +1,16 @@
 /**
- * Black glint: absolute black that holds still, with one small red glint. Dark only.
+ * Black glint: absolute black that holds still, with one small white glint. Dark only.
  *
- * Chosen themes, batch 2 (labkit #31). The text ramp and the ground are a
- * measured draft, carried over unchanged. Three values are NOT the draft's, and
- * each says why below: the accent, the line and the inset. The draft had no
- * status pair, so it starts from DEFAULT_PALETTE's dark pair.
+ * Chosen themes, batch 2 (labkit #31). The text ramp, the ground and the accent
+ * are a measured draft, carried over unchanged. Two values are NOT the draft's,
+ * and each says why below: the line and the inset. The draft had no status
+ * pair, so it starts from DEFAULT_PALETTE's dark pair.
  */
 import type { Theme } from '../themes';
 
 export const BLACK_GLINT: Theme = {
   name: 'Black glint',
-  character: 'absolute black that holds still, with one small red glint, dark only',
+  character: 'absolute black that holds still, with one small white glint, dark only',
   modes: {
     dark: {
       ink: {
@@ -27,11 +27,11 @@ export const BLACK_GLINT: Theme = {
       // DEFAULT_PALETTE's dark pair, and neither value moved: on pure black it
       // measures 8.65:1 (pos) and 6.07:1 (neg) against the 4.5 bar.
       status: { pos: '#29bb97', neg: '#e06351' },
-      // ⚠️ Not the draft's near-white. The primary button puts a white label on
-      // the accent, so a white accent left it blank, and a grey one reads as no
-      // focus ring at all. One small red instead: 3.57:1 on the ground, and the
-      // white label on it 5.88:1.
-      accent: '#c8102e',
+      // The draft's near-white, with its black label. Batch 2 shipped a red here
+      // while the primary button's label was a fixed white, which left a white
+      // accent's button blank (labkit #35).
+      accent: '#fcfcfc',
+      onAccent: '#000000',
       floor: 'rgba(0, 0, 0, 0.20)',
     },
   },

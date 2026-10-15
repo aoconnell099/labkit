@@ -46,7 +46,17 @@
     /** Every audited token and its ratio, as the theme's Contrast table measures it. */
     labkitRatios: (name: string, mode: Mode) =>
       auditTheme(THEMES.find((t) => t.theme.name === name)!.theme).checks
-        .filter((c) => c.mode === mode).map((c) => `${c.token} ${c.ratio}`).join(', '),
+        .filter((c) => c.mode === mode)
+        .map((c) => `${c.token}${c.on === 'accent' ? ' on accent' : ''} ${c.ratio}`).join(', '),
+    /** The audit's failures for a COPY of a theme with one mode's label replaced.
+     *  Never shown and never shipped: it is how the render check proves a label
+     *  that fails is caught. "Banked ember", "dark", "#ffffff" -> its failures. */
+    labkitAuditLabel: (name: string, mode: Mode, onAccent: string) => {
+      const theme = THEMES.find((t) => t.theme.name === name)!.theme;
+      const copy = { ...theme, modes: { ...theme.modes, [mode]: { ...theme.modes[mode]!, onAccent } } };
+      return auditTheme(copy).failures
+        .map((f) => `${f.mode} ${f.token} on ${f.on} ${f.ratio}:1 (needs ${f.required})`).join(', ');
+    },
     /** A motion token, read off a real button in the theme's frame. */
     labkitToken: (name: string, token: string) =>
       getComputedStyle(frame(name).querySelector('.btn')!).getPropertyValue(token).trim(),

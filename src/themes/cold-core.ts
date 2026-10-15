@@ -23,6 +23,8 @@ export const COLD_CORE: Theme = {
       status: { pos: '#29bb97', neg: '#e06351' },
       // A deep cyan-blue: 3.45:1 on the ground, chroma 0.128 over the 0.10 floor.
       accent: '#0e6aaa',
+      // The draft's label on the accent, the primary button's text.
+      onAccent: '#eceef5',
       floor: 'rgba(9, 10, 14, 0.20)',
     },
   },
