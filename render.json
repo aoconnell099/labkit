@@ -5,7 +5,7 @@
       "name": "motion tokens",
       "reduced_motion": true,
       "steps": [
-        {"wait_for": ".btn"},
+        {"wait_for": ".btn", "ms": 5000},
         {"note": "getComputedStyle(document.querySelector('.btn')).getPropertyValue('--dur-state').trim()", "as": "token"},
         {"note": "getComputedStyle(document.querySelector('.btn')).transitionDuration", "as": "btn"},
         {"expect": "notes.token === '0ms'", "says": "the state duration token is 0ms"},
@@ -16,7 +16,7 @@
     {
       "name": "motion tokens",
       "steps": [
-        {"wait_for": ".btn"},
+        {"wait_for": ".btn", "ms": 5000},
         {"note": "getComputedStyle(document.querySelector('.btn')).getPropertyValue('--dur-state').trim()", "as": "token"},
         {"note": "getComputedStyle(document.querySelector('.btn')).transitionDuration", "as": "btn"},
         {"expect": "notes.token === '180ms'", "says": "the state duration token is 180ms"},
@@ -24,7 +24,7 @@
       ]
     },
     {
-      "name": "dark-only theme",
+      "name": "dark-only theme and audit",
       "width": "phone",
       "steps": [
         {"wait_for": ".frame[data-theme=\"Cool dark\"]", "ms": 5000},
@@ -34,13 +34,8 @@
         {"wait_until": "document.querySelectorAll('.frame:not([data-theme])').length === 6", "ms": 5000},
         {"expect": "document.querySelectorAll('.frame:not([data-theme])').length === 6", "says": "show both modes doubled the palette frames"},
         {"expect": "document.querySelectorAll('.frame[data-theme=\"Cool dark\"]').length === 1 && document.querySelectorAll('.frame[data-theme=\"Cool dark\"][data-mode=light]').length === 0", "says": "the gallery never offers the dark-only theme a light mode"},
-        {"shot": "both-modes"}
-      ]
-    },
-    {
-      "name": "theme audit",
-      "width": "phone",
-      "steps": [
+        {"shot": "both-modes"},
+
         {"wait_until": "typeof window.labkitAudit === 'function'", "ms": 5000},
         {"note": "JSON.stringify(window.labkitAudit())", "as": "audit"},
         {"expect": "Object.keys(window.labkitAudit()).length > 0", "says": "the audit reports at least one theme"},
@@ -82,7 +77,7 @@
       ]
     },
     {
-      "name": "theme motion levels",
+      "name": "chosen themes: reduced motion",
       "width": "phone",
       "reduced_motion": true,
       "steps": [
@@ -93,7 +88,61 @@
         {"expect": "getComputedStyle(document.querySelector('.frame[data-theme] .btn')).getPropertyValue('--dur-state').trim() === '0ms'", "says": "under calm the state duration token is 0ms"},
         {"click": "#motion-off"},
         {"wait_until": "document.querySelector('.frame[data-theme]').dataset.motion === 'off'", "ms": 5000},
-        {"expect": "getComputedStyle(document.querySelector('.frame[data-theme] .btn')).getPropertyValue('--dur-state').trim() === '0ms'", "says": "under off the state duration token is 0ms"}
+        {"expect": "getComputedStyle(document.querySelector('.frame[data-theme] .btn')).getPropertyValue('--dur-state').trim() === '0ms'", "says": "under off the state duration token is 0ms"},
+
+        {"wait_until": "typeof window.labkitToken === 'function'", "ms": 5000},
+
+        {"expect": "window.labkitToken('Cold core', '--dur-state') === '0ms'", "says": "Cold core: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Cold core')", "as": "cold_core_shown"},
+        {"shot": "cold-core"},
+
+        {"expect": "window.labkitToken('Still violet', '--dur-state') === '0ms'", "says": "Still violet: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Still violet')", "as": "still_violet_shown"},
+        {"shot": "still-violet"},
+
+        {"expect": "window.labkitToken('Blue haze', '--dur-state') === '0ms'", "says": "Blue haze: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Blue haze')", "as": "blue_haze_shown"},
+        {"shot": "blue-haze"},
+
+        {"expect": "window.labkitToken('Banked ember', '--dur-state') === '0ms' && window.labkitToken('Banked ember', '--dur-enter') === '0ms'", "says": "Banked ember: with reduce motion on, the state duration token is 0ms (it is 0ms under full too), and so is the entrance"},
+        {"note": "window.labkitShow('Banked ember')", "as": "banked_ember_shown"},
+        {"shot": "banked-ember"},
+
+        {"expect": "window.labkitToken('Magenta tube', '--dur-state') === '0ms'", "says": "Magenta tube: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Magenta tube')", "as": "magenta_tube_shown"},
+        {"shot": "magenta-tube"},
+
+        {"expect": "window.labkitToken('Rust terminal', '--dur-state') === '0ms'", "says": "Rust terminal: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Rust terminal')", "as": "rust_terminal_shown"},
+        {"shot": "rust-terminal"},
+
+        {"expect": "window.labkitToken('Black glint', '--dur-state') === '0ms'", "says": "Black glint: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Black glint')", "as": "black_glint_shown"},
+        {"shot": "black-glint"},
+
+        {"expect": "window.labkitToken('Pen and seal', '--dur-state') === '0ms'", "says": "Pen and seal: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Pen and seal')", "as": "pen_and_seal_shown"},
+        {"shot": "pen-and-seal"},
+
+        {"expect": "window.labkitToken('Candy glass', '--dur-state') === '0ms'", "says": "Candy glass: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Candy glass')", "as": "candy_glass_shown"},
+        {"shot": "candy-glass"},
+
+        {"expect": "window.labkitToken('Loud wall', '--dur-state') === '0ms'", "says": "Loud wall: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Loud wall')", "as": "loud_wall_shown"},
+        {"shot": "loud-wall"},
+
+        {"expect": "window.labkitToken('Film page', '--dur-state') === '0ms'", "says": "Film page: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Film page')", "as": "film_page_shown"},
+        {"shot": "film-page"},
+
+        {"expect": "window.labkitToken('Screen print', '--dur-state') === '0ms'", "says": "Screen print: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Screen print')", "as": "screen_print_shown"},
+        {"shot": "screen-print"},
+
+        {"expect": "window.labkitToken('Rose mist', '--dur-state') === '0ms'", "says": "Rose mist: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Rose mist')", "as": "rose_mist_shown"},
+        {"shot": "rose-mist"}
       ]
     },
     {
@@ -161,66 +210,6 @@
         {"note": "window.labkitAuditLabel('Banked ember', 'dark', '#ffffff')", "as": "banked_ember_white_label"},
         {"expect": "/^dark onAccent on accent 2\\.\\d+:1 \\(needs 4\\.5\\)$/.test(notes.banked_ember_white_label)", "says": "a copy of Banked ember with a white label fails the audit on onAccent, and nothing else"},
         {"expect": "getComputedStyle(document.querySelector('.frame[data-theme=\"Black glint\"] .btn.primary')).backgroundColor === 'rgb(252, 252, 252)' && getComputedStyle(document.querySelector('.frame[data-theme=\"Black glint\"] .btn.primary')).color === 'rgb(0, 0, 0)'", "says": "Black glint's primary button is near-white with a black label"}
-      ]
-    },
-    {
-      "name": "chosen themes: reduced motion",
-      "width": "phone",
-      "reduced_motion": true,
-      "steps": [
-        {"wait_until": "typeof window.labkitToken === 'function'", "ms": 5000},
-
-        {"expect": "window.labkitToken('Cold core', '--dur-state') === '0ms'", "says": "Cold core: with reduce motion on, the state duration token is 0ms"},
-        {"note": "window.labkitShow('Cold core')", "as": "cold_core_shown"},
-        {"shot": "cold-core"},
-
-        {"expect": "window.labkitToken('Still violet', '--dur-state') === '0ms'", "says": "Still violet: with reduce motion on, the state duration token is 0ms"},
-        {"note": "window.labkitShow('Still violet')", "as": "still_violet_shown"},
-        {"shot": "still-violet"},
-
-        {"expect": "window.labkitToken('Blue haze', '--dur-state') === '0ms'", "says": "Blue haze: with reduce motion on, the state duration token is 0ms"},
-        {"note": "window.labkitShow('Blue haze')", "as": "blue_haze_shown"},
-        {"shot": "blue-haze"},
-
-        {"expect": "window.labkitToken('Banked ember', '--dur-state') === '0ms' && window.labkitToken('Banked ember', '--dur-enter') === '0ms'", "says": "Banked ember: with reduce motion on, the state duration token is 0ms (it is 0ms under full too), and so is the entrance"},
-        {"note": "window.labkitShow('Banked ember')", "as": "banked_ember_shown"},
-        {"shot": "banked-ember"},
-
-        {"expect": "window.labkitToken('Magenta tube', '--dur-state') === '0ms'", "says": "Magenta tube: with reduce motion on, the state duration token is 0ms"},
-        {"note": "window.labkitShow('Magenta tube')", "as": "magenta_tube_shown"},
-        {"shot": "magenta-tube"},
-
-        {"expect": "window.labkitToken('Rust terminal', '--dur-state') === '0ms'", "says": "Rust terminal: with reduce motion on, the state duration token is 0ms"},
-        {"note": "window.labkitShow('Rust terminal')", "as": "rust_terminal_shown"},
-        {"shot": "rust-terminal"},
-
-        {"expect": "window.labkitToken('Black glint', '--dur-state') === '0ms'", "says": "Black glint: with reduce motion on, the state duration token is 0ms"},
-        {"note": "window.labkitShow('Black glint')", "as": "black_glint_shown"},
-        {"shot": "black-glint"},
-
-        {"expect": "window.labkitToken('Pen and seal', '--dur-state') === '0ms'", "says": "Pen and seal: with reduce motion on, the state duration token is 0ms"},
-        {"note": "window.labkitShow('Pen and seal')", "as": "pen_and_seal_shown"},
-        {"shot": "pen-and-seal"},
-
-        {"expect": "window.labkitToken('Candy glass', '--dur-state') === '0ms'", "says": "Candy glass: with reduce motion on, the state duration token is 0ms"},
-        {"note": "window.labkitShow('Candy glass')", "as": "candy_glass_shown"},
-        {"shot": "candy-glass"},
-
-        {"expect": "window.labkitToken('Loud wall', '--dur-state') === '0ms'", "says": "Loud wall: with reduce motion on, the state duration token is 0ms"},
-        {"note": "window.labkitShow('Loud wall')", "as": "loud_wall_shown"},
-        {"shot": "loud-wall"},
-
-        {"expect": "window.labkitToken('Film page', '--dur-state') === '0ms'", "says": "Film page: with reduce motion on, the state duration token is 0ms"},
-        {"note": "window.labkitShow('Film page')", "as": "film_page_shown"},
-        {"shot": "film-page"},
-
-        {"expect": "window.labkitToken('Screen print', '--dur-state') === '0ms'", "says": "Screen print: with reduce motion on, the state duration token is 0ms"},
-        {"note": "window.labkitShow('Screen print')", "as": "screen_print_shown"},
-        {"shot": "screen-print"},
-
-        {"expect": "window.labkitToken('Rose mist', '--dur-state') === '0ms'", "says": "Rose mist: with reduce motion on, the state duration token is 0ms"},
-        {"note": "window.labkitShow('Rose mist')", "as": "rose_mist_shown"},
-        {"shot": "rose-mist"}
       ]
     },
     {

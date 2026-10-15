@@ -258,21 +258,30 @@ when a ticket runs on the desktop worker. Read the tokens from an element, as he
 undefined custom property doesn't warn, it silently falls back.
 
 The theme scenes (#28) run at phone width against the gallery's dark-only Cool dark theme
-and its motion picker. "dark-only theme" ticks "show both modes" and finds the palettes
-doubled but no light frame for the theme. "theme audit" calls `window.labkitAudit()`, which
+and its motion picker. "dark-only theme and audit" ticks "show both modes" and finds the
+palettes doubled but no light frame for the theme, then calls `window.labkitAudit()`, which
 the gallery exposes: each shown theme's contrast failures, keyed by the modes it ships,
-and expects none. "full motion" and "calm motion" pause the frame's entrance at its first
-frame and read its transform: 12 px down under `full` (so the check can see a distance), none
-under `calm`, where the loading pulse also has no running animation and `--dur-state` stays
-`180ms`; `off` makes it `0ms`. "theme motion levels" runs with reduce motion on and finds
-`--dur-state` at `0ms` under all three levels.
+and expects none. The audit reads the themes themselves, not the page, so it runs after
+the tick without being changed by it. "full motion" and "calm motion" pause the frame's
+entrance at its first frame and read its transform: 12 px down under `full` (so the check
+can see a distance), none under `calm`, where the loading pulse also has no running
+animation and `--dur-state` stays `180ms`; `off` makes it `0ms`.
+
+There are eight scenes (#38): "motion tokens" twice, "dark-only theme and audit", "full
+motion", "calm motion", "chosen themes: reduced motion", "chosen themes: audit" and
+"chosen themes: calm". The tool allows ten, so two are free, kept for the effects shelf
+(ideas `plans/71`). It also caps the waits and holds of the whole file at 120 s, summed over
+every scene: each `wait_ms`, `hold` and `touch` counts its `ms`, and each `wait_for` or
+`wait_until` its `ms`, or 10 s when it has none, so give every wait an `ms`. The eight use
+86.4 s, leaving 33.6 s: the effects shelf's ticket 2 may add 14 s, tickets 3 and 4 8 s each.
 
 The chosen themes (#29) share three scenes, because the tool allows ten scenes of 60
 steps, and thirteen themes would not fit one scene each. A new theme adds its steps to
 each, and a line to `CHOSEN` in `gallery/src/palettes.ts`; nothing else changes.
 "chosen themes: audit" ticks "show both modes", notes each theme's measured ratios, and
 expects it shown and audited in exactly the modes it ships, with 0 failures in each.
-"chosen themes: reduced motion" runs with reduce motion on, finds each theme's
+"chosen themes: reduced motion" runs with reduce motion on. It first finds the Cool dark
+frame's `--dur-state` at `0ms` under all three motion levels, then finds each theme's
 `--dur-state` at `0ms`, and takes a screenshot of each frame. "chosen themes: calm"
 checks each theme's own durations land under `full`, then picks `calm` and finds no
 entrance distance. Both batch 1 themes enter with a fade, which moves no distance under
