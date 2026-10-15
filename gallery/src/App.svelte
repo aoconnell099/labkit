@@ -33,6 +33,34 @@
       return [theme.name, perMode];
     }));
 
+  /** More for the render check, so a theme's steps there stay one short line:
+   *  render.json caps a step at 500 characters and a scene at 60 steps, and
+   *  every chosen theme adds its steps to the same three scenes. */
+  const frame = (name: string, mode?: Mode) => document.querySelector<HTMLElement>(
+    `.frame[data-theme="${name}"]${mode ? `[data-mode="${mode}"]` : ''}`)!;
+  Object.assign(window, {
+    /** The modes a theme is shown in, in page order: "dark", or "light,dark". */
+    labkitModesShown: (name: string) =>
+      Array.from(document.querySelectorAll<HTMLElement>(`.frame[data-theme="${name}"]`))
+        .map((f) => f.dataset.mode).join(),
+    /** Every audited token and its ratio, as the theme's Contrast table measures it. */
+    labkitRatios: (name: string, mode: Mode) =>
+      auditTheme(THEMES.find((t) => t.theme.name === name)!.theme).checks
+        .filter((c) => c.mode === mode).map((c) => `${c.token} ${c.ratio}`).join(', '),
+    /** A motion token, read off a real button in the theme's frame. */
+    labkitToken: (name: string, token: string) =>
+      getComputedStyle(frame(name).querySelector('.btn')!).getPropertyValue(token).trim(),
+    /** The frame's entrance, paused at its first frame: its transform there. */
+    labkitEnterStart: (name: string) => {
+      const el = frame(name).querySelector<HTMLElement>('.enter')!;
+      const a = el.getAnimations().find((x) => (x as CSSAnimation).animationName === 'labkit-enter')!;
+      a.pause();
+      a.currentTime = 0;
+      return getComputedStyle(el).transform;
+    },
+    labkitShow: (name: string) => (frame(name).scrollIntoView(), true),
+  });
+
   // ⚠️ Surfaced at the top, not buried in a frame. If any shipped example fails
   // its own contrast bar, that is the first thing a reader should learn.
   /** ⚠️ Two identical examples demonstrate nothing, and the page still looks
@@ -107,6 +135,7 @@
     <p>
       A theme is a palette for each mode it ships, plus type, surfaces and
       motion. It may ship one mode only, and then the gallery shows only that one.
+      Cool dark is the example; the rest are the chosen themes labkit ships.
     </p>
     <fieldset class="controls">
       <legend>motion</legend>

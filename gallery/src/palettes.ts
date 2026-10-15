@@ -14,7 +14,8 @@
  * frame shows a FAIL, that is not a gallery bug — it is the palette, and the
  * point of putting the number on the screen.
  */
-import { modePalette, type Mode, type Palette, type Theme } from 'labkit';
+import { modePalette, COLD_CORE, STILL_VIOLET,
+         type Mode, type Palette, type Theme } from 'labkit';
 
 export interface Example {
   name: string;
@@ -161,6 +162,19 @@ const COOL_DARK_THEME: Theme = {
   },
 };
 
+/**
+ * The chosen themes, labkit's own (src/themes/). One line each, in batch order;
+ * batches 2 and 3 only add lines here, and render.json's per-theme scenes.
+ *
+ * ⚠️ Cool dark stays FIRST. render.json's "full motion" and "calm motion"
+ * scenes read the first theme frame, because it is the one with a rise.
+ */
+const CHOSEN: ThemeExample[] = [
+  { theme: COLD_CORE, primary: 'dark' },
+  { theme: STILL_VIOLET, primary: 'dark' },
+];
+
 export const THEMES: ThemeExample[] = [
   { theme: COOL_DARK_THEME, primary: 'dark' },
+  ...CHOSEN,
 ];
