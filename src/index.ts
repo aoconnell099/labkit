@@ -46,3 +46,7 @@ export {
   type EnterKind,
   type MotionLevel,
 } from './themes';
+
+// The chosen themes, one file each in themes/. Batches 2 and 3 add lines here.
+export { COLD_CORE } from './themes/cold-core';
+export { STILL_VIOLET } from './themes/still-violet';

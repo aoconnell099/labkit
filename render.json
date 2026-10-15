@@ -27,13 +27,13 @@
       "name": "dark-only theme",
       "width": "phone",
       "steps": [
-        {"wait_for": ".frame[data-theme]", "ms": 5000},
-        {"expect": "document.querySelectorAll('.frame[data-theme]').length === 1 && document.querySelector('.frame[data-theme]').dataset.mode === 'dark'", "says": "the theme loads, in its dark mode"},
-        {"expect": "!document.querySelector('.frame[data-theme]').textContent.includes('token(s) undefined')", "says": "every token the kit promises resolves in the theme frame"},
+        {"wait_for": ".frame[data-theme=\"Cool dark\"]", "ms": 5000},
+        {"expect": "document.querySelectorAll('.frame[data-theme=\"Cool dark\"]').length === 1 && document.querySelector('.frame[data-theme=\"Cool dark\"]').dataset.mode === 'dark'", "says": "the theme loads, in its dark mode"},
+        {"expect": "!document.querySelector('.frame[data-theme=\"Cool dark\"]').textContent.includes('token(s) undefined')", "says": "every token the kit promises resolves in the theme frame"},
         {"click": "#show-both"},
         {"wait_until": "document.querySelectorAll('.frame:not([data-theme])').length === 6", "ms": 5000},
         {"expect": "document.querySelectorAll('.frame:not([data-theme])').length === 6", "says": "show both modes doubled the palette frames"},
-        {"expect": "document.querySelectorAll('.frame[data-theme]').length === 1 && document.querySelectorAll('.frame[data-theme][data-mode=light]').length === 0", "says": "the gallery never offers the dark-only theme a light mode"},
+        {"expect": "document.querySelectorAll('.frame[data-theme=\"Cool dark\"]').length === 1 && document.querySelectorAll('.frame[data-theme=\"Cool dark\"][data-mode=light]').length === 0", "says": "the gallery never offers the dark-only theme a light mode"},
         {"shot": "both-modes"}
       ]
     },
@@ -94,6 +94,55 @@
         {"click": "#motion-off"},
         {"wait_until": "document.querySelector('.frame[data-theme]').dataset.motion === 'off'", "ms": 5000},
         {"expect": "getComputedStyle(document.querySelector('.frame[data-theme] .btn')).getPropertyValue('--dur-state').trim() === '0ms'", "says": "under off the state duration token is 0ms"}
+      ]
+    },
+    {
+      "name": "chosen themes: audit",
+      "width": "phone",
+      "steps": [
+        {"wait_until": "typeof window.labkitAudit === 'function' && typeof window.labkitRatios === 'function'", "ms": 5000},
+        {"click": "#show-both"},
+        {"wait_until": "document.querySelectorAll('.frame:not([data-theme])').length === 6", "ms": 5000},
+
+        {"note": "window.labkitRatios('Cold core', 'dark')", "as": "cold_core_dark"},
+        {"expect": "Object.keys(window.labkitAudit()['Cold core']).join() === 'dark' && window.labkitModesShown('Cold core') === 'dark'", "says": "Cold core ships dark only, and is shown and audited in dark only"},
+        {"expect": "window.labkitAudit()['Cold core'].dark.length === 0", "says": "Cold core dark: 0 audit failures"},
+
+        {"note": "window.labkitRatios('Still violet', 'dark')", "as": "still_violet_dark"},
+        {"expect": "Object.keys(window.labkitAudit()['Still violet']).join() === 'dark' && window.labkitModesShown('Still violet') === 'dark'", "says": "Still violet ships dark only, and is shown and audited in dark only"},
+        {"expect": "window.labkitAudit()['Still violet'].dark.length === 0", "says": "Still violet dark: 0 audit failures"}
+      ]
+    },
+    {
+      "name": "chosen themes: reduced motion",
+      "width": "phone",
+      "reduced_motion": true,
+      "steps": [
+        {"wait_until": "typeof window.labkitToken === 'function'", "ms": 5000},
+
+        {"expect": "window.labkitToken('Cold core', '--dur-state') === '0ms'", "says": "Cold core: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Cold core')", "as": "cold_core_shown"},
+        {"shot": "cold-core"},
+
+        {"expect": "window.labkitToken('Still violet', '--dur-state') === '0ms'", "says": "Still violet: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Still violet')", "as": "still_violet_shown"},
+        {"shot": "still-violet"}
+      ]
+    },
+    {
+      "name": "chosen themes: calm",
+      "width": "phone",
+      "steps": [
+        {"wait_until": "typeof window.labkitEnterStart === 'function'", "ms": 5000},
+
+        {"expect": "window.labkitToken('Cold core', '--dur-state') === '20ms' && window.labkitToken('Cold core', '--dur-enter') === '870ms'", "says": "Cold core: under full its own 20ms and 870ms land"},
+        {"expect": "window.labkitToken('Still violet', '--dur-state') === '180ms' && window.labkitToken('Still violet', '--dur-enter') === '1190ms'", "says": "Still violet: under full its own 180ms and 1190ms land"},
+
+        {"click": "#motion-calm"},
+        {"wait_until": "Array.from(document.querySelectorAll('.frame[data-theme]')).every(f => f.dataset.motion === 'calm')", "ms": 5000},
+
+        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Cold core'))", "says": "Cold core: under calm an entrance moves no distance"},
+        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Still violet'))", "says": "Still violet: under calm an entrance moves no distance"}
       ]
     }
   ]

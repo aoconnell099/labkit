@@ -79,6 +79,7 @@ values. labkit owns the *shape*, not the choices.
 | `palette.ts` | the palette shape, a validated default, and `applyPalette` |
 | `contrast.ts` | `contrast` and `auditPalette`: every text token against its surface |
 | `themes.ts` | `Theme`, `applyTheme` and `auditTheme`: a palette per mode plus type, surfaces and motion |
+| `themes/` | the chosen themes, one file each (see Chosen themes below) |
 | `mode.ts` | an explicit light/dark choice, persisted (renamed in #28, when "theme" came to mean an art theme; the storage key is still `labkit.theme`) |
 
 ### Themes
@@ -116,6 +117,25 @@ The system's reduce-motion setting forces `off` under every level.
 
 `.surface` is a raised panel wearing the theme's glass, grain and glow. With all
 three at 0, the default, it is plain and opaque.
+
+### Chosen themes
+
+labkit ships these, one file each in `src/themes/`, exported from the package:
+
+```js
+import { COLD_CORE } from 'labkit';
+applyTheme(COLD_CORE, 'dark', 'full');
+```
+
+| theme | export | character | modes | motion |
+|---|---|---|---|---|
+| Cold core | `COLD_CORE` | near-black instrument panels lit by one cold glow | dark only | state 20 ms, entrance 870 ms, fade |
+| Still violet | `STILL_VIOLET` | a violet-black ground where everything arrives slowly | dark only | state 180 ms, entrance 1190 ms, fade |
+
+Each passes `auditTheme` in every mode it ships. Both start from the default dark
+status pair, and on these grounds neither value had to move: Cold core measures
+8.15:1 and 5.72:1, Still violet 7.97:1 and 5.59:1, against a bar of 4.5. More
+themes come in two later batches (#29 was the first).
 
 ## Gallery
 
@@ -172,3 +192,17 @@ frame and read its transform: 12 px down under `full` (so the check can see a di
 under `calm`, where the loading pulse also has no running animation and `--dur-state` stays
 `180ms`; `off` makes it `0ms`. "theme motion levels" runs with reduce motion on and finds
 `--dur-state` at `0ms` under all three levels.
+
+The chosen themes (#29) share three scenes, because the tool allows ten scenes of 60
+steps, and thirteen themes would not fit one scene each. A new theme adds its steps to
+each, and a line to `CHOSEN` in `gallery/src/palettes.ts`; nothing else changes.
+"chosen themes: audit" ticks "show both modes", notes each theme's measured ratios, and
+expects it shown and audited in exactly the modes it ships, with 0 failures in each.
+"chosen themes: reduced motion" runs with reduce motion on, finds each theme's
+`--dur-state` at `0ms`, and takes a screenshot of each frame. "chosen themes: calm"
+checks each theme's own durations land under `full`, then picks `calm` and finds no
+entrance distance. Both batch 1 themes enter with a fade, which moves no distance under
+`full` either, so for them the calm check confirms nothing was added rather than taken
+away. The steps call small helpers the gallery puts on `window` (`labkitModesShown`,
+`labkitRatios`, `labkitToken`, `labkitEnterStart`, `labkitShow`) to stay under the
+tool's 500 characters a step.
