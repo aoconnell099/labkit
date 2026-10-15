@@ -256,32 +256,43 @@
       "steps": [
         {"wait_until": "typeof window.labkitEffectPick === 'function'", "ms": 1000},
         {"note": "window.labkitEffectPick('Cold core')", "as": "cold_core_picked"},
-        {"wait_until": "window.labkitEffectState('filament').frames > 0", "ms": 3000},
+        {"wait_until": "['filament', 'planet', 'tinted'].every(p => window.labkitEffectState(p).frames > 0)", "ms": 3000},
         {"expect": "window.labkitEffectState('filament').running === true", "says": "Cold core: under full the filament orb's own loop runs"},
+        {"expect": "window.labkitEffectState('planet').running === true && window.labkitEffectState('tinted').running === true", "says": "Cold core: under full both planet orbs' own loops run"},
         {"wait_ms": 700},
         {"shot": "cold-core-orb"},
         {"note": "window.labkitEffectPick('Film page')", "as": "film_page_picked"},
         {"expect": "document.querySelector('.effect-panel').dataset.effectTheme === 'Film page' && getComputedStyle(document.querySelector('labkit-filament-orb')).getPropertyValue('--accent').trim() === window.labkitToken('Film page', '--accent')", "says": "Film page: the panel wears the picked theme, and the orb sees its accent"},
+        {"expect": "document.querySelector('[data-piece=planet]').settings.tint === window.labkitToken('Film page', '--accent') && document.querySelector('[data-piece=tinted]').settings.tint === '#3cc6a0'", "says": "Film page: the planet orb wears the accent, and the tinted one its tint"},
         {"shot": "film-page-orb"},
         {"note": "window.labkitEffectState('filament').frames", "as": "full_before"},
+        {"note": "window.labkitEffectState('planet').frames", "as": "planet_full_before"},
+        {"note": "window.labkitEffectState('tinted').frames", "as": "tinted_full_before"},
         {"wait_ms": 500},
         {"expect": "window.labkitEffectState('filament').frames > notes.full_before", "says": "under full the frame count rises over a wait"},
+        {"expect": "window.labkitEffectState('planet').frames > notes.planet_full_before && window.labkitEffectState('tinted').frames > notes.tinted_full_before", "says": "under full both planet orbs' frame counts rise over the same wait"},
 
         {"click": "#motion-calm"},
         {"note": "window.labkitEffectPick('Film page')", "as": "calm_picked"},
-        {"wait_until": "document.querySelector('.effect-panel').dataset.motion === 'calm' && window.labkitEffectState('filament').running === false", "ms": 2000},
+        {"wait_until": "document.querySelector('.effect-panel').dataset.motion === 'calm' && document.querySelectorAll('.effect-panel [data-shown]').length === 3 && ['filament', 'planet', 'tinted'].every(p => window.labkitEffectState(p).running === false)", "ms": 2000},
         {"expect": "window.labkitEffectState('filament').running === false && window.labkitEffectState('filament').frames > 0", "says": "under calm, after a settle, the orb's loop is not running"},
+        {"expect": "['planet', 'tinted'].every(p => window.labkitEffectState(p).running === false && window.labkitEffectState(p).frames > 0)", "says": "under calm, after a settle, neither planet orb's loop is running"},
         {"note": "window.labkitEffectState('filament').frames", "as": "calm_before"},
+        {"note": "window.labkitEffectState('planet').frames + ',' + window.labkitEffectState('tinted').frames", "as": "planets_calm_before"},
         {"wait_ms": 500},
         {"expect": "window.labkitEffectState('filament').frames === notes.calm_before", "says": "under calm the frame count holds over a wait"},
+        {"expect": "window.labkitEffectState('planet').frames + ',' + window.labkitEffectState('tinted').frames === notes.planets_calm_before", "says": "under calm both planet orbs' frame counts hold over the same wait"},
 
         {"click": "#motion-off"},
         {"note": "window.labkitEffectPick('Film page')", "as": "off_picked"},
         {"wait_ms": 300},
         {"expect": "document.querySelector('.effect-panel').dataset.motion === 'off' && window.labkitEffectState('filament').running === false", "says": "under off, after a settle, the orb's loop is not running"},
+        {"expect": "['planet', 'tinted'].every(p => window.labkitEffectState(p).running === false)", "says": "under off, after a settle, neither planet orb's loop is running"},
         {"note": "window.labkitEffectState('filament').frames", "as": "off_before"},
+        {"note": "window.labkitEffectState('planet').frames + ',' + window.labkitEffectState('tinted').frames", "as": "planets_off_before"},
         {"wait_ms": 500},
-        {"expect": "window.labkitEffectState('filament').frames === notes.off_before", "says": "under off the frame count holds over a wait"}
+        {"expect": "window.labkitEffectState('filament').frames === notes.off_before", "says": "under off the frame count holds over a wait"},
+        {"expect": "window.labkitEffectState('planet').frames + ',' + window.labkitEffectState('tinted').frames === notes.planets_off_before", "says": "under off both planet orbs' frame counts hold over the same wait"}
       ]
     },
     {
@@ -297,13 +308,21 @@
         {"expect": "window.labkitThemes().every(t => window.labkitEffectRead(t, 'filament').pace.period === 10 * parseFloat(window.labkitToken(t, '--motion-dur-enter')))", "says": "every theme: the orb's loop period is 10 times the theme's own entrance duration"},
         {"expect": "window.labkitThemes().every(t => window.labkitEffectRead(t, 'filament').pace.level === 'off')", "says": "every theme: with reduce motion on, the orb's level is off"},
         {"expect": "document.querySelectorAll('labkit-filament-orb').length === 1 && !document.querySelector('labkit-filament-orb').shadowRoot.querySelector('canvas')", "says": "reading every theme left no probe behind and made no canvas"},
+        {"note": "JSON.stringify(window.labkitThemes().map(t => [t, window.labkitEffectRead(t, 'planet').tint, window.labkitEffectRead(t, 'tinted').tint]))", "as": "planet_read"},
+        {"expect": "window.labkitThemes().every(t => window.labkitEffectRead(t, 'planet').tint === window.labkitToken(t, '--accent'))", "says": "every theme: with no tint set, the planet orb's tint falls back to the theme's own accent"},
+        {"expect": "window.labkitThemes().every(t => window.labkitEffectRead(t, 'tinted').tint === '#3cc6a0' && window.labkitEffectRead(t, 'tinted').accent === window.labkitToken(t, '--accent'))", "says": "every theme: the tinted planet orb reads its own tint, and still the theme's accent"},
+        {"expect": "window.labkitThemes().every(t => ['planet', 'tinted'].every(p => { const s = window.labkitEffectRead(t, p); return s.glow === parseFloat(window.labkitToken(t, '--glow')) && s.pace.period === 10 * parseFloat(window.labkitToken(t, '--motion-dur-enter')) && s.pace.level === 'off'; }))", "says": "every theme: both planet orbs read its glow and pace, at level off"},
+        {"expect": "document.querySelectorAll('labkit-planet-orb').length === 2 && Array.from(document.querySelectorAll('labkit-planet-orb')).every(e => !e.shadowRoot.querySelector('canvas'))", "says": "reading the planet orbs left no probe behind and made no canvas"},
 
         {"note": "window.labkitEffectPick('Cold core')", "as": "cold_core_picked"},
-        {"wait_until": "window.labkitEffectState('filament').frames > 0", "ms": 3000},
+        {"wait_until": "['filament', 'planet', 'tinted'].every(p => window.labkitEffectState(p).frames > 0)", "ms": 3000},
         {"expect": "window.labkitEffectState('filament').running === false", "says": "with reduce motion on, the live orb drew a still frame and its loop is not running"},
+        {"expect": "['planet', 'tinted'].every(p => window.labkitEffectState(p).running === false)", "says": "with reduce motion on, both planet orbs drew a still frame and their loops are not running"},
         {"note": "window.labkitEffectState('filament').frames", "as": "still_before"},
+        {"note": "window.labkitEffectState('planet').frames + ',' + window.labkitEffectState('tinted').frames", "as": "planets_still_before"},
         {"wait_ms": 500},
-        {"expect": "window.labkitEffectState('filament').frames === notes.still_before", "says": "with reduce motion on, the frame count holds over a wait"}
+        {"expect": "window.labkitEffectState('filament').frames === notes.still_before", "says": "with reduce motion on, the frame count holds over a wait"},
+        {"expect": "window.labkitEffectState('planet').frames + ',' + window.labkitEffectState('tinted').frames === notes.planets_still_before", "says": "with reduce motion on, both planet orbs' frame counts hold over the same wait"}
       ]
     }
   ]

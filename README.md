@@ -240,10 +240,26 @@ three.js chunk is included, so another engine can compile them as they stand.
 | piece | what it is |
 |---|---|
 | `<labkit-filament-orb>` | a sphere of many thin glowing strands in the accent, its glow from `--glow`, turning once per loop and breathing on the theme's curves |
+| `<labkit-planet-orb>` | a glossy, marbled sphere lit from inside, in `--effect-tint` (the accent when unset), its inner light and halo from `--glow`, turning once per loop while its marbling swirls on the theme's curves |
 
 **What an effect reads from a theme**, from computed style on its own element, with
 no canvas (its `settings`): `--accent`; `--glow`, 0 to 1 (a theme with no glow gets
 the strands with no halo); and its pace from `readPace`.
+
+**`--effect-tint`** gives the planet orb a colour of its own, set on the element or
+anywhere above it, while it keeps the theme's glow and pace. Unset, it falls back to
+the theme's `--accent`. The app orbs are the planet orb in different colours (ideas
+`plans/71`): each app sets its own tint and wears its own theme. The planet orb's
+`settings` add `tint`, the colour it draws in (`--effect-tint` as written, or the
+accent).
+
+```html
+<labkit-planet-orb style="--effect-tint: #3cc6a0"></labkit-planet-orb>
+```
+
+The planet orb is worked out per pixel on one square facing the viewer
+(`shaders/planet.frag.glsl`, on the glow square's `halo.vert.glsl`), with the
+filament orb's glow square behind it, so it needs no sphere mesh.
 
 **`readPace(el)`** (`src/effects/pace.ts`) is the one place an effect gets its
 motion, and the motion shelf's first piece. A theme has no speed field, and gets none:
@@ -303,7 +319,8 @@ exact mistake, and each frame prints its own measured contrast ratios.
 
 The gallery's **effects panel** shows each piece in one chosen theme at a time, with a
 picker over all thirteen and the same motion picker as the theme frames: one theme at
-a time, so at most one canvas per piece is alive.
+a time, so at most one canvas per piece is alive. The planet orb is there twice: in
+the theme's accent, and with `--effect-tint` set to `#3cc6a0`.
 
 ## Licence
 
@@ -353,8 +370,10 @@ audit", "chosen themes: calm" (merged down to these eight in #38), then "effects
 The tool also caps the waits and holds of the whole file at 120 s, summed over every
 scene: each `wait_ms`, `hold` and `touch` counts its `ms`, and each `wait_for` or
 `wait_until` its `ms`, or 10 s when it has none, so give every wait an `ms`. The ten use
-99.4 s (the first eight 86.4 s, the effects scenes 13 s), leaving 20.6 s: the planet orb
-and the orbit rings (ideas `plans/71`, tickets 3 and 4) may add 8 s each.
+99.4 s (the first eight 86.4 s, the effects scenes 13 s), leaving 20.6 s. The planet orb
+(#40) added none: its steps run inside the filament orb's waits, since every piece in
+the panel comes on screen, and changes level, together. The orbit rings (ideas
+`plans/71`, ticket 4) may add 8 s.
 
 The effects scenes run at phone width. "effects" picks Cold core in the effects panel,
 waits for the filament orb's first frames, finds its loop running, and takes a
@@ -371,7 +390,20 @@ for them: `labkitThemes()` (the chosen themes' names), `labkitEffectRead(theme,
 piece)` (a piece's `settings` in that theme, read from a probe put in the theme's
 frame and taken out in the same task, so no canvas), `labkitEffectPick(theme)` (shows
 the panel in that theme and scrolls to it) and `labkitEffectState(piece)` (`{running,
-frames}` of the panel's live piece). The piece is `'filament'`.
+frames}` of the panel's live piece). The piece is `'filament'`, `'planet'` (the planet
+orb in the accent) or `'tinted'` (the one with `--effect-tint` set).
+
+The planet orbs ride the same steps. In "effects" the first wait is for all three
+pieces' first frames, both planet orbs' loops run under `full`, in Film page the
+plain one's tint is Film page's accent and the tinted one's is its tint, and their
+frame counts rise under `full` and hold under `calm` and `off` over the same waits.
+⚠️ Clicking the motion picker scrolls the planet orbs off screen, so they give their
+canvas back and draw one frame on coming back: the calm settle also waits until all
+three pieces are shown again (`data-shown`), or the count moves after it is noted.
+In "effects: reduced motion", for every theme the plain planet orb's tint is the
+theme's accent, the tinted one's is `#3cc6a0` while its accent is still the theme's,
+both read the theme's glow and pace at level `off`, and no probe or canvas is left;
+then both draw a still frame and hold.
 
 The chosen themes (#29) share three scenes, because the tool allows ten scenes of 60
 steps, and thirteen themes would not fit one scene each. A new theme adds its steps to

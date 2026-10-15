@@ -13,6 +13,7 @@
            type ContrastCheck } from 'labkit';
   // The effects shelf: its own entry, so this import is what loads three.js.
   import 'labkit/effects';
+  import type { LabkitEffect } from 'labkit/effects';
 
   let showBoth = $state(false);
   let narrow = $state(false);
@@ -22,8 +23,11 @@
   /** The effects panel shows ONE theme at a time, unlike the frames: each
    *  piece holds a WebGL context while on screen, and a browser keeps only a
    *  handful alive. Reading a theme needs no canvas (labkitEffectRead), so the
-   *  render check still covers all of them. */
-  const PIECES = { filament: 'labkit-filament-orb' } as const;
+   *  render check still covers all of them. The planet orb is shown twice: in
+   *  the theme's accent, and in a tint of its own, as an app would set it. */
+  const PIECES = { filament: 'labkit-filament-orb', planet: 'labkit-planet-orb',
+                   tinted: 'labkit-planet-orb' } as const;
+  const TINT = '#3cc6a0';
   type Piece = keyof typeof PIECES;
   let effectTheme = $state(CHOSEN[0].theme.name);
   let effectPanel = $state<HTMLDivElement>();
@@ -92,6 +96,7 @@
      *  it could ever come on screen and make a renderer. */
     labkitEffectRead: (name: string, piece: Piece) => {
       const probe = document.createElement(PIECES[piece]);
+      if (piece === 'tinted') probe.style.setProperty('--effect-tint', TINT);
       frame(name).append(probe);
       try {
         return probe.settings;
@@ -108,7 +113,7 @@
     },
     /** The panel's live piece: whether its loop runs, and the frames it drew. */
     labkitEffectState: (piece: Piece) => {
-      const el = effectPanel!.querySelector(PIECES[piece])!;
+      const el = effectPanel!.querySelector<LabkitEffect>(`[data-piece="${piece}"]`)!;
       return { running: el.running, frames: el.frames };
     },
   });
@@ -213,8 +218,18 @@
         </select>
       </label>
       <div class="effect-panel" bind:this={effectPanel} data-effect-theme={effectTheme}>
-        <labkit-filament-orb></labkit-filament-orb>
+        <labkit-filament-orb data-piece="filament"></labkit-filament-orb>
         <span class="lbl">filament orb &middot; {effectTheme} &middot; motion {level}</span>
+        <div class="planets">
+          <figure>
+            <labkit-planet-orb data-piece="planet"></labkit-planet-orb>
+            <figcaption class="lbl">planet orb &middot; accent</figcaption>
+          </figure>
+          <figure>
+            <labkit-planet-orb data-piece="tinted" style:--effect-tint={TINT}></labkit-planet-orb>
+            <figcaption class="lbl">planet orb &middot; tint {TINT}</figcaption>
+          </figure>
+        </div>
       </div>
     </div>
 
@@ -271,4 +286,7 @@
     background: var(--surface);
   }
   .effect-panel labkit-filament-orb { width: min(100%, 320px); }
+  .planets { display: flex; gap: 16px; justify-content: center; width: 100%; }
+  .planets figure { margin: 0; display: grid; justify-items: center; gap: 6px; flex: 0 1 150px; }
+  .planets labkit-planet-orb { width: 100%; }
 </style>
