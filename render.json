@@ -249,6 +249,62 @@
         {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Screen print'))", "says": "Screen print: under calm an entrance moves no distance"},
         {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Rose mist'))", "says": "Rose mist: under calm an entrance moves no distance"}
       ]
+    },
+    {
+      "name": "effects",
+      "width": "phone",
+      "steps": [
+        {"wait_until": "typeof window.labkitEffectPick === 'function'", "ms": 1000},
+        {"note": "window.labkitEffectPick('Cold core')", "as": "cold_core_picked"},
+        {"wait_until": "window.labkitEffectState('filament').frames > 0", "ms": 3000},
+        {"expect": "window.labkitEffectState('filament').running === true", "says": "Cold core: under full the filament orb's own loop runs"},
+        {"wait_ms": 700},
+        {"shot": "cold-core-orb"},
+        {"note": "window.labkitEffectPick('Film page')", "as": "film_page_picked"},
+        {"expect": "document.querySelector('.effect-panel').dataset.effectTheme === 'Film page' && getComputedStyle(document.querySelector('labkit-filament-orb')).getPropertyValue('--accent').trim() === window.labkitToken('Film page', '--accent')", "says": "Film page: the panel wears the picked theme, and the orb sees its accent"},
+        {"shot": "film-page-orb"},
+        {"note": "window.labkitEffectState('filament').frames", "as": "full_before"},
+        {"wait_ms": 500},
+        {"expect": "window.labkitEffectState('filament').frames > notes.full_before", "says": "under full the frame count rises over a wait"},
+
+        {"click": "#motion-calm"},
+        {"note": "window.labkitEffectPick('Film page')", "as": "calm_picked"},
+        {"wait_until": "document.querySelector('.effect-panel').dataset.motion === 'calm' && window.labkitEffectState('filament').running === false", "ms": 2000},
+        {"expect": "window.labkitEffectState('filament').running === false && window.labkitEffectState('filament').frames > 0", "says": "under calm, after a settle, the orb's loop is not running"},
+        {"note": "window.labkitEffectState('filament').frames", "as": "calm_before"},
+        {"wait_ms": 500},
+        {"expect": "window.labkitEffectState('filament').frames === notes.calm_before", "says": "under calm the frame count holds over a wait"},
+
+        {"click": "#motion-off"},
+        {"note": "window.labkitEffectPick('Film page')", "as": "off_picked"},
+        {"wait_ms": 300},
+        {"expect": "document.querySelector('.effect-panel').dataset.motion === 'off' && window.labkitEffectState('filament').running === false", "says": "under off, after a settle, the orb's loop is not running"},
+        {"note": "window.labkitEffectState('filament').frames", "as": "off_before"},
+        {"wait_ms": 500},
+        {"expect": "window.labkitEffectState('filament').frames === notes.off_before", "says": "under off the frame count holds over a wait"}
+      ]
+    },
+    {
+      "name": "effects: reduced motion",
+      "width": "phone",
+      "reduced_motion": true,
+      "steps": [
+        {"wait_until": "typeof window.labkitEffectRead === 'function'", "ms": 1000},
+        {"expect": "window.labkitThemes().length === 13", "says": "the effects picker offers all thirteen chosen themes"},
+        {"note": "JSON.stringify(window.labkitThemes().map(t => { const s = window.labkitEffectRead(t, 'filament'); return [t, s.accent, s.glow, s.pace.period, s.pace.level]; }))", "as": "read"},
+        {"expect": "window.labkitThemes().every(t => window.labkitEffectRead(t, 'filament').accent === window.labkitToken(t, '--accent'))", "says": "every theme: the orb reads the theme's own accent"},
+        {"expect": "window.labkitThemes().every(t => window.labkitEffectRead(t, 'filament').glow === parseFloat(window.labkitToken(t, '--glow')))", "says": "every theme: the orb reads the theme's own glow"},
+        {"expect": "window.labkitThemes().every(t => window.labkitEffectRead(t, 'filament').pace.period === 10 * parseFloat(window.labkitToken(t, '--motion-dur-enter')))", "says": "every theme: the orb's loop period is 10 times the theme's own entrance duration"},
+        {"expect": "window.labkitThemes().every(t => window.labkitEffectRead(t, 'filament').pace.level === 'off')", "says": "every theme: with reduce motion on, the orb's level is off"},
+        {"expect": "document.querySelectorAll('labkit-filament-orb').length === 1 && !document.querySelector('labkit-filament-orb').shadowRoot.querySelector('canvas')", "says": "reading every theme left no probe behind and made no canvas"},
+
+        {"note": "window.labkitEffectPick('Cold core')", "as": "cold_core_picked"},
+        {"wait_until": "window.labkitEffectState('filament').frames > 0", "ms": 3000},
+        {"expect": "window.labkitEffectState('filament').running === false", "says": "with reduce motion on, the live orb drew a still frame and its loop is not running"},
+        {"note": "window.labkitEffectState('filament').frames", "as": "still_before"},
+        {"wait_ms": 500},
+        {"expect": "window.labkitEffectState('filament').frames === notes.still_before", "says": "with reduce motion on, the frame count holds over a wait"}
+      ]
     }
   ]
 }

@@ -81,6 +81,7 @@ values. labkit owns the *shape*, not the choices.
 | `themes.ts` | `Theme`, `applyTheme` and `auditTheme`: a palette per mode plus type, surfaces and motion |
 | `themes/` | the chosen themes, one file each (see Chosen themes below) |
 | `mode.ts` | an explicit light/dark choice, persisted (renamed in #28, when "theme" came to mean an art theme; the storage key is still `labkit.theme`) |
+| `effects/` | **a separate entry, `labkit/effects`**: the effects shelf, set pieces drawn with three.js that read the theme (see Effects below) |
 
 ### Themes
 
@@ -211,6 +212,76 @@ its 3:1 bar by the least, at 3.04:1.
 
 That is all thirteen, in three batches (#29, #31 and #32).
 
+### Effects
+
+The effects shelf (ideas `plans/71`): set pieces built once, each reading its colour,
+glow and pace from the theme around it, so one piece worn in two themes is two looks.
+It is **its own entry, `labkit/effects`, and the only place three.js loads**. `labkit`
+itself never imports it, so an app that draws no 3D never loads three.js.
+
+```bash
+npm install three        # an optional peer dependency: only apps that use effects
+```
+
+```js
+import 'labkit/effects';   // defines the elements, once
+import { applyTheme, COLD_CORE } from 'labkit';
+
+// <div id="hero"><labkit-filament-orb></labkit-filament-orb></div>
+applyTheme(COLD_CORE, 'dark', 'full', document.getElementById('hero'));
+```
+
+Importing the entry defines each element once (guarded by `customElements.get`, so a
+second copy in the page does not throw). The shaders are plain GLSL files in
+`src/effects/shaders/`, imported as text with Vite's `?raw`, and used through
+`RawShaderMaterial`: every uniform and attribute is declared in the shader and no
+three.js chunk is included, so another engine can compile them as they stand.
+
+| piece | what it is |
+|---|---|
+| `<labkit-filament-orb>` | a sphere of many thin glowing strands in the accent, its glow from `--glow`, turning once per loop and breathing on the theme's curves |
+
+**What an effect reads from a theme**, from computed style on its own element, with
+no canvas (its `settings`): `--accent`; `--glow`, 0 to 1 (a theme with no glow gets
+the strands with no halo); and its pace from `readPace`.
+
+**`readPace(el)`** (`src/effects/pace.ts`) is the one place an effect gets its
+motion, and the motion shelf's first piece. A theme has no speed field, and gets none:
+
+- `period`, the loop, is **10 × the theme's `--motion-dur-enter`**
+  (`PERIOD_PER_ENTER`). Cold core's 870 ms entrance turns its orb once every 8.7 s,
+  Pen and seal's 500 ms once every 5 s: a theme that arrives slowly also turns slowly.
+- `easeOut` and `easeIn`, the theme's `--motion-ease-out` and `--motion-ease-in`
+  parsed into functions by a small cubic-Bézier evaluator of our own (`parseEase`,
+  `cubicBezier`).
+- `level`, the nearest `data-motion` (itself included; `full` when there is none),
+  forced to `off` whenever `prefers-reduced-motion: reduce` matches.
+
+⚠️ It reads `--motion-*`, the theme's own values, and never `--dur-*`: those are 0
+under `off` and under reduce motion, so a period read from them would be 0 exactly
+when the effect should hold still.
+
+**The motion levels for effects.** labkit applies its levels in CSS, which cannot
+reach a canvas, so an effect follows them itself:
+
+- `full`: its own `requestAnimationFrame` loop.
+- `calm`: one still frame, then no loop. It still fades in and brightens when
+  touched, at the theme's pace.
+- `off`: one still frame, and the fade and brighten are instant. Reduce motion
+  forces `off`.
+
+The fade-in and the brighten on touch are CSS on the element (`opacity` and
+`filter`), timed by `--dur-enter` and `--dur-state`, so they follow the levels like
+everything else in labkit. An effect makes its three.js renderer only while it is
+connected and on screen (an `IntersectionObserver`) and disposes it when it is not,
+because a browser keeps only a handful of WebGL contexts alive. It re-reads the theme
+and the level when an ancestor's `style` or `data-motion` changes, and when the
+reduce-motion setting does. It reports `running` (whether its loop runs) and
+`frames` (frames drawn).
+
+New pieces extend `LabkitEffect` (`src/effects/base.ts`): `create`, `update`, `draw`
+and `destroy`; the base owns the renderer, the loop, the levels and the observers.
+
 ## Gallery
 
 `gallery/` renders every primitive in every state across all three palettes and
@@ -230,9 +301,17 @@ example palettes rendering identically, because they shared every value. Reading
 the source would not have caught it. There is now a check on the page for that
 exact mistake, and each frame prints its own measured contrast ratios.
 
+The gallery's **effects panel** shows each piece in one chosen theme at a time, with a
+picker over all thirteen and the same motion picker as the theme frames: one theme at
+a time, so at most one canvas per piece is alive.
+
 ## Licence
 
 MIT.
+
+`labkit/effects` builds on **three.js**, MIT licensed. It is an optional peer
+dependency, not bundled: an app that imports the entry installs it, under its own
+licence.
 
 ## Previews
 
@@ -267,13 +346,32 @@ entrance at its first frame and read its transform: 12 px down under `full` (so 
 can see a distance), none under `calm`, where the loading pulse also has no running
 animation and `--dur-state` stays `180ms`; `off` makes it `0ms`.
 
-There are eight scenes (#38): "motion tokens" twice, "dark-only theme and audit", "full
-motion", "calm motion", "chosen themes: reduced motion", "chosen themes: audit" and
-"chosen themes: calm". The tool allows ten, so two are free, kept for the effects shelf
-(ideas `plans/71`). It also caps the waits and holds of the whole file at 120 s, summed over
-every scene: each `wait_ms`, `hold` and `touch` counts its `ms`, and each `wait_for` or
-`wait_until` its `ms`, or 10 s when it has none, so give every wait an `ms`. The eight use
-86.4 s, leaving 33.6 s: the effects shelf's ticket 2 may add 14 s, tickets 3 and 4 8 s each.
+There are ten scenes, the most the tool allows: "motion tokens" twice, "dark-only theme
+and audit", "full motion", "calm motion", "chosen themes: reduced motion", "chosen themes:
+audit", "chosen themes: calm" (merged down to these eight in #38), then "effects" and
+"effects: reduced motion" (#39). A new effect adds its steps to the two effects scenes.
+The tool also caps the waits and holds of the whole file at 120 s, summed over every
+scene: each `wait_ms`, `hold` and `touch` counts its `ms`, and each `wait_for` or
+`wait_until` its `ms`, or 10 s when it has none, so give every wait an `ms`. The ten use
+99.4 s (the first eight 86.4 s, the effects scenes 13 s), leaving 20.6 s: the planet orb
+and the orbit rings (ideas `plans/71`, tickets 3 and 4) may add 8 s each.
+
+The effects scenes run at phone width. "effects" picks Cold core in the effects panel,
+waits for the filament orb's first frames, finds its loop running, and takes a
+screenshot; picks Film page, finds the panel and the orb wearing it, and takes a second;
+then finds the frame count rising over half a second under `full`. It picks `calm`, and
+after a settle the loop is not running and the count holds over half a second; the
+same under `off`. "effects: reduced motion" runs with reduce motion on: for every theme
+in `labkitThemes()`, `labkitEffectRead` gives the theme's own `--accent` (as
+`labkitToken` reads it), its `--glow`, a period of 10 × its `--motion-dur-enter`, and
+level `off`, and no canvas was made doing it. Then the live orb draws a still frame,
+its loop is not running, and the count holds. Screenshots are only in Cold core and
+Film page: WebGL draws on the processor in the check, slowly. The gallery's helpers
+for them: `labkitThemes()` (the chosen themes' names), `labkitEffectRead(theme,
+piece)` (a piece's `settings` in that theme, read from a probe put in the theme's
+frame and taken out in the same task, so no canvas), `labkitEffectPick(theme)` (shows
+the panel in that theme and scrolls to it) and `labkitEffectState(piece)` (`{running,
+frames}` of the panel's live piece). The piece is `'filament'`.
 
 The chosen themes (#29) share three scenes, because the tool allows ten scenes of 60
 steps, and thirteen themes would not fit one scene each. A new theme adds its steps to

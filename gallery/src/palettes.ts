@@ -170,8 +170,10 @@ const COOL_DARK_THEME: Theme = {
  *
  * ⚠️ Cool dark stays FIRST. render.json's "full motion" and "calm motion"
  * scenes read the first theme frame, because it is the one with a rise.
+ *
+ * Exported for the effects panel, whose picker offers these and only these.
  */
-const CHOSEN: ThemeExample[] = [
+export const CHOSEN: ThemeExample[] = [
   { theme: COLD_CORE, primary: 'dark' },
   { theme: STILL_VIOLET, primary: 'dark' },
   { theme: BLUE_HAZE, primary: 'dark' },

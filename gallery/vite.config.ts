@@ -15,6 +15,8 @@ export default defineConfig({
       // that drifts — and it gets believed precisely because it looks
       // authoritative. If this alias is ever pointed at a snapshot, the gallery
       // stops being evidence.
+      // It covers subpaths too: `labkit/effects` lands on ../src/effects, whose
+      // index.ts is the effects entry, and `labkit/tokens.css` on the real file.
       labkit: fileURLToPath(new URL('../src', import.meta.url)),
     },
   },

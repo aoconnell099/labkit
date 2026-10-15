@@ -6,15 +6,31 @@
    *  drift survives. The whole reason this page exists is that a difference
    *  between two palettes is invisible sequentially and obvious in parallel.
    */
+  import { flushSync } from 'svelte';
   import Frame from './Frame.svelte';
-  import { EXAMPLES, THEMES } from './palettes';
-  import { auditPalette, auditTheme, shippedModes, type Mode, type MotionLevel,
+  import { EXAMPLES, THEMES, CHOSEN } from './palettes';
+  import { auditPalette, auditTheme, applyTheme, shippedModes, type Mode, type MotionLevel,
            type ContrastCheck } from 'labkit';
+  // The effects shelf: its own entry, so this import is what loads three.js.
+  import 'labkit/effects';
 
   let showBoth = $state(false);
   let narrow = $state(false);
   let level = $state<MotionLevel>('full');
   const LEVELS: MotionLevel[] = ['full', 'calm', 'off'];
+
+  /** The effects panel shows ONE theme at a time, unlike the frames: each
+   *  piece holds a WebGL context while on screen, and a browser keeps only a
+   *  handful alive. Reading a theme needs no canvas (labkitEffectRead), so the
+   *  render check still covers all of them. */
+  const PIECES = { filament: 'labkit-filament-orb' } as const;
+  type Piece = keyof typeof PIECES;
+  let effectTheme = $state(CHOSEN[0].theme.name);
+  let effectPanel = $state<HTMLDivElement>();
+  $effect(() => {
+    const t = CHOSEN.find((c) => c.theme.name === effectTheme)!;
+    if (effectPanel) applyTheme(t.theme, t.primary, level, effectPanel);
+  });
 
   /** The modes a theme frame is shown in. ⚠️ Only modes the theme ships:
    *  "show both modes" adds the other one only if it exists, so a dark-only
@@ -69,6 +85,32 @@
       return getComputedStyle(el).transform;
     },
     labkitShow: (name: string) => (frame(name).scrollIntoView(), true),
+    /** The themes the effects panel offers, in picker order. */
+    labkitThemes: () => CHOSEN.map((t) => t.theme.name),
+    /** What a piece takes from a theme, with no canvas: a probe of the piece is
+     *  put in the theme's frame, read, and taken out in the same task, before
+     *  it could ever come on screen and make a renderer. */
+    labkitEffectRead: (name: string, piece: Piece) => {
+      const probe = document.createElement(PIECES[piece]);
+      frame(name).append(probe);
+      try {
+        return probe.settings;
+      } finally {
+        probe.remove();
+      }
+    },
+    /** Show the effects panel in a theme, and scroll to it. */
+    labkitEffectPick: (name: string) => {
+      effectTheme = name;
+      flushSync();
+      document.getElementById('effects')!.scrollIntoView();
+      return true;
+    },
+    /** The panel's live piece: whether its loop runs, and the frames it drew. */
+    labkitEffectState: (piece: Piece) => {
+      const el = effectPanel!.querySelector(PIECES[piece])!;
+      return { running: el.running, frames: el.frames };
+    },
   });
 
   // ⚠️ Surfaced at the top, not buried in a frame. If any shipped example fails
@@ -153,6 +195,29 @@
         <label><input type="radio" name="motion" id={`motion-${l}`} value={l} bind:group={level} /> {l}</label>
       {/each}
     </fieldset>
+
+    <div class="effects" id="effects">
+      <h3>Effects</h3>
+      <p>
+        The effects shelf, imported on its own from <code>labkit/effects</code>.
+        Each piece reads its colour, glow and pace from the theme around it, in
+        one theme at a time. The motion picker above applies: under calm and off
+        it draws one still frame and stops.
+      </p>
+      <label class="controls">
+        theme
+        <select id="effect-theme" bind:value={effectTheme}>
+          {#each CHOSEN as t (t.theme.name)}
+            <option value={t.theme.name}>{t.theme.name}</option>
+          {/each}
+        </select>
+      </label>
+      <div class="effect-panel" bind:this={effectPanel} data-effect-theme={effectTheme}>
+        <labkit-filament-orb></labkit-filament-orb>
+        <span class="lbl">filament orb &middot; {effectTheme} &middot; motion {level}</span>
+      </div>
+    </div>
+
     <div class="grid" class:narrow>
       {#each THEMES as t (t.theme.name)}
         {#each themeModes(t.primary, shippedModes(t.theme)) as m (m)}
@@ -194,4 +259,16 @@
   h2 { font-size: 1.1rem; margin: 0 0 6px; font-weight: 600; }
   .themes p { margin: 0 0 10px; opacity: .75; max-width: 62ch; }
   fieldset.controls { border: 1px solid #8886; border-radius: 6px; padding: 6px 12px 8px; }
+  h3 { font-size: 1rem; margin: 24px 0 6px; font-weight: 600; }
+  /* Layout only, as in Frame: every colour comes from the theme stamped here. */
+  .effect-panel {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid #8884;
+    border-radius: 10px;
+    background: var(--surface);
+  }
+  .effect-panel labkit-filament-orb { width: min(100%, 320px); }
 </style>
