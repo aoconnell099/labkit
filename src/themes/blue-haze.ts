@@ -22,6 +22,8 @@ export const BLUE_HAZE: Theme = {
       status: { pos: '#29bb97', neg: '#e06351' },
       // A cold mid blue: 3.22:1 on the ground.
       accent: '#395fbe',
+      // The draft's label on the accent, the primary button's text.
+      onAccent: '#e7effc',
       floor: 'rgba(10, 16, 27, 0.20)',
     },
   },

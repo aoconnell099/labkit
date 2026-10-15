@@ -8,7 +8,7 @@
    *  exactly the blind spot it exists to remove.
    */
   import { Section, StatRow, Rail, Meter, Field, applyPalette, auditPalette,
-           applyTheme, auditTheme, modePalette,
+           applyTheme, auditTheme, modePalette, onAccentFor,
            type Mode, type Palette, type Theme, type MotionLevel } from 'labkit';
 
   /** Either a palette or a theme. A theme frame also wears the theme's type,
@@ -50,7 +50,7 @@
     '--dur-state', '--dur-enter', '--font-ui', '--font-fig', '--fig-tracking',
     '--bg', '--surface', '--surface-inset', '--line',
     '--text', '--text-dim', '--text-faint',
-    '--accent', '--tone-pos', '--tone-neg', '--floor',
+    '--accent', '--on-accent', '--tone-pos', '--tone-neg', '--floor',
     '--font-display', '--enter-y', '--enter-scale', '--glass', '--grain', '--glow',
   ];
   let missing = $state<string[]>([]);
@@ -77,6 +77,7 @@
     { name: 'tone-pos', value: values.status.pos },
     { name: 'tone-neg', value: values.status.neg },
     { name: 'accent', value: values.accent },
+    { name: 'on-accent', value: onAccentFor(values) },
   ]);
 </script>
 
@@ -111,7 +112,7 @@
       </div>
     </Section>
 
-    <Section title="Contrast" meta="measured" note="Every token that paints text, against this frame's own surface. 4.5:1 for text, 3:1 for the focus ring.">
+    <Section title="Contrast" meta="measured" note="Every token that paints text, against this frame's own surface, and the button label against the accent. 4.5:1 for text, 3:1 for the focus ring.">
       <table>
         <thead>
           <tr><th>token</th><th class="r">ratio</th><th class="r">need</th><th></th></tr>
@@ -119,7 +120,7 @@
         <tbody>
           {#each audit as c (c.token)}
             <tr>
-              <td class="mono">{c.token}</td>
+              <td class="mono">{c.token}{c.on === 'accent' ? ' on accent' : ''}</td>
               <td class="r mono ratio">{c.ratio.toFixed(2)}:1</td>
               <td class="r mono">{c.required}</td>
               <td class="r"><Rail code={c.passes ? 'PASS' : 'FAIL'}

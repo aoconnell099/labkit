@@ -20,8 +20,10 @@ export const LOUD_WALL: Theme = {
       // DEFAULT_PALETTE's light pair, and neither value moved: on this ground it
       // measures 5.12:1 (pos) and 7.59:1 (neg) against the 4.5 bar.
       status: { pos: '#047a60', neg: '#9c240a' },
-      // A flat red: 4.79:1 on the ground, and the white label on it 4.96:1.
+      // A flat red: 4.79:1 on the ground. The label on it is the draft's
+      // off-white.
       accent: '#d8262a',
+      onAccent: '#fbfbf8',
       floor: 'rgba(251, 251, 248, 0.07)',
     },
   },

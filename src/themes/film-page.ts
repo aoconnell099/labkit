@@ -22,8 +22,9 @@ export const FILM_PAGE: Theme = {
       // DEFAULT_PALETTE's light pair, and neither value moved: on white it
       // measures 5.31:1 (pos) and 7.86:1 (neg) against the 4.5 bar.
       status: { pos: '#047a60', neg: '#9c240a' },
-      // Near-black: 19.7:1 on the page, and the white label on it the same.
+      // Near-black: 19.7:1 on the page. The label on it is the draft's white.
       accent: '#0a0b0f',
+      onAccent: '#ffffff',
       floor: 'rgba(255, 255, 255, 0.07)',
     },
   },

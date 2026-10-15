@@ -26,6 +26,8 @@ export const RUST_TERMINAL: Theme = {
       status: { pos: '#29bb97', neg: '#e06351' },
       // A rust red: 3.59:1 on the ground.
       accent: '#ba3f21',
+      // The draft's label on the accent, the primary button's text.
+      onAccent: '#f0eeed',
       floor: 'rgba(12, 10, 10, 0.20)',
     },
   },

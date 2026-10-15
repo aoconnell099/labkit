@@ -20,9 +20,10 @@ export const PEN_AND_SEAL: Theme = {
       // DEFAULT_PALETTE's light pair, and neither value moved: on this ground it
       // measures 5.26:1 (pos) and 7.80:1 (neg) against the 4.5 bar.
       status: { pos: '#047a60', neg: '#9c240a' },
-      // Solid ink: 20.8:1 on the ground, and the primary button's white label
-      // on it 21:1.
+      // Solid ink: 20.8:1 on the ground. The label on it is the draft's
+      // near-white.
       accent: '#000000',
+      onAccent: '#fefefe',
       floor: 'rgba(254, 254, 254, 0.07)',
     },
   },

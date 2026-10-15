@@ -76,8 +76,8 @@ values. labkit owns the *shape*, not the choices.
 | `Rail` | a tick, a short code, a qualifier |
 | `Meter` | a progress mark — takes a **tone**, never a value-to-colour rule |
 | `Field` | a labelled control with its hint and an announced error |
-| `palette.ts` | the palette shape, a validated default, and `applyPalette` |
-| `contrast.ts` | `contrast` and `auditPalette`: every text token against its surface |
+| `palette.ts` | the palette shape, a validated default, `applyPalette`, and `onAccentFor`, the button label's colour |
+| `contrast.ts` | `contrast` and `auditPalette`: every text token against its surface, and the button label against the accent |
 | `themes.ts` | `Theme`, `applyTheme` and `auditTheme`: a palette per mode plus type, surfaces and motion |
 | `themes/` | the chosen themes, one file each (see Chosen themes below) |
 | `mode.ts` | an explicit light/dark choice, persisted (renamed in #28, when "theme" came to mean an art theme; the storage key is still `labkit.theme`) |
@@ -85,7 +85,7 @@ values. labkit owns the *shape*, not the choices.
 ### Themes
 
 A **`Theme`** extends what a palette holds. It has a name and a one-line
-character; `modes`, holding a palette's values (ink, status, accent, floor) for
+character; `modes`, holding a palette's values (ink, status, accent, onAccent, floor) for
 **each mode it ships**, which may be dark only, light only, or both; `type`, the
 font stacks for `--font-ui`, `--font-fig` and an optional `--font-display` (stacks
 only: labkit ships no font files); `surfaces`, `glass` (blur in px), `grain` and
@@ -103,6 +103,17 @@ ship. It stamps the colours through the same code as `applyPalette`, sets the
 type and surface tokens, puts the motion in `--motion-*`, and sets `data-motion`
 on the element. **`auditTheme(theme)`** runs `auditPalette`'s checks (one shared
 function) on each mode the theme ships, and only those.
+
+**The button label.** The primary button's text sits on the accent, not the
+surface, so it has its own colour: `onAccent`, optional per mode in a palette
+(`onAccent: { light, dark }`) and in each of a theme's modes. `applyPalette` and
+`applyTheme` stamp it as `--on-accent`, and `.btn.primary` paints its label with
+it. A mode that gives none gets the kit's choice, `onAccentFor(values)`: white
+wherever white clears 4.5:1 on the accent, so a label that already passed stays as
+it was; otherwise whichever of white, the mode's `ink.text` and its `ink.surface`
+measures highest. (The surface is in that list because in a dark mode the text is
+light too, and a light accent would otherwise get a choice of two light labels.)
+The audit checks it as one more row, `onAccent` on `accent`, at 4.5:1.
 
 **Three motion levels**, set by `data-motion`:
 
@@ -135,7 +146,7 @@ applyTheme(COLD_CORE, 'dark', 'full');
 | Banked ember | `BANKED_EMBER` | a warm brown-black lit by one gold glow | dark only | state 0 ms, entrance 1170 ms, fade |
 | Magenta tube | `MAGENTA_TUBE` | glossy black under a hot magenta glow | dark only | state 30 ms, entrance 1200 ms, fade |
 | Rust terminal | `RUST_TERMINAL` | a monospace screen in rust red on near-black | dark only | state 30 ms, entrance 1210 ms, fade |
-| Black glint | `BLACK_GLINT` | absolute black that holds still, with one small red glint | dark only | state 180 ms, entrance 1160 ms, fade |
+| Black glint | `BLACK_GLINT` | absolute black that holds still, with one small white glint | dark only | state 180 ms, entrance 1160 ms, fade |
 | Pen and seal | `PEN_AND_SEAL` | black ink on white paper, drawn by hand | light only | state 180 ms, entrance 500 ms, fade |
 | Candy glass | `CANDY_GLASS` | soft pastel toys under frosted glass | light only | state 180 ms, entrance 1130 ms, fade |
 | Loud wall | `LOUD_WALL` | flat poster red on a bright white wall | light only | state 70 ms, entrance 1200 ms, fade |
@@ -170,13 +181,33 @@ pink, the default green measures 3.55:1, so its pos is the same green darkened t
 | Screen print | 5.09:1 | 7.54:1 |
 | Rose mist | 4.52:1 (moved) | 5.26:1 |
 
-Black glint departs from its draft in three values, each for a reason in its file:
-a red accent where the draft had near-white (the primary button's white label
-vanished on it), and a visible line and inset where the draft's measured 1.0:1 on
-black. ⚠️ Banked ember's gold accent is light enough that the primary button's
-white label sits on it at about 2.6:1, and Candy glass's pink at about 3.3:1; the
-kit does not audit that pairing yet. Rose mist's accent clears its 3:1 bar by the
-least, at 3.04:1.
+Each sets its draft's button label (`onAccent`), and each clears 4.5:1 on its accent:
+
+| theme | label | on the accent |
+|---|---|---|
+| Cold core | `#eceef5` | 4.95:1 |
+| Still violet | `#eeedf6` | 5.18:1 |
+| Blue haze | `#e7effc` | 5.11:1 |
+| Banked ember | `#190e0b` | 7.33:1 |
+| Magenta tube | `#0b090d` | 4.89:1 |
+| Rust terminal | `#f0eeed` | 4.75:1 |
+| Black glint | `#000000` | 20.47:1 |
+| Pen and seal | `#fefefe` | 20.82:1 |
+| Candy glass | `#161616` | 5.49:1 |
+| Loud wall | `#fbfbf8` | 4.79:1 |
+| Film page | `#ffffff` | 19.67:1 |
+| Screen print | `#000000` | 4.84:1 |
+| Rose mist | `#000000` | 4.62:1 |
+
+Black glint departs from its draft in two values, each for a reason in its file:
+a visible line and inset where the draft's measured 1.0:1 on black. Its accent is
+the draft's near-white `#fcfcfc` with a black label; batch 2 had swapped in a red,
+while the label was still a fixed white that vanished on it (#35). ⚠️ Banked
+ember's gold is light for an accent: a white label on it measures 2.58:1, so its
+label is a dark, the ground's own brown-black, and the audit fails a copy of it
+set back to white. Candy glass's pink and Screen print's red also fail a white
+label (about 3.3:1 and 4.34:1), so theirs are dark too. Rose mist's accent clears
+its 3:1 bar by the least, at 3.04:1.
 
 That is all thirteen, in three batches (#29, #31 and #32).
 

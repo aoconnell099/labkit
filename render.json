@@ -154,7 +154,13 @@
 
         {"note": "window.labkitRatios('Rose mist', 'light')", "as": "rose_mist_light"},
         {"expect": "Object.keys(window.labkitAudit()['Rose mist']).join() === 'light' && window.labkitModesShown('Rose mist') === 'light'", "says": "Rose mist ships light only, and is shown and audited in light only"},
-        {"expect": "window.labkitAudit()['Rose mist'].light.length === 0", "says": "Rose mist light: 0 audit failures"}
+        {"expect": "window.labkitAudit()['Rose mist'].light.length === 0", "says": "Rose mist light: 0 audit failures"},
+
+        {"expect": "Array.from(document.querySelectorAll('.frame[data-theme]')).every(f => /onAccent on accent/.test(window.labkitRatios(f.dataset.theme, f.dataset.mode)))", "says": "every theme frame's audit has an onAccent on accent row"},
+        {"expect": "/onAccent on accent (4\\.[5-9]|[5-9]|1\\d|2[01])/.test(notes.banked_ember_dark) && /onAccent on accent (4\\.[5-9]|[5-9]|1\\d|2[01])/.test(notes.black_glint_dark)", "says": "Banked ember's and Black glint's labels measure 4.5:1 or more on their accents"},
+        {"note": "window.labkitAuditLabel('Banked ember', 'dark', '#ffffff')", "as": "banked_ember_white_label"},
+        {"expect": "/^dark onAccent on accent 2\\.\\d+:1 \\(needs 4\\.5\\)$/.test(notes.banked_ember_white_label)", "says": "a copy of Banked ember with a white label fails the audit on onAccent, and nothing else"},
+        {"expect": "getComputedStyle(document.querySelector('.frame[data-theme=\"Black glint\"] .btn.primary')).backgroundColor === 'rgb(252, 252, 252)' && getComputedStyle(document.querySelector('.frame[data-theme=\"Black glint\"] .btn.primary')).color === 'rgb(0, 0, 0)'", "says": "Black glint's primary button is near-white with a black label"}
       ]
     },
     {

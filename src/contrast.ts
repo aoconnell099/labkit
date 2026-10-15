@@ -21,7 +21,7 @@
  * cannot tell apart. Run the real thing when choosing values; run this to stop
  * them regressing.
  */
-import { DEFAULT_PALETTE, modePalette, type Mode, type ModePalette, type Palette } from './palette';
+import { DEFAULT_PALETTE, modePalette, onAccentFor, type Mode, type ModePalette, type Palette } from './palette';
 
 /** sRGB channel -> linear. The 0.03928 kink is the spec's, not a rounding. */
 function channel(c: number): number {
@@ -50,6 +50,9 @@ export function contrast(a: string, b: string): number {
 export interface ContrastCheck {
   mode: Mode;
   token: string;
+  /** The token it sits on: `surface`, or `accent` for the label on a button. */
+  on: 'surface' | 'accent';
+  /** That token's value. */
   against: string;
   ratio: number;
   required: number;
@@ -57,7 +60,8 @@ export interface ContrastCheck {
 }
 
 /**
- * Every token that paints text, checked against the surface it sits on.
+ * Every token that paints text, checked against the surface it sits on, and the
+ * primary button's label against the accent it sits on.
  *
  * ⚠️ The bar is 4.5:1, not 3:1. These paint TEXT — a state label in a table
  * cell, a caveat under a figure — not chart marks. Checking status colours at
@@ -82,24 +86,28 @@ export function auditMode(mode: Mode, values: ModePalette): ContrastCheck[] {
   const ink = values.ink;
   const st = values.status;
 
-  const against = ink.surface;
-  const text: [string, string, number][] = [
-    ['text', ink.text, 4.5],
-    ['textDim', ink.textDim, 4.5],
+  const text: [string, string, number, 'surface' | 'accent'][] = [
+    ['text', ink.text, 4.5, 'surface'],
+    ['textDim', ink.textDim, 4.5, 'surface'],
     // ⚠️ Yes, the faint step too. In some apps the small uppercase label IS
     // the content of the row, not a caption beside a big figure.
-    ['textFaint', ink.textFaint, 4.5],
-    ['status.pos', st.pos, 4.5],
-    ['status.neg', st.neg, 4.5],
+    ['textFaint', ink.textFaint, 4.5, 'surface'],
+    ['status.pos', st.pos, 4.5, 'surface'],
+    ['status.neg', st.neg, 4.5, 'surface'],
     // A focus ring is a non-text UI element, so 3:1 — but it must still be
     // visible, and an accent that reads as grey is not a focus ring.
-    ['accent', values.accent, 3],
+    ['accent', values.accent, 3, 'surface'],
+    // ⚠️ The primary button's label, on the accent rather than the surface. It
+    // was a fixed white for months, unchecked: on a gold accent it measured
+    // about 2.6:1, and a white accent left it blank (labkit #35).
+    ['onAccent', onAccentFor(values), 4.5, 'accent'],
   ];
 
-  return text.map(([token, value, required]) => {
+  return text.map(([token, value, required, on]) => {
+    const against = on === 'accent' ? values.accent : ink.surface;
     const ratio = contrast(value, against);
     return {
-      mode, token, against,
+      mode, token, on, against,
       ratio: Math.round(ratio * 100) / 100,
       required,
       passes: ratio >= required,

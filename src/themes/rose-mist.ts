@@ -25,6 +25,8 @@ export const ROSE_MIST: Theme = {
       status: { pos: '#046852', neg: '#9c240a' },
       // A dusky mauve: 3.04:1 on the ground, just over the 3 bar.
       accent: '#9f6195',
+      // The draft's label on the accent: black, the primary button's text.
+      onAccent: '#000000',
       floor: 'rgba(231, 204, 217, 0.07)',
     },
   },

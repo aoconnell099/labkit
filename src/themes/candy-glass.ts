@@ -21,10 +21,10 @@ export const CANDY_GLASS: Theme = {
       // measures 4.88:1 (pos) and 7.23:1 (neg) against the 4.5 bar. pos has the
       // least room of the light themes that kept it.
       status: { pos: '#047a60', neg: '#9c240a' },
-      // A candy pink: 3.03:1 on the ground. ⚠️ Light for an accent: the primary
-      // button's white label sits on it at about 3.3:1; the kit does not audit
-      // that pairing yet.
+      // A candy pink: 3.03:1 on the ground. ⚠️ Light for an accent: a white
+      // label sits on it at about 3.3:1, so the label is the draft's near-black.
       accent: '#e75c97',
+      onAccent: '#161616',
       floor: 'rgba(246, 245, 245, 0.07)',
     },
   },

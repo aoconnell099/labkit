@@ -20,8 +20,10 @@ export const SCREEN_PRINT: Theme = {
       // DEFAULT_PALETTE's light pair, and neither value moved: on this ground it
       // measures 5.09:1 (pos) and 7.54:1 (neg) against the 4.5 bar.
       status: { pos: '#047a60', neg: '#9c240a' },
-      // A print red: 4.16:1 on the ground, and the white label on it 4.34:1.
+      // A print red: 4.16:1 on the ground. ⚠️ A white label on it measures
+      // 4.34:1, under the 4.5 bar, so the label is the draft's black.
       accent: '#d64834',
+      onAccent: '#000000',
       floor: 'rgba(248, 252, 237, 0.07)',
     },
   },

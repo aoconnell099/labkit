@@ -13,6 +13,10 @@
  * rather than trusting what you meant to type. The defaults here are a starting
  * point that passes; an app is expected to supply its own.
  */
+// A cycle with contrast.ts, and a safe one: each side uses the other only
+// inside function bodies, never while the module is being evaluated.
+import { contrast } from './contrast';
+
 export type Mode = 'light' | 'dark';
 
 /**
@@ -79,6 +83,9 @@ export interface Palette {
    *  ⚠️ Must clear the 0.10 chroma floor in BOTH modes or it reads as grey and
    *  a focus ring looks like a rendering artifact rather than "you are here". */
   accent: Record<Mode, string>;
+  /** The label on the accent: the primary button's text. Optional per mode; a
+   *  mode without one gets `onAccentFor`'s choice. Audited at 4.5:1 on `accent`. */
+  onAccent?: Partial<Record<Mode, string>>;
   /** Always-on ambient wash so a dark app does not read as flat black.
    *  Deliberately neutral: an ambient signal that carries meaning must be
    *  anchored to a figure the screen is already stating in words. */
@@ -92,6 +99,8 @@ export interface ModePalette {
   ink: InkPalette;
   status: StatusPalette;
   accent: string;
+  /** The label on the accent. Optional: see `onAccentFor`. */
+  onAccent?: string;
   floor: string;
 }
 
@@ -100,8 +109,27 @@ export function modePalette(palette: Palette, mode: Mode): ModePalette {
     ink: palette.ink[mode],
     status: palette.status[mode],
     accent: palette.accent[mode],
+    onAccent: palette.onAccent?.[mode],
     floor: palette.floor[mode],
   };
+}
+
+/**
+ * The label colour on the accent: the mode's own `onAccent`, or the kit's choice.
+ *
+ * The choice keeps white wherever white clears 4.5:1, so every label that already
+ * passed stays exactly as it was. Otherwise it takes whichever of white, `ink.text`
+ * and `ink.surface` measures highest on the accent.
+ *
+ * ⚠️ `ink.surface` is in that list because `ink.text` alone does not help a dark
+ * mode: there the text is light too, and a light accent (a gold, a mid blue) then
+ * gets a choice of two light labels. The surface is the mode's dark.
+ */
+export function onAccentFor(values: ModePalette): string {
+  if (values.onAccent) return values.onAccent;
+  if (contrast('#ffffff', values.accent) >= 4.5) return '#ffffff';
+  return ['#ffffff', values.ink.text, values.ink.surface]
+    .reduce((best, c) => (contrast(c, values.accent) > contrast(best, values.accent) ? c : best));
 }
 
 /** A validated starting point. Apps are expected to supply their own. */
@@ -169,6 +197,7 @@ export function stampColours(mode: Mode, values: ModePalette, root: HTMLElement)
   s.setProperty('--text-faint', ink.textFaint);
 
   s.setProperty('--accent', values.accent);
+  s.setProperty('--on-accent', onAccentFor(values));
   s.setProperty('--floor', values.floor);
 
   // ⚠️ Domain-neutral names. Three apps named this same pigment `--money-in`,
