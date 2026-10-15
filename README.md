@@ -292,8 +292,10 @@ everything else in labkit. An effect makes its three.js renderer only while it i
 connected and on screen (an `IntersectionObserver`) and disposes it when it is not,
 because a browser keeps only a handful of WebGL contexts alive. It re-reads the theme
 and the level when an ancestor's `style` or `data-motion` changes, and when the
-reduce-motion setting does. It reports `running` (whether its loop runs) and
-`frames` (frames drawn).
+reduce-motion setting does. A resize clears the canvas, so it draws a frame straight
+after, whether or not its loop runs, rather than leave the canvas blank until the
+loop's next tick. It reports `running` (whether its loop runs) and `frames` (frames
+drawn).
 
 New pieces extend `LabkitEffect` (`src/effects/base.ts`): `create`, `update`, `draw`
 and `destroy`; the base owns the renderer, the loop, the levels and the observers.
@@ -370,9 +372,11 @@ audit", "chosen themes: calm" (merged down to these eight in #38), then "effects
 The tool also caps the waits and holds of the whole file at 120 s, summed over every
 scene: each `wait_ms`, `hold` and `touch` counts its `ms`, and each `wait_for` or
 `wait_until` its `ms`, or 10 s when it has none, so give every wait an `ms`. The ten use
-99.4 s (the first eight 86.4 s, the effects scenes 13 s), leaving 20.6 s. The planet orb
-(#40) added none: its steps run inside the filament orb's waits, since every piece in
-the panel comes on screen, and changes level, together. The orbit rings (ideas
+104.1 s (the first eight 86.4 s, the effects scenes 17.7 s), leaving 15.9 s. The planet
+orb (#40) added 4.7 s: its own steps run inside the filament orb's waits, since every
+piece in the panel comes on screen, and changes level, together, and the 4.7 s are a
+wait for new frames before the Film page shot (3 s) and the `off` settle becoming a
+wait for the pieces (2 s, in place of a fixed 0.3 s). The orbit rings (ideas
 `plans/71`, ticket 4) may add 8 s.
 
 The effects scenes run at phone width. "effects" picks Cold core in the effects panel,
@@ -393,13 +397,15 @@ the panel in that theme and scrolls to it) and `labkitEffectState(piece)` (`{run
 frames}` of the panel's live piece). The piece is `'filament'`, `'planet'` (the planet
 orb in the accent) or `'tinted'` (the one with `--effect-tint` set).
 
-The planet orbs ride the same steps. In "effects" the first wait is for all three
-pieces' first frames, both planet orbs' loops run under `full`, in Film page the
-plain one's tint is Film page's accent and the tinted one's is its tint, and their
-frame counts rise under `full` and hold under `calm` and `off` over the same waits.
-⚠️ Clicking the motion picker scrolls the planet orbs off screen, so they give their
-canvas back and draw one frame on coming back: the calm settle also waits until all
-three pieces are shown again (`data-shown`), or the count moves after it is noted.
+The planet orbs ride the same steps. Before each screenshot the scene notes every
+piece's frame count right after the pick and waits until all three have drawn a new
+frame, so no shot catches a piece before it has drawn in the picked theme. Both planet
+orbs' loops run under `full`, in Film page the plain one's tint is Film page's accent
+and the tinted one's is its tint, and their frame counts rise under `full` and hold
+under `calm` and `off` over the same waits. ⚠️ Clicking the motion picker scrolls the
+planet orbs off screen, so they give their canvas back and draw one frame on coming
+back: the `calm` and `off` settles wait until all three pieces are shown again
+(`data-shown`) and none is running, or the count moves after it is noted.
 In "effects: reduced motion", for every theme the plain planet orb's tint is the
 theme's accent, the tinted one's is `#3cc6a0` while its accent is still the theme's,
 both read the theme's glow and pace at level `off`, and no probe or canvas is left;
