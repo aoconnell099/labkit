@@ -50,3 +50,8 @@ export {
 // The chosen themes, one file each in themes/. Batches 2 and 3 add lines here.
 export { COLD_CORE } from './themes/cold-core';
 export { STILL_VIOLET } from './themes/still-violet';
+export { BLUE_HAZE } from './themes/blue-haze';
+export { BANKED_EMBER } from './themes/banked-ember';
+export { MAGENTA_TUBE } from './themes/magenta-tube';
+export { RUST_TERMINAL } from './themes/rust-terminal';
+export { BLACK_GLINT } from './themes/black-glint';

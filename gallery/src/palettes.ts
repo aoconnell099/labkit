@@ -14,7 +14,8 @@
  * frame shows a FAIL, that is not a gallery bug — it is the palette, and the
  * point of putting the number on the screen.
  */
-import { modePalette, COLD_CORE, STILL_VIOLET,
+import { modePalette, COLD_CORE, STILL_VIOLET, BLUE_HAZE, BANKED_EMBER,
+         MAGENTA_TUBE, RUST_TERMINAL, BLACK_GLINT,
          type Mode, type Palette, type Theme } from 'labkit';
 
 export interface Example {
@@ -172,6 +173,11 @@ const COOL_DARK_THEME: Theme = {
 const CHOSEN: ThemeExample[] = [
   { theme: COLD_CORE, primary: 'dark' },
   { theme: STILL_VIOLET, primary: 'dark' },
+  { theme: BLUE_HAZE, primary: 'dark' },
+  { theme: BANKED_EMBER, primary: 'dark' },
+  { theme: MAGENTA_TUBE, primary: 'dark' },
+  { theme: RUST_TERMINAL, primary: 'dark' },
+  { theme: BLACK_GLINT, primary: 'dark' },
 ];
 
 export const THEMES: ThemeExample[] = [

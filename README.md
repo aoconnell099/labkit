@@ -131,11 +131,33 @@ applyTheme(COLD_CORE, 'dark', 'full');
 |---|---|---|---|---|
 | Cold core | `COLD_CORE` | near-black instrument panels lit by one cold glow | dark only | state 20 ms, entrance 870 ms, fade |
 | Still violet | `STILL_VIOLET` | a violet-black ground where everything arrives slowly | dark only | state 180 ms, entrance 1190 ms, fade |
+| Blue haze | `BLUE_HAZE` | a deep navy haze cut by hard, cold light | dark only | state 180 ms, entrance 1200 ms, fade |
+| Banked ember | `BANKED_EMBER` | a warm brown-black lit by one gold glow | dark only | state 0 ms, entrance 1170 ms, fade |
+| Magenta tube | `MAGENTA_TUBE` | glossy black under a hot magenta glow | dark only | state 30 ms, entrance 1200 ms, fade |
+| Rust terminal | `RUST_TERMINAL` | a monospace screen in rust red on near-black | dark only | state 30 ms, entrance 1210 ms, fade |
+| Black glint | `BLACK_GLINT` | absolute black that holds still, with one small red glint | dark only | state 180 ms, entrance 1160 ms, fade |
 
-Each passes `auditTheme` in every mode it ships. Both start from the default dark
-status pair, and on these grounds neither value had to move: Cold core measures
-8.15:1 and 5.72:1, Still violet 7.97:1 and 5.59:1, against a bar of 4.5. More
-themes come in two later batches (#29 was the first).
+Each passes `auditTheme` in every mode it ships. All start from the default dark
+status pair, and on these grounds no value had to move (pos / neg, against a bar
+of 4.5):
+
+| theme | pos | neg |
+|---|---|---|
+| Cold core | 8.15:1 | 5.72:1 |
+| Still violet | 7.97:1 | 5.59:1 |
+| Blue haze | 7.84:1 | 5.51:1 |
+| Banked ember | 7.80:1 | 5.48:1 |
+| Magenta tube | 8.17:1 | 5.73:1 |
+| Rust terminal | 8.13:1 | 5.71:1 |
+| Black glint | 8.65:1 | 6.07:1 |
+
+Black glint departs from its draft in three values, each for a reason in its file:
+a red accent where the draft had near-white (the primary button's white label
+vanished on it), and a visible line and inset where the draft's measured 1.0:1 on
+black. ⚠️ Banked ember's gold accent is light enough that the primary button's
+white label sits on it at about 2.6:1; the kit does not audit that pairing yet.
+
+More themes come in a third batch (#29 was the first, #31 the second).
 
 ## Gallery
 
@@ -203,6 +225,8 @@ expects it shown and audited in exactly the modes it ships, with 0 failures in e
 checks each theme's own durations land under `full`, then picks `calm` and finds no
 entrance distance. Both batch 1 themes enter with a fade, which moves no distance under
 `full` either, so for them the calm check confirms nothing was added rather than taken
-away. The steps call small helpers the gallery puts on `window` (`labkitModesShown`,
+away; the same holds for every batch 2 theme (#31). Banked ember's state duration is
+0 ms under `full`, so its reduced-motion step also finds `--dur-enter` at `0ms`, which
+is the part that changes. The steps call small helpers the gallery puts on `window` (`labkitModesShown`,
 `labkitRatios`, `labkitToken`, `labkitEnterStart`, `labkitShow`) to stay under the
 tool's 500 characters a step.

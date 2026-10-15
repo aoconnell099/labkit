@@ -110,7 +110,27 @@
 
         {"note": "window.labkitRatios('Still violet', 'dark')", "as": "still_violet_dark"},
         {"expect": "Object.keys(window.labkitAudit()['Still violet']).join() === 'dark' && window.labkitModesShown('Still violet') === 'dark'", "says": "Still violet ships dark only, and is shown and audited in dark only"},
-        {"expect": "window.labkitAudit()['Still violet'].dark.length === 0", "says": "Still violet dark: 0 audit failures"}
+        {"expect": "window.labkitAudit()['Still violet'].dark.length === 0", "says": "Still violet dark: 0 audit failures"},
+
+        {"note": "window.labkitRatios('Blue haze', 'dark')", "as": "blue_haze_dark"},
+        {"expect": "Object.keys(window.labkitAudit()['Blue haze']).join() === 'dark' && window.labkitModesShown('Blue haze') === 'dark'", "says": "Blue haze ships dark only, and is shown and audited in dark only"},
+        {"expect": "window.labkitAudit()['Blue haze'].dark.length === 0", "says": "Blue haze dark: 0 audit failures"},
+
+        {"note": "window.labkitRatios('Banked ember', 'dark')", "as": "banked_ember_dark"},
+        {"expect": "Object.keys(window.labkitAudit()['Banked ember']).join() === 'dark' && window.labkitModesShown('Banked ember') === 'dark'", "says": "Banked ember ships dark only, and is shown and audited in dark only"},
+        {"expect": "window.labkitAudit()['Banked ember'].dark.length === 0", "says": "Banked ember dark: 0 audit failures"},
+
+        {"note": "window.labkitRatios('Magenta tube', 'dark')", "as": "magenta_tube_dark"},
+        {"expect": "Object.keys(window.labkitAudit()['Magenta tube']).join() === 'dark' && window.labkitModesShown('Magenta tube') === 'dark'", "says": "Magenta tube ships dark only, and is shown and audited in dark only"},
+        {"expect": "window.labkitAudit()['Magenta tube'].dark.length === 0", "says": "Magenta tube dark: 0 audit failures"},
+
+        {"note": "window.labkitRatios('Rust terminal', 'dark')", "as": "rust_terminal_dark"},
+        {"expect": "Object.keys(window.labkitAudit()['Rust terminal']).join() === 'dark' && window.labkitModesShown('Rust terminal') === 'dark'", "says": "Rust terminal ships dark only, and is shown and audited in dark only"},
+        {"expect": "window.labkitAudit()['Rust terminal'].dark.length === 0", "says": "Rust terminal dark: 0 audit failures"},
+
+        {"note": "window.labkitRatios('Black glint', 'dark')", "as": "black_glint_dark"},
+        {"expect": "Object.keys(window.labkitAudit()['Black glint']).join() === 'dark' && window.labkitModesShown('Black glint') === 'dark'", "says": "Black glint ships dark only, and is shown and audited in dark only"},
+        {"expect": "window.labkitAudit()['Black glint'].dark.length === 0", "says": "Black glint dark: 0 audit failures"}
       ]
     },
     {
@@ -126,7 +146,27 @@
 
         {"expect": "window.labkitToken('Still violet', '--dur-state') === '0ms'", "says": "Still violet: with reduce motion on, the state duration token is 0ms"},
         {"note": "window.labkitShow('Still violet')", "as": "still_violet_shown"},
-        {"shot": "still-violet"}
+        {"shot": "still-violet"},
+
+        {"expect": "window.labkitToken('Blue haze', '--dur-state') === '0ms'", "says": "Blue haze: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Blue haze')", "as": "blue_haze_shown"},
+        {"shot": "blue-haze"},
+
+        {"expect": "window.labkitToken('Banked ember', '--dur-state') === '0ms' && window.labkitToken('Banked ember', '--dur-enter') === '0ms'", "says": "Banked ember: with reduce motion on, the state duration token is 0ms (it is 0ms under full too), and so is the entrance"},
+        {"note": "window.labkitShow('Banked ember')", "as": "banked_ember_shown"},
+        {"shot": "banked-ember"},
+
+        {"expect": "window.labkitToken('Magenta tube', '--dur-state') === '0ms'", "says": "Magenta tube: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Magenta tube')", "as": "magenta_tube_shown"},
+        {"shot": "magenta-tube"},
+
+        {"expect": "window.labkitToken('Rust terminal', '--dur-state') === '0ms'", "says": "Rust terminal: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Rust terminal')", "as": "rust_terminal_shown"},
+        {"shot": "rust-terminal"},
+
+        {"expect": "window.labkitToken('Black glint', '--dur-state') === '0ms'", "says": "Black glint: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Black glint')", "as": "black_glint_shown"},
+        {"shot": "black-glint"}
       ]
     },
     {
@@ -137,12 +177,22 @@
 
         {"expect": "window.labkitToken('Cold core', '--dur-state') === '20ms' && window.labkitToken('Cold core', '--dur-enter') === '870ms'", "says": "Cold core: under full its own 20ms and 870ms land"},
         {"expect": "window.labkitToken('Still violet', '--dur-state') === '180ms' && window.labkitToken('Still violet', '--dur-enter') === '1190ms'", "says": "Still violet: under full its own 180ms and 1190ms land"},
+        {"expect": "window.labkitToken('Blue haze', '--dur-state') === '180ms' && window.labkitToken('Blue haze', '--dur-enter') === '1200ms'", "says": "Blue haze: under full its own 180ms and 1200ms land"},
+        {"expect": "window.labkitToken('Banked ember', '--dur-state') === '0ms' && window.labkitToken('Banked ember', '--dur-enter') === '1170ms'", "says": "Banked ember: under full its own 0ms and 1170ms land"},
+        {"expect": "window.labkitToken('Magenta tube', '--dur-state') === '30ms' && window.labkitToken('Magenta tube', '--dur-enter') === '1200ms'", "says": "Magenta tube: under full its own 30ms and 1200ms land"},
+        {"expect": "window.labkitToken('Rust terminal', '--dur-state') === '30ms' && window.labkitToken('Rust terminal', '--dur-enter') === '1210ms'", "says": "Rust terminal: under full its own 30ms and 1210ms land"},
+        {"expect": "window.labkitToken('Black glint', '--dur-state') === '180ms' && window.labkitToken('Black glint', '--dur-enter') === '1160ms'", "says": "Black glint: under full its own 180ms and 1160ms land"},
 
         {"click": "#motion-calm"},
         {"wait_until": "Array.from(document.querySelectorAll('.frame[data-theme]')).every(f => f.dataset.motion === 'calm')", "ms": 5000},
 
         {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Cold core'))", "says": "Cold core: under calm an entrance moves no distance"},
-        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Still violet'))", "says": "Still violet: under calm an entrance moves no distance"}
+        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Still violet'))", "says": "Still violet: under calm an entrance moves no distance"},
+        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Blue haze'))", "says": "Blue haze: under calm an entrance moves no distance"},
+        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Banked ember'))", "says": "Banked ember: under calm an entrance moves no distance"},
+        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Magenta tube'))", "says": "Magenta tube: under calm an entrance moves no distance"},
+        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Rust terminal'))", "says": "Rust terminal: under calm an entrance moves no distance"},
+        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Black glint'))", "says": "Black glint: under calm an entrance moves no distance"}
       ]
     }
   ]
