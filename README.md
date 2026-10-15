@@ -241,6 +241,7 @@ three.js chunk is included, so another engine can compile them as they stand.
 |---|---|
 | `<labkit-filament-orb>` | a sphere of many thin glowing strands in the accent, its glow from `--glow`, turning once per loop and breathing on the theme's curves |
 | `<labkit-planet-orb>` | a glossy, marbled sphere lit from inside, in `--effect-tint` (the accent when unset), its inner light and halo from `--glow`, turning once per loop while its marbling swirls on the theme's curves |
+| `<labkit-orbit-rings>` | three hairline rings at different tilts, each carrying small nodes that go round it once per loop, in the accent, the rings' glow band and the nodes' halo from `--glow`; a transparent frame that holds either orb inside it |
 
 **What an effect reads from a theme**, from computed style on its own element, with
 no canvas (its `settings`): `--accent`; `--glow`, 0 to 1 (a theme with no glow gets
@@ -260,6 +261,24 @@ accent).
 The planet orb is worked out per pixel on one square facing the viewer
 (`shaders/planet.frag.glsl`, on the glow square's `halo.vert.glsl`), with the
 filament orb's glow square behind it, so it needs no sphere mesh.
+
+**The orbit rings hold an orb.** Put either orb inside `<labkit-orbit-rings>` and it
+sits in the middle at `ORB_SHARE` (0.68) of the rings' width, slotted into the rings'
+shadow root under their canvas; the rings pass in front of it, and the parts behind it
+are hidden by its disc. The rings' background is transparent, so with nothing inside
+they are rings alone over whatever is behind, and a touch goes through the canvas to
+the orb. Size the rings, not the orb: a width set on the orb from the page wins over
+the slot's.
+
+```html
+<labkit-orbit-rings><labkit-planet-orb></labkit-planet-orb></labkit-orbit-rings>
+```
+
+One vertex shader (`shaders/orbit.vert.glsl`) places a point on a ring for the
+hairline, the glow band along it (pushed sideways on screen, so it keeps its width
+edge on) and the nodes alike, and one fragment shader draws all three. A piece whose
+look changes on something the base does not watch calls the base's `redraw()`; the
+rings do when an orb is put in or taken out.
 
 **`readPace(el)`** (`src/effects/pace.ts`) is the one place an effect gets its
 motion, and the motion shelf's first piece. A theme has no speed field, and gets none:
@@ -321,8 +340,9 @@ exact mistake, and each frame prints its own measured contrast ratios.
 
 The gallery's **effects panel** shows each piece in one chosen theme at a time, with a
 picker over all thirteen and the same motion picker as the theme frames: one theme at
-a time, so at most one canvas per piece is alive. The planet orb is there twice: in
-the theme's accent, and with `--effect-tint` set to `#3cc6a0`.
+a time, so at most one canvas per piece is alive. The filament orb sits inside the
+orbit rings. The planet orb is there twice: in the theme's accent, and with
+`--effect-tint` set to `#3cc6a0`.
 
 ## Licence
 
@@ -376,8 +396,8 @@ scene: each `wait_ms`, `hold` and `touch` counts its `ms`, and each `wait_for` o
 orb (#40) added 4.7 s: its own steps run inside the filament orb's waits, since every
 piece in the panel comes on screen, and changes level, together, and the 4.7 s are a
 wait for new frames before the Film page shot (3 s) and the `off` settle becoming a
-wait for the pieces (2 s, in place of a fixed 0.3 s). The orbit rings (ideas
-`plans/71`, ticket 4) may add 8 s.
+wait for the pieces (2 s, in place of a fixed 0.3 s). The orbit rings (#41) added
+nothing: all their steps run inside the same waits, so the file still uses 104.1 s.
 
 The effects scenes run at phone width. "effects" picks Cold core in the effects panel,
 waits for the filament orb's first frames, finds its loop running, and takes a
@@ -395,7 +415,8 @@ piece)` (a piece's `settings` in that theme, read from a probe put in the theme'
 frame and taken out in the same task, so no canvas), `labkitEffectPick(theme)` (shows
 the panel in that theme and scrolls to it) and `labkitEffectState(piece)` (`{running,
 frames}` of the panel's live piece). The piece is `'filament'`, `'planet'` (the planet
-orb in the accent) or `'tinted'` (the one with `--effect-tint` set).
+orb in the accent), `'tinted'` (the one with `--effect-tint` set) or `'rings'` (the
+orbit rings).
 
 The planet orbs ride the same steps. Before each screenshot the scene notes every
 piece's frame count right after the pick and waits until all three have drawn a new
@@ -406,6 +427,13 @@ under `calm` and `off` over the same waits. ⚠️ Clicking the motion picker sc
 planet orbs off screen, so they give their canvas back and draw one frame on coming
 back: the `calm` and `off` settles wait until all three pieces are shown again
 (`data-shown`) and none is running, or the count moves after it is noted.
+The orbit rings ride them too (#41): every frame wait and settle counts four pieces,
+the rings' loop runs under `full` in Cold core, the filament orb is slotted inside
+them and their element and canvas have a transparent background, in Film page they
+read its accent and glow, and their count rises under `full` and holds, loop stopped,
+under `calm` and `off`. In "effects: reduced motion" they read every theme's accent,
+glow and pace at level `off` with no probe or canvas left, then draw a still frame
+and hold.
 In "effects: reduced motion", for every theme the plain planet orb's tint is the
 theme's accent, the tinted one's is `#3cc6a0` while its accent is still the theme's,
 both read the theme's glow and pace at level `off`, and no probe or canvas is left;
