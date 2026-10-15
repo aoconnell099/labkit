@@ -1,5 +1,10 @@
 /**
- * Theme resolution: an explicit choice, persisted.
+ * Mode resolution: an explicit light/dark choice, persisted.
+ *
+ * Named for the mode since labkit #28: a "theme" is now an art theme
+ * (themes.ts), and one word meaning two things is how a reader ends up in the
+ * wrong file. The storage key keeps its old name on purpose: renaming it
+ * would silently forget every choice already saved.
  *
  * ⚠️ Deliberately NOT derived from `prefers-color-scheme`. An app in this kit
  * has an opinion about which surface suits it, and the toggle is how someone

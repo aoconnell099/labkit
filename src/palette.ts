@@ -85,6 +85,25 @@ export interface Palette {
   floor: Record<Mode, string>;
 }
 
+/** One mode's slice of a `Palette`: what `applyPalette` stamps and `auditPalette`
+ *  checks for that mode. A `Theme` (themes.ts) holds one of these per mode it
+ *  ships, which is how a theme can be dark only without inventing a light half. */
+export interface ModePalette {
+  ink: InkPalette;
+  status: StatusPalette;
+  accent: string;
+  floor: string;
+}
+
+export function modePalette(palette: Palette, mode: Mode): ModePalette {
+  return {
+    ink: palette.ink[mode],
+    status: palette.status[mode],
+    accent: palette.accent[mode],
+    floor: palette.floor[mode],
+  };
+}
+
 /** A validated starting point. Apps are expected to supply their own. */
 export const DEFAULT_PALETTE: Palette = {
   ink: {
@@ -132,9 +151,14 @@ export function applyPalette(
   palette: Palette = DEFAULT_PALETTE,
   root: HTMLElement = document.documentElement,
 ): void {
+  stampColours(mode, modePalette(palette, mode), root);
+}
+
+/** The one implementation behind `applyPalette` and `applyTheme`. */
+export function stampColours(mode: Mode, values: ModePalette, root: HTMLElement): void {
   const s = root.style;
-  const ink = palette.ink[mode];
-  const st = palette.status[mode];
+  const ink = values.ink;
+  const st = values.status;
 
   s.setProperty('--bg', ink.surface);
   s.setProperty('--surface', ink.surfaceRaised);
@@ -144,8 +168,8 @@ export function applyPalette(
   s.setProperty('--text-dim', ink.textDim);
   s.setProperty('--text-faint', ink.textFaint);
 
-  s.setProperty('--accent', palette.accent[mode]);
-  s.setProperty('--floor', palette.floor[mode]);
+  s.setProperty('--accent', values.accent);
+  s.setProperty('--floor', values.floor);
 
   // ⚠️ Domain-neutral names. Three apps named this same pigment `--money-in`,
   // `--ok` and `--pos`. A token called `--money-in` marking an ACTIVE ACCOUNT is

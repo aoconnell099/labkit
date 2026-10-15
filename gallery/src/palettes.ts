@@ -14,7 +14,7 @@
  * frame shows a FAIL, that is not a gallery bug — it is the palette, and the
  * point of putting the number on the screen.
  */
-import type { Palette } from 'labkit';
+import { modePalette, type Mode, type Palette, type Theme } from 'labkit';
 
 export interface Example {
   name: string;
@@ -125,4 +125,42 @@ export const EXAMPLES: Example[] = [
     palette: VIOLET_CHROME,
     primary: 'dark',
   },
+];
+
+export interface ThemeExample {
+  theme: Theme;
+  /** The mode shown when "show both modes" is off. Must be one it ships. */
+  primary: Mode;
+}
+
+/**
+ * Cool dark as a THEME, and dark only: the light half of COOL_DARK above is not
+ * carried over. That is the demonstration. A theme ships the modes it was
+ * designed for, the gallery never offers it another, and the audit checks only
+ * what it ships.
+ *
+ * Type and motion are labkit's own defaults from tokens.css, except the
+ * entrance, which rises so `full` and `calm` look different. No glass, grain or
+ * glow: the chosen themes (ideas plan 48, ticket 11) bring their own.
+ */
+const COOL_DARK_THEME: Theme = {
+  name: 'Cool dark',
+  character: 'dense data on a near-black ground, dark only',
+  modes: { dark: modePalette(COOL_DARK, 'dark') },
+  type: {
+    ui: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+    fig: "ui-monospace, 'Cascadia Mono', Consolas, monospace",
+  },
+  surfaces: { glass: 0, grain: 0, glow: 0 },
+  motion: {
+    durState: 180,
+    durEnter: 500,
+    easeOut: 'cubic-bezier(.22, .61, .36, 1)',
+    easeIn: 'cubic-bezier(.55, .06, .68, .19)',
+    enter: 'rise',
+  },
+};
+
+export const THEMES: ThemeExample[] = [
+  { theme: COOL_DARK_THEME, primary: 'dark' },
 ];

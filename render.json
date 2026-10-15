@@ -22,6 +22,79 @@
         {"expect": "notes.token === '180ms'", "says": "the state duration token is 180ms"},
         {"expect": "notes.btn.split(', ').every(d => d === '0.18s')", "says": "a button's transitions take 180ms"}
       ]
+    },
+    {
+      "name": "dark-only theme",
+      "width": "phone",
+      "steps": [
+        {"wait_for": ".frame[data-theme]", "ms": 5000},
+        {"expect": "document.querySelectorAll('.frame[data-theme]').length === 1 && document.querySelector('.frame[data-theme]').dataset.mode === 'dark'", "says": "the theme loads, in its dark mode"},
+        {"expect": "!document.querySelector('.frame[data-theme]').textContent.includes('token(s) undefined')", "says": "every token the kit promises resolves in the theme frame"},
+        {"click": "#show-both"},
+        {"wait_until": "document.querySelectorAll('.frame:not([data-theme])').length === 6", "ms": 5000},
+        {"expect": "document.querySelectorAll('.frame:not([data-theme])').length === 6", "says": "show both modes doubled the palette frames"},
+        {"expect": "document.querySelectorAll('.frame[data-theme]').length === 1 && document.querySelectorAll('.frame[data-theme][data-mode=light]').length === 0", "says": "the gallery never offers the dark-only theme a light mode"},
+        {"shot": "both-modes"}
+      ]
+    },
+    {
+      "name": "theme audit",
+      "width": "phone",
+      "steps": [
+        {"wait_until": "typeof window.labkitAudit === 'function'", "ms": 5000},
+        {"note": "JSON.stringify(window.labkitAudit())", "as": "audit"},
+        {"expect": "Object.keys(window.labkitAudit()).length > 0", "says": "the audit reports at least one theme"},
+        {"expect": "Object.values(window.labkitAudit()).every(t => Object.values(t).every(f => f.length === 0))", "says": "labkitAudit reports 0 failures"},
+        {"expect": "Object.keys(window.labkitAudit()['Cool dark']).join() === 'dark'", "says": "the dark-only theme is audited in dark only"}
+      ]
+    },
+    {
+      "name": "full motion",
+      "width": "phone",
+      "steps": [
+        {"wait_for": ".frame[data-theme] .enter", "ms": 5000},
+        {"expect": "document.querySelector('.frame[data-theme]').dataset.motion === 'full'", "says": "the theme starts at full"},
+        {"note": "(document.querySelector('.frame[data-theme]').scrollIntoView(), true)", "as": "scrolled"},
+        {"wait_ms": 700},
+        {"shot": "theme-frame"},
+        {"note": "(() => { const el = document.querySelector('.frame[data-theme] .enter'); const a = el.getAnimations().find(x => x.animationName === 'labkit-enter'); a.pause(); a.currentTime = 0; return getComputedStyle(el).transform; })()", "as": "start"},
+        {"expect": "notes.start === 'matrix(1, 0, 0, 1, 0, 12)'", "says": "under full the rise entrance starts 12px down"},
+        {"expect": "document.querySelector('.frame[data-theme] .is-loading').getAnimations().some(a => a.playState === 'running')", "says": "under full the loading pulse runs"}
+      ]
+    },
+    {
+      "name": "calm motion",
+      "width": "phone",
+      "steps": [
+        {"wait_for": ".frame[data-theme] .enter", "ms": 5000},
+        {"click": "#motion-calm"},
+        {"wait_until": "document.querySelector('.frame[data-theme]').dataset.motion === 'calm'", "ms": 5000},
+        {"note": "(document.querySelector('.frame[data-theme] .surface').scrollIntoView(), true)", "as": "scrolled"},
+        {"wait_ms": 700},
+        {"shot": "theme-surface"},
+        {"note": "(() => { const el = document.querySelector('.frame[data-theme] .enter'); const a = el.getAnimations().find(x => x.animationName === 'labkit-enter'); a.pause(); a.currentTime = 0; return getComputedStyle(el).transform; })()", "as": "start"},
+        {"expect": "notes.start === 'none' || notes.start === 'matrix(1, 0, 0, 1, 0, 0)'", "says": "under calm an entrance moves no distance"},
+        {"expect": "document.querySelector('.frame[data-theme] .is-loading').getAnimations().filter(a => a.playState === 'running').length === 0", "says": "under calm the loading state has no running animation"},
+        {"expect": "getComputedStyle(document.querySelector('.frame[data-theme] .btn')).getPropertyValue('--dur-state').trim() === '180ms'", "says": "under calm state changes keep the theme's 180ms"},
+        {"click": "#motion-off"},
+        {"wait_until": "document.querySelector('.frame[data-theme]').dataset.motion === 'off'", "ms": 5000},
+        {"expect": "getComputedStyle(document.querySelector('.frame[data-theme] .btn')).getPropertyValue('--dur-state').trim() === '0ms'", "says": "under off the state duration token is 0ms"}
+      ]
+    },
+    {
+      "name": "theme motion levels",
+      "width": "phone",
+      "reduced_motion": true,
+      "steps": [
+        {"wait_for": ".frame[data-theme] .btn", "ms": 5000},
+        {"expect": "document.querySelector('.frame[data-theme]').dataset.motion === 'full' && getComputedStyle(document.querySelector('.frame[data-theme] .btn')).getPropertyValue('--dur-state').trim() === '0ms'", "says": "under full the state duration token is 0ms"},
+        {"click": "#motion-calm"},
+        {"wait_until": "document.querySelector('.frame[data-theme]').dataset.motion === 'calm'", "ms": 5000},
+        {"expect": "getComputedStyle(document.querySelector('.frame[data-theme] .btn')).getPropertyValue('--dur-state').trim() === '0ms'", "says": "under calm the state duration token is 0ms"},
+        {"click": "#motion-off"},
+        {"wait_until": "document.querySelector('.frame[data-theme]').dataset.motion === 'off'", "ms": 5000},
+        {"expect": "getComputedStyle(document.querySelector('.frame[data-theme] .btn')).getPropertyValue('--dur-state').trim() === '0ms'", "says": "under off the state duration token is 0ms"}
+      ]
     }
   ]
 }
