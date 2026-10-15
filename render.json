@@ -130,7 +130,31 @@
 
         {"note": "window.labkitRatios('Black glint', 'dark')", "as": "black_glint_dark"},
         {"expect": "Object.keys(window.labkitAudit()['Black glint']).join() === 'dark' && window.labkitModesShown('Black glint') === 'dark'", "says": "Black glint ships dark only, and is shown and audited in dark only"},
-        {"expect": "window.labkitAudit()['Black glint'].dark.length === 0", "says": "Black glint dark: 0 audit failures"}
+        {"expect": "window.labkitAudit()['Black glint'].dark.length === 0", "says": "Black glint dark: 0 audit failures"},
+
+        {"note": "window.labkitRatios('Pen and seal', 'light')", "as": "pen_and_seal_light"},
+        {"expect": "Object.keys(window.labkitAudit()['Pen and seal']).join() === 'light' && window.labkitModesShown('Pen and seal') === 'light'", "says": "Pen and seal ships light only, and is shown and audited in light only"},
+        {"expect": "window.labkitAudit()['Pen and seal'].light.length === 0", "says": "Pen and seal light: 0 audit failures"},
+
+        {"note": "window.labkitRatios('Candy glass', 'light')", "as": "candy_glass_light"},
+        {"expect": "Object.keys(window.labkitAudit()['Candy glass']).join() === 'light' && window.labkitModesShown('Candy glass') === 'light'", "says": "Candy glass ships light only, and is shown and audited in light only"},
+        {"expect": "window.labkitAudit()['Candy glass'].light.length === 0", "says": "Candy glass light: 0 audit failures"},
+
+        {"note": "window.labkitRatios('Loud wall', 'light')", "as": "loud_wall_light"},
+        {"expect": "Object.keys(window.labkitAudit()['Loud wall']).join() === 'light' && window.labkitModesShown('Loud wall') === 'light'", "says": "Loud wall ships light only, and is shown and audited in light only"},
+        {"expect": "window.labkitAudit()['Loud wall'].light.length === 0", "says": "Loud wall light: 0 audit failures"},
+
+        {"note": "window.labkitRatios('Film page', 'light')", "as": "film_page_light"},
+        {"expect": "Object.keys(window.labkitAudit()['Film page']).join() === 'light' && window.labkitModesShown('Film page') === 'light'", "says": "Film page ships light only, and is shown and audited in light only"},
+        {"expect": "window.labkitAudit()['Film page'].light.length === 0", "says": "Film page light: 0 audit failures"},
+
+        {"note": "window.labkitRatios('Screen print', 'light')", "as": "screen_print_light"},
+        {"expect": "Object.keys(window.labkitAudit()['Screen print']).join() === 'light' && window.labkitModesShown('Screen print') === 'light'", "says": "Screen print ships light only, and is shown and audited in light only"},
+        {"expect": "window.labkitAudit()['Screen print'].light.length === 0", "says": "Screen print light: 0 audit failures"},
+
+        {"note": "window.labkitRatios('Rose mist', 'light')", "as": "rose_mist_light"},
+        {"expect": "Object.keys(window.labkitAudit()['Rose mist']).join() === 'light' && window.labkitModesShown('Rose mist') === 'light'", "says": "Rose mist ships light only, and is shown and audited in light only"},
+        {"expect": "window.labkitAudit()['Rose mist'].light.length === 0", "says": "Rose mist light: 0 audit failures"}
       ]
     },
     {
@@ -166,7 +190,31 @@
 
         {"expect": "window.labkitToken('Black glint', '--dur-state') === '0ms'", "says": "Black glint: with reduce motion on, the state duration token is 0ms"},
         {"note": "window.labkitShow('Black glint')", "as": "black_glint_shown"},
-        {"shot": "black-glint"}
+        {"shot": "black-glint"},
+
+        {"expect": "window.labkitToken('Pen and seal', '--dur-state') === '0ms'", "says": "Pen and seal: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Pen and seal')", "as": "pen_and_seal_shown"},
+        {"shot": "pen-and-seal"},
+
+        {"expect": "window.labkitToken('Candy glass', '--dur-state') === '0ms'", "says": "Candy glass: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Candy glass')", "as": "candy_glass_shown"},
+        {"shot": "candy-glass"},
+
+        {"expect": "window.labkitToken('Loud wall', '--dur-state') === '0ms'", "says": "Loud wall: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Loud wall')", "as": "loud_wall_shown"},
+        {"shot": "loud-wall"},
+
+        {"expect": "window.labkitToken('Film page', '--dur-state') === '0ms'", "says": "Film page: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Film page')", "as": "film_page_shown"},
+        {"shot": "film-page"},
+
+        {"expect": "window.labkitToken('Screen print', '--dur-state') === '0ms'", "says": "Screen print: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Screen print')", "as": "screen_print_shown"},
+        {"shot": "screen-print"},
+
+        {"expect": "window.labkitToken('Rose mist', '--dur-state') === '0ms'", "says": "Rose mist: with reduce motion on, the state duration token is 0ms"},
+        {"note": "window.labkitShow('Rose mist')", "as": "rose_mist_shown"},
+        {"shot": "rose-mist"}
       ]
     },
     {
@@ -182,6 +230,12 @@
         {"expect": "window.labkitToken('Magenta tube', '--dur-state') === '30ms' && window.labkitToken('Magenta tube', '--dur-enter') === '1200ms'", "says": "Magenta tube: under full its own 30ms and 1200ms land"},
         {"expect": "window.labkitToken('Rust terminal', '--dur-state') === '30ms' && window.labkitToken('Rust terminal', '--dur-enter') === '1210ms'", "says": "Rust terminal: under full its own 30ms and 1210ms land"},
         {"expect": "window.labkitToken('Black glint', '--dur-state') === '180ms' && window.labkitToken('Black glint', '--dur-enter') === '1160ms'", "says": "Black glint: under full its own 180ms and 1160ms land"},
+        {"expect": "window.labkitToken('Pen and seal', '--dur-state') === '180ms' && window.labkitToken('Pen and seal', '--dur-enter') === '500ms'", "says": "Pen and seal: under full its own 180ms and 500ms land"},
+        {"expect": "window.labkitToken('Candy glass', '--dur-state') === '180ms' && window.labkitToken('Candy glass', '--dur-enter') === '1130ms'", "says": "Candy glass: under full its own 180ms and 1130ms land"},
+        {"expect": "window.labkitToken('Loud wall', '--dur-state') === '70ms' && window.labkitToken('Loud wall', '--dur-enter') === '1200ms'", "says": "Loud wall: under full its own 70ms and 1200ms land"},
+        {"expect": "window.labkitToken('Film page', '--dur-state') === '30ms' && window.labkitToken('Film page', '--dur-enter') === '1120ms'", "says": "Film page: under full its own 30ms and 1120ms land"},
+        {"expect": "window.labkitToken('Screen print', '--dur-state') === '60ms' && window.labkitToken('Screen print', '--dur-enter') === '1200ms'", "says": "Screen print: under full its own 60ms and 1200ms land"},
+        {"expect": "window.labkitToken('Rose mist', '--dur-state') === '180ms' && window.labkitToken('Rose mist', '--dur-enter') === '500ms'", "says": "Rose mist: under full its own 180ms and 500ms land"},
 
         {"click": "#motion-calm"},
         {"wait_until": "Array.from(document.querySelectorAll('.frame[data-theme]')).every(f => f.dataset.motion === 'calm')", "ms": 5000},
@@ -192,7 +246,13 @@
         {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Banked ember'))", "says": "Banked ember: under calm an entrance moves no distance"},
         {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Magenta tube'))", "says": "Magenta tube: under calm an entrance moves no distance"},
         {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Rust terminal'))", "says": "Rust terminal: under calm an entrance moves no distance"},
-        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Black glint'))", "says": "Black glint: under calm an entrance moves no distance"}
+        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Black glint'))", "says": "Black glint: under calm an entrance moves no distance"},
+        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Pen and seal'))", "says": "Pen and seal: under calm an entrance moves no distance"},
+        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Candy glass'))", "says": "Candy glass: under calm an entrance moves no distance"},
+        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Loud wall'))", "says": "Loud wall: under calm an entrance moves no distance"},
+        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Film page'))", "says": "Film page: under calm an entrance moves no distance"},
+        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Screen print'))", "says": "Screen print: under calm an entrance moves no distance"},
+        {"expect": "['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(window.labkitEnterStart('Rose mist'))", "says": "Rose mist: under calm an entrance moves no distance"}
       ]
     }
   ]
