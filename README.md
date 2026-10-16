@@ -554,9 +554,13 @@ picker over all thirteen and the same motion picker as the theme frames: one the
 a time, so at most one canvas per piece is alive. The filament orb sits inside the
 orbit rings. The planet orb is there twice: in the theme's accent, and with
 `--effect-tint` set to `#3cc6a0`. One tendrils element lies behind them all, joining
-the filament orb to both planet orbs: to the plain one half grown, in the accent, and
-to the tinted one blending from the accent to its tint. The gallery sets their ends
-from where the pieces sit, only when the panel resizes. Under everything, the star dust
+the filament orb to both planet orbs: to the plain one in the accent, and to the
+tinted one blending from the accent to its tint. The plain one shows `grow`: whenever
+the panel shows the tendrils (on load, once the panel is on screen, on a theme change,
+and on picking tendrils or dials) it grows in from 0 to 1 over two loops of the theme's
+pace, on its ease-out, then stays reached; under `calm` and `off`, and with reduce
+motion, both are drawn fully grown at once. The gallery sets their ends from where the
+pieces sit, only when the panel resizes. Under everything, the star dust
 fills the panel at no offset.
 
 Beside the theme picker, an **arrangement** picker chooses how the planet orbs relate to
@@ -637,7 +641,9 @@ wait (as it already did after each pick), not one step per piece. The orbit path
 (#55) added 6 s, two waits for new frames after picking them (3 s each), so the file
 uses 110.1 s. To fit their steps, "effects" now checks every piece's rise under `full`
 in one step, and the loops running in Cold core and stopped after each settle in one
-step each: 59 steps.
+step each: 59 steps. The tendril growing in (#62) turned the 0.7 s wait before the
+Cold core shot into a wait of up to 25 s for the plain tendril to reach its orb (two
+loops of Cold core's pace is 17.4 s), and added no step: its checks ride existing ones.
 
 The effects scenes run at phone width. "effects" picks Cold core in the effects panel,
 waits for the filament orb's first frames, finds its loop running, and takes a
@@ -681,8 +687,13 @@ under `calm` and `off`. In "effects: reduced motion" they read every theme's acc
 glow and pace at level `off` with no probe or canvas left, then draw a still frame
 and hold.
 The tendrils ride them too (#49): every frame wait and settle counts five pieces. In
-Cold core their loop runs, the panel holds two tendrils (the plain one at grow 0.5),
-and the element fills the panel on a transparent canvas; in Film page they read its
+Cold core their loop runs, the panel holds two tendrils (the plain one still growing
+in, its `grow` below 1, the tinted one at 1), and the element fills the panel on a
+transparent canvas; the scene then waits for the plain one to reach its orb (`grow` 1,
+read as `planet:1,tinted:1` and checked with the orbit paths' placing) before the
+shot (#62). Under `calm` and `off`, the settle's first step picks the tendrils and reads
+`planet:1,tinted:1` at once, then picks the orbit paths back; with reduce motion the
+still frame reads the same. In Film page they read its
 glow, both unset colours fall back to its accent and the other blends to the tint.
 Their count rises under `full` and holds, loop stopped, under `calm` and `off`. Under
 `calm` one step moves their ends by setting `tendrils` and finds the count rose by
