@@ -12,6 +12,8 @@
  *     // <labkit-orbit-rings><labkit-filament-orb></labkit-filament-orb></labkit-orbit-rings>
  *     // <labkit-tendrils style="position: absolute; inset: 0"></labkit-tendrils>,
  *     //   then el.tendrils = [{ id: 'a', from: [40, 40], to: [300, 220] }]
+ *     // <labkit-star-dust style="position: absolute; inset: 0"></labkit-star-dust>,
+ *     //   and el.offset = [x, y] as the app's camera moves
  *
  * A piece's colour is the theme's `--accent`; the planet orb takes
  * `--effect-tint` first, so each app's orb can wear its own colour.
@@ -23,13 +25,15 @@ import { FilamentOrb } from './filament-orb';
 import { PlanetOrb } from './planet-orb';
 import { OrbitRings, ORB_SHARE } from './orbit-rings';
 import { Tendrils } from './tendrils';
+import { StarDust } from './star-dust';
 
 export { LabkitEffect, type EffectSettings } from './base';
 export { readPace, readLevel, parseEase, cubicBezier, PERIOD_PER_ENTER,
          type Pace, type Ease } from './pace';
 export { type PlanetSettings } from './planet-orb';
 export { type Tendril, type TendrilSettings } from './tendrils';
-export { FilamentOrb, PlanetOrb, OrbitRings, ORB_SHARE, Tendrils };
+export { type StarDustSettings } from './star-dust';
+export { FilamentOrb, PlanetOrb, OrbitRings, ORB_SHARE, Tendrils, StarDust };
 
 /** Guarded, so two copies of the entry in one page don't throw on a second
  *  define. */
@@ -45,6 +49,9 @@ if (!customElements.get('labkit-orbit-rings')) {
 if (!customElements.get('labkit-tendrils')) {
   customElements.define('labkit-tendrils', Tendrils);
 }
+if (!customElements.get('labkit-star-dust')) {
+  customElements.define('labkit-star-dust', StarDust);
+}
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -52,5 +59,6 @@ declare global {
     'labkit-planet-orb': PlanetOrb;
     'labkit-orbit-rings': OrbitRings;
     'labkit-tendrils': Tendrils;
+    'labkit-star-dust': StarDust;
   }
 }

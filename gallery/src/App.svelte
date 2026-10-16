@@ -26,10 +26,11 @@
    *  render check still covers all of them. The planet orb is shown twice: in
    *  the theme's accent, and in a tint of its own, as an app would set it. The
    *  orbit rings frame the filament orb, as an app would place them, and one
-   *  tendrils element behind them all joins it to both planet orbs. */
+   *  tendrils element behind them all joins it to both planet orbs, with the
+   *  star dust behind everything. */
   const PIECES = { filament: 'labkit-filament-orb', planet: 'labkit-planet-orb',
                    tinted: 'labkit-planet-orb', rings: 'labkit-orbit-rings',
-                   tendrils: 'labkit-tendrils' } as const;
+                   tendrils: 'labkit-tendrils', stars: 'labkit-star-dust' } as const;
   const TINT = '#3cc6a0';
   type Piece = keyof typeof PIECES;
   let effectTheme = $state(CHOSEN[0].theme.name);
@@ -257,6 +258,7 @@
         </select>
       </label>
       <div class="effect-panel" bind:this={effectPanel} data-effect-theme={effectTheme}>
+        <labkit-star-dust data-piece="stars"></labkit-star-dust>
         <labkit-tendrils data-piece="tendrils" bind:this={tendrilsEl}></labkit-tendrils>
         <labkit-orbit-rings data-piece="rings">
           <labkit-filament-orb data-piece="filament"></labkit-filament-orb>
@@ -328,10 +330,11 @@
     background: var(--surface);
     position: relative;
   }
-  /* Behind the pieces: first in the panel, and everything after it positioned,
-     captions too, so it all paints over the tendrils. */
-  .effect-panel labkit-tendrils { position: absolute; inset: 0; }
-  .effect-panel > :not(labkit-tendrils) { position: relative; }
+  /* Behind the pieces: first in the panel, the star dust under the tendrils,
+     and everything after them positioned, captions too, so it all paints over
+     both. */
+  .effect-panel labkit-star-dust, .effect-panel labkit-tendrils { position: absolute; inset: 0; }
+  .effect-panel > :not(labkit-star-dust, labkit-tendrils) { position: relative; }
   .effect-panel labkit-orbit-rings { width: min(100%, 400px); }
   .planets { display: flex; gap: 16px; justify-content: center; width: 100%; }
   .planets figure { margin: 0; display: grid; justify-items: center; gap: 6px; flex: 0 1 150px; }
