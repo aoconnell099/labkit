@@ -242,6 +242,7 @@ three.js chunk is included, so another engine can compile them as they stand.
 | `<labkit-filament-orb>` | a sphere of many thin glowing strands in the accent, its glow from `--glow`, turning once per loop and breathing on the theme's curves |
 | `<labkit-planet-orb>` | a glossy, marbled sphere lit from inside, in `--effect-tint` (the accent when unset), its inner light and halo from `--glow`, turning once per loop while its marbling swirls on the theme's curves |
 | `<labkit-orbit-rings>` | three hairline rings at different tilts, each carrying small nodes that go round it once per loop, in the accent, the rings' glow band and the nodes' halo from `--glow`; a transparent frame that holds either orb inside it |
+| `<labkit-tendrils>` | hand-drawn vines between points the app gives it, each wandering, kinking and stepping on its way, its colour blending from one end to the other, its glow from `--glow`, swaying a little once per loop; one element, over a transparent background, draws every tendril |
 
 **What an effect reads from a theme**, from computed style on its own element, with
 no canvas (its `settings`): `--accent`; `--glow`, 0 to 1 (a theme with no glow gets
@@ -279,6 +280,41 @@ hairline, the glow band along it (pushed sideways on screen, so it keeps its wid
 edge on) and the nodes alike, and one fragment shader draws all three. A piece whose
 look changes on something the base does not watch calls the base's `redraw()`; the
 rings do when an orb is put in or taken out.
+
+**The tendrils join things up.** One `<labkit-tendrils>` draws every tendril on one
+canvas, so an app that lays it behind its orbs pays one WebGL context however many
+tendrils it has. It is not square like the orbs: its size and place come from the
+page, so lay it over its parent and put it first, under the pieces it joins. A touch
+goes through it.
+
+```html
+<div style="position: relative">
+  <labkit-tendrils style="position: absolute; inset: 0"></labkit-tendrils>
+  <!-- the orbs it joins -->
+</div>
+```
+
+Its JS property **`tendrils`** is the list it draws, each
+`{id, from: [x, y], to: [x, y], fromColor, toColor, grow}`:
+
+- `from` and `to`: its ends, in CSS pixels from the element's top left.
+- `fromColor` and `toColor`: CSS colours at each end, blended along its length; the
+  theme's `--accent` where either is unset.
+- `grow`: how much of it is drawn, 0 to 1 from `from` (1 when unset), so an app can
+  grow one in.
+- `id`: seeds its wander, so a tendril keeps its shape from frame to frame and as its
+  ends move.
+
+Setting `tendrils` draws one frame through the base's `redraw()`, so an app may move
+the ends every frame (its orbs float) while the element's own loop stays stopped under
+`calm` and `off`. Its `settings` add `variant` and, per tendril, its `id`, `grow` and
+the `fromColor` and `toColor` it draws in (the accent filled in). The one look so far
+is `variant="vine"`, the default: a line that wanders, kinks and steps on its way
+rather than running straight or curving smoothly, a thin solid line with a glow either
+side of it. It sways a little once per loop of the theme's pace and holds still under
+`calm` and `off`. Each path is walked on the CPU, in pixels, into one ribbon mesh for
+every tendril, and `shaders/tendril.vert.glsl` and `tendril.frag.glsl` only place and
+colour it.
 
 **`readPace(el)`** (`src/effects/pace.ts`) is the one place an effect gets its
 motion, and the motion shelf's first piece. A theme has no speed field, and gets none:
@@ -342,7 +378,10 @@ The gallery's **effects panel** shows each piece in one chosen theme at a time, 
 picker over all thirteen and the same motion picker as the theme frames: one theme at
 a time, so at most one canvas per piece is alive. The filament orb sits inside the
 orbit rings. The planet orb is there twice: in the theme's accent, and with
-`--effect-tint` set to `#3cc6a0`.
+`--effect-tint` set to `#3cc6a0`. One tendrils element lies behind them all, joining
+the filament orb to both planet orbs: to the plain one half grown, in the accent, and
+to the tinted one blending from the accent to its tint. The gallery sets their ends
+from where the pieces sit, only when the panel resizes.
 
 ## Licence
 
@@ -405,6 +444,7 @@ piece in the panel comes on screen, and changes level, together, and the 4.7 s a
 wait for new frames before the Film page shot (3 s) and the `off` settle becoming a
 wait for the pieces (2 s, in place of a fixed 0.3 s). The orbit rings (#41) added
 nothing: all their steps run inside the same waits, so the file still uses 104.1 s.
+The tendrils (#49) added nothing either, for the same reason: 104.1 s, leaving 135.9 s.
 
 The effects scenes run at phone width. "effects" picks Cold core in the effects panel,
 waits for the filament orb's first frames, finds its loop running, and takes a
@@ -422,8 +462,9 @@ piece)` (a piece's `settings` in that theme, read from a probe put in the theme'
 frame and taken out in the same task, so no canvas), `labkitEffectPick(theme)` (shows
 the panel in that theme and scrolls to it) and `labkitEffectState(piece)` (`{running,
 frames}` of the panel's live piece). The piece is `'filament'`, `'planet'` (the planet
-orb in the accent), `'tinted'` (the one with `--effect-tint` set) or `'rings'` (the
-orbit rings).
+orb in the accent), `'tinted'` (the one with `--effect-tint` set), `'rings'` (the
+orbit rings) or `'tendrils'` (the tendrils; its probe is given one tendril with its
+start colour unset and its end in `#3cc6a0`).
 
 The planet orbs ride the same steps. Before each screenshot the scene notes every
 piece's frame count right after the pick and waits until all three have drawn a new
@@ -441,6 +482,15 @@ read its accent and glow, and their count rises under `full` and holds, loop sto
 under `calm` and `off`. In "effects: reduced motion" they read every theme's accent,
 glow and pace at level `off` with no probe or canvas left, then draw a still frame
 and hold.
+The tendrils ride them too (#49): every frame wait and settle counts five pieces. In
+Cold core their loop runs, the panel holds two tendrils (the plain one at grow 0.5),
+and the element fills the panel on a transparent canvas; in Film page they read its
+glow, both unset colours fall back to its accent and the other blends to the tint.
+Their count rises under `full` and holds, loop stopped, under `calm` and `off`. Under
+`calm` one step moves their ends by setting `tendrils` and finds the count rose by
+exactly one, with no loop started. In "effects: reduced motion" they read every
+theme's accent (the probe's unset start colour too), glow and pace at level `off`
+with no probe or canvas left, then draw a still frame and hold.
 In "effects: reduced motion", for every theme the plain planet orb's tint is the
 theme's accent, the tinted one's is `#3cc6a0` while its accent is still the theme's,
 both read the theme's glow and pace at level `off`, and no probe or canvas is left;

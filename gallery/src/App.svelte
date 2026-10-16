@@ -13,7 +13,7 @@
            type ContrastCheck } from 'labkit';
   // The effects shelf: its own entry, so this import is what loads three.js.
   import 'labkit/effects';
-  import type { LabkitEffect } from 'labkit/effects';
+  import type { LabkitEffect, Tendrils } from 'labkit/effects';
 
   let showBoth = $state(false);
   let narrow = $state(false);
@@ -25,16 +25,50 @@
    *  handful alive. Reading a theme needs no canvas (labkitEffectRead), so the
    *  render check still covers all of them. The planet orb is shown twice: in
    *  the theme's accent, and in a tint of its own, as an app would set it. The
-   *  orbit rings frame the filament orb, as an app would place them. */
+   *  orbit rings frame the filament orb, as an app would place them, and one
+   *  tendrils element behind them all joins it to both planet orbs. */
   const PIECES = { filament: 'labkit-filament-orb', planet: 'labkit-planet-orb',
-                   tinted: 'labkit-planet-orb', rings: 'labkit-orbit-rings' } as const;
+                   tinted: 'labkit-planet-orb', rings: 'labkit-orbit-rings',
+                   tendrils: 'labkit-tendrils' } as const;
   const TINT = '#3cc6a0';
   type Piece = keyof typeof PIECES;
   let effectTheme = $state(CHOSEN[0].theme.name);
   let effectPanel = $state<HTMLDivElement>();
+  let tendrilsEl = $state<Tendrils>();
   $effect(() => {
     const t = CHOSEN.find((c) => c.theme.name === effectTheme)!;
     if (effectPanel) applyTheme(t.theme, t.primary, level, effectPanel);
+  });
+
+  /** The tendrils' ends, from where the pieces sit in the panel: from the
+   *  filament orb's rim to each planet orb's, the plain one half grown and in
+   *  the accent, the tinted one blending from the accent to its tint. Only on a
+   *  resize, as an app would, so under calm and off they stay still. */
+  function joinOrbs() {
+    if (!effectPanel || !tendrilsEl) return;
+    const box = effectPanel.getBoundingClientRect();
+    const at = (piece: Piece) => {
+      const r = effectPanel!.querySelector(`[data-piece="${piece}"]`)!.getBoundingClientRect();
+      return { x: r.left + r.width / 2 - box.left - effectPanel!.clientLeft,
+               y: r.top + r.height / 2 - box.top - effectPanel!.clientTop, r: r.width / 2 };
+    };
+    const orb = at('filament');
+    const toward = (a: { x: number; y: number; r: number }, b: { x: number; y: number },
+                    share: number): [number, number] => {
+      const d = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+      return [a.x + ((b.x - a.x) / d) * a.r * share, a.y + ((b.y - a.y) / d) * a.r * share];
+    };
+    tendrilsEl.tendrils = (['planet', 'tinted'] as const).map((piece) => {
+      const p = at(piece);
+      return { id: piece, from: toward(orb, p, 0.55), to: toward(p, orb, 0.6),
+               toColor: piece === 'tinted' ? TINT : undefined, grow: piece === 'planet' ? 0.5 : 1 };
+    });
+  }
+  $effect(() => {
+    if (!effectPanel) return;
+    const ro = new ResizeObserver(joinOrbs);
+    ro.observe(effectPanel);
+    return () => ro.disconnect();
   });
 
   /** The modes a theme frame is shown in. ⚠️ Only modes the theme ships:
@@ -98,6 +132,10 @@
     labkitEffectRead: (name: string, piece: Piece) => {
       const probe = document.createElement(PIECES[piece]);
       if (piece === 'tinted') probe.style.setProperty('--effect-tint', TINT);
+      // One tendril with its start colour unset and its end in the tint.
+      if (piece === 'tendrils') {
+        (probe as Tendrils).tendrils = [{ id: 'probe', from: [0, 0], to: [100, 100], toColor: TINT }];
+      }
       frame(name).append(probe);
       try {
         return probe.settings;
@@ -219,6 +257,7 @@
         </select>
       </label>
       <div class="effect-panel" bind:this={effectPanel} data-effect-theme={effectTheme}>
+        <labkit-tendrils data-piece="tendrils" bind:this={tendrilsEl}></labkit-tendrils>
         <labkit-orbit-rings data-piece="rings">
           <labkit-filament-orb data-piece="filament"></labkit-filament-orb>
         </labkit-orbit-rings>
@@ -287,7 +326,12 @@
     border: 1px solid #8884;
     border-radius: 10px;
     background: var(--surface);
+    position: relative;
   }
+  /* Behind the pieces: first in the panel, and everything after it positioned,
+     captions too, so it all paints over the tendrils. */
+  .effect-panel labkit-tendrils { position: absolute; inset: 0; }
+  .effect-panel > :not(labkit-tendrils) { position: relative; }
   .effect-panel labkit-orbit-rings { width: min(100%, 400px); }
   .planets { display: flex; gap: 16px; justify-content: center; width: 100%; }
   .planets figure { margin: 0; display: grid; justify-items: center; gap: 6px; flex: 0 1 150px; }
