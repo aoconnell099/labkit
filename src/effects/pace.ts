@@ -15,9 +15,9 @@
  */
 import type { MotionLevel } from '../themes';
 
-/** The loop period is this many times the theme's `--motion-dur-enter`. Cold
- *  core's 870 ms entrance turns its orb once every 8.7 s; Pen and seal's 500 ms,
- *  once every 5 s. Slow enough to read as ambient, never as a spinner. */
+/** The loop period is this many times the theme's `--motion-dur-enter`: 8.7 s
+ *  for Cold core's 870 ms entrance, 5 s for Pen and seal's 500 ms. A piece's
+ *  motion is measured in loops; drift.ts's cycles are several loops each. */
 export const PERIOD_PER_ENTER = 10;
 
 /** tokens.css's own default, for an element with no theme above it. */

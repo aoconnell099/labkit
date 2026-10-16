@@ -239,7 +239,7 @@ three.js chunk is included, so another engine can compile them as they stand.
 
 | piece | what it is |
 |---|---|
-| `<labkit-filament-orb>` | a sphere of many thin glowing strands in the accent, its glow from `--glow`, turning once per loop and breathing on the theme's curves |
+| `<labkit-filament-orb>` | a hologram of a mind (#52): thousands of short glowing fragments on nested shells you can see through, in bright clumps, with small panels, partial dials at many angles, a curled ribbon of light at the core, jagged threads over the outer shell, sparks, and streaks breaking the edge, in the accent, burning toward white and blooming as strongly as `--glow`. It never spins: it drifts, floats and pulses (`drift.ts`) |
 | `<labkit-planet-orb>` | a glossy, marbled sphere lit from inside, in `--effect-tint` (the accent when unset), its inner light and halo from `--glow`, turning once per loop while its marbling swirls on the theme's curves |
 | `<labkit-orbit-rings>` | three hairline rings at different tilts, each carrying small nodes that go round it once per loop, in the accent, the rings' glow band and the nodes' halo from `--glow`; a transparent frame that holds either orb inside it |
 | `<labkit-tendrils>` | hand-drawn vines between points the app gives it, each wandering, kinking and stepping on its way, its colour blending from one end to the other, its glow from `--glow`, swaying a little once per loop; one element, over a transparent background, draws every tendril |
@@ -247,6 +247,41 @@ three.js chunk is included, so another engine can compile them as they stand.
 **What an effect reads from a theme**, from computed style on its own element, with
 no canvas (its `settings`): `--accent`; `--glow`, 0 to 1 (a theme with no glow gets
 the strands with no halo); and its pace from `readPace`.
+
+**Drift, not spin** (`src/effects/drift.ts`, #52). The owner's phone check of the
+first shelf (#42) found the orbs "spinning, and way too fast", where the look they come
+from floats and pulses at random. So a piece that moves takes its motion from
+`drift.ts`, one implementation. Nothing in it turns round and round:
+
+- `wanderAt`: each layer leans a little on its own slowly changing axis and comes
+  back. Each axis is two slow sines of 3 to 9 loops that never line up.
+- `bobAt`: the whole floats a hair, up and down over about 1.7 loops.
+- `pulseAt`: brightness jumps at irregular moments, about once every 0.55 loop and
+  sometimes twice. It rises in 0.025 loop on the theme's ease-out and falls over 0.2
+  on its ease-in. `wave` says how far its light has run out from the core.
+- `seeded`: the small seeded random every piece is built with.
+
+All of it is a pure function of the time into the loop, so a still frame under calm
+or off is one moment of it, the same every time. The strand orb uses all four. The
+planet orb, orbit paths and dials take it in their tickets (#53, #55, #56).
+
+**Bloom** (`src/effects/bloom.ts`, #52). A WebGL line is one device pixel wide, so on
+a phone's dense screen it is a hair, and hairs never glow. A piece that wants to glow
+draws its scene to a texture. A copy shrunk to a third of the CSS size is blurred
+twice, a tight blur and a wide one, and added back over the sharp picture as strongly
+as the theme's `--glow`. A theme with no glow skips the passes and draws straight to
+the canvas. Its shaders are `quad.vert.glsl`, `shrink.frag.glsl`, `blur.frag.glsl` and
+`bloom.frag.glsl`.
+
+**How the strand orb is built.** One `LineSegments` holds every line, in one draw
+call. Each vertex says which of eight layers leans it (six shells, the core and the
+threads), and the shader turns it by that layer's matrix (`uRot[8]`). The sparks are
+one `Points` with the same layers. Each piece blinks at its own rate, and one in five
+goes fully dark between blinks. On a pulse, everything brightens, the threads crack
+bright, and a shell of light runs out from the core. The far side is dimmer, so it
+reads as depth. A line is drawn brighter by the square root of the pixel ratio,
+because it is thinner on a dense screen. Its look follows the owner's private
+reference images, described here in our own words.
 
 **`--effect-tint`** gives the planet orb a colour of its own, set on the element or
 anywhere above it, while it keeps the theme's glow and pace. Unset, it falls back to
@@ -320,8 +355,9 @@ colour it.
 motion, and the motion shelf's first piece. A theme has no speed field, and gets none:
 
 - `period`, the loop, is **10 × the theme's `--motion-dur-enter`**
-  (`PERIOD_PER_ENTER`). Cold core's 870 ms entrance turns its orb once every 8.7 s,
-  Pen and seal's 500 ms once every 5 s: a theme that arrives slowly also turns slowly.
+  (`PERIOD_PER_ENTER`): 8.7 s for Cold core's 870 ms entrance, 5 s for Pen and
+  seal's 500 ms. A theme that arrives slowly also moves slowly. Since #52 the strand
+  orb does not turn once per loop. Its drift's cycles are multiples of the loop.
 - `easeOut` and `easeIn`, the theme's `--motion-ease-out` and `--motion-ease-in`
   parsed into functions by a small cubic-Bézier evaluator of our own (`parseEase`,
   `cubicBezier`).
