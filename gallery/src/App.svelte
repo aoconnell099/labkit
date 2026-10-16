@@ -30,14 +30,16 @@
    *  star dust behind everything. The arrangement picker chooses how the
    *  planet orbs relate to the filament orb: joined by the tendrils, or riding
    *  two orbit paths round it. Both elements stay in the panel, and the one not
-   *  picked draws nothing. */
+   *  picked draws nothing. Under dials the filament orb sits in the flat dials
+   *  instead of the orbit rings (only one of the two is in the panel), with the
+   *  planet orbs joined by the tendrils, as under tendrils. */
   const PIECES = { filament: 'labkit-filament-orb', planet: 'labkit-planet-orb',
                    tinted: 'labkit-planet-orb', rings: 'labkit-orbit-rings',
                    tendrils: 'labkit-tendrils', stars: 'labkit-star-dust',
-                   orbits: 'labkit-orbits' } as const;
+                   orbits: 'labkit-orbits', dials: 'labkit-dials' } as const;
   const TINT = '#3cc6a0';
   type Piece = keyof typeof PIECES;
-  const ARRANGEMENTS = { tendrils: 'tendrils', orbits: 'orbit paths' } as const;
+  const ARRANGEMENTS = { tendrils: 'tendrils', orbits: 'orbit paths', dials: 'dials' } as const;
   type Arrangement = keyof typeof ARRANGEMENTS;
   /** The two paths: the plain planet orb on the inner one, in the accent, and
    *  the tinted one on the outer, in its tint. */
@@ -60,7 +62,7 @@
    *  resize, as an app would, so under calm and off they stay still. */
   function joinOrbs() {
     if (!effectPanel || !tendrilsEl) return;
-    if (arrangement !== 'tendrils') {
+    if (arrangement === 'orbits') {
       tendrilsEl.tendrils = [];
       return;
     }
@@ -222,7 +224,8 @@
     /** The orbit paths' pure functions, as labkit/effects exports them, so the
      *  render check can test them with no element. */
     labkitOrbits: { place: orbitPlace, lap: orbitLap },
-    /** Pick how the planet orbs relate to the filament orb: 'tendrils' or 'orbits'. */
+    /** Pick how the planet orbs relate to the filament orb: 'tendrils', 'orbits'
+     *  or 'dials' (the filament orb in the dials, the planets as with tendrils). */
     labkitArrangement: (name: Arrangement) => {
       arrangement = name;
       flushSync();
@@ -344,10 +347,16 @@
         <labkit-star-dust data-piece="stars"></labkit-star-dust>
         <labkit-tendrils data-piece="tendrils" bind:this={tendrilsEl}></labkit-tendrils>
         <labkit-orbits data-piece="orbits" bind:this={orbitsEl}></labkit-orbits>
-        <labkit-orbit-rings data-piece="rings">
-          <labkit-filament-orb data-piece="filament"></labkit-filament-orb>
-        </labkit-orbit-rings>
-        <span class="lbl">filament orb in orbit rings &middot; {effectTheme} &middot; motion {level} &middot; {ARRANGEMENTS[arrangement]}</span>
+        {#if arrangement === 'dials'}
+          <labkit-dials data-piece="dials">
+            <labkit-filament-orb data-piece="filament"></labkit-filament-orb>
+          </labkit-dials>
+        {:else}
+          <labkit-orbit-rings data-piece="rings">
+            <labkit-filament-orb data-piece="filament"></labkit-filament-orb>
+          </labkit-orbit-rings>
+        {/if}
+        <span class="lbl">filament orb in {arrangement === 'dials' ? 'dials' : 'orbit rings'} &middot; {effectTheme} &middot; motion {level} &middot; {ARRANGEMENTS[arrangement]}</span>
         <div class="planets">
           <figure>
             <labkit-planet-orb data-piece="planet"></labkit-planet-orb>
@@ -420,7 +429,7 @@
   .effect-panel labkit-star-dust, .effect-panel labkit-tendrils,
   .effect-panel labkit-orbits { position: absolute; inset: 0; }
   .effect-panel > :not(labkit-star-dust, labkit-tendrils, labkit-orbits) { position: relative; }
-  .effect-panel labkit-orbit-rings { width: min(100%, 400px); }
+  .effect-panel labkit-orbit-rings, .effect-panel labkit-dials { width: min(100%, 400px); }
   .planets { display: flex; gap: 16px; justify-content: center; width: 100%; }
   .planets figure { margin: 0; display: grid; justify-items: center; gap: 6px; flex: 0 1 150px; }
   .planets labkit-planet-orb { width: 100%; }
