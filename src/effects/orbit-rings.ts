@@ -29,7 +29,7 @@ import orbitFrag from './shaders/orbit.frag.glsl?raw';
 export const ORB_SHARE = 0.68;
 /** An orb's disc as a share of its own box: the orbs' camera sees a unit
  *  sphere from 4.6 away at 35°, which fills 0.707 of the box. */
-const ORB_DISC = 0.707;
+export const ORB_DISC = 0.707;
 
 /** Radius, tilt toward the viewer (0 is edge on), roll on screen, node turns
  *  per loop, nodes. */
@@ -44,8 +44,9 @@ const BAND_PX = 6;
 const CORE_PX = 4;
 
 /** On the element: the orb inside sits in the middle, under the rings' canvas,
- *  and the canvas lets a touch through to it. */
-const STYLE = `
+ *  and the canvas lets a touch through to it. The dials (dials.ts) frame an orb
+ *  the same way, with this same style. */
+export const FRAME_STYLE = `
 ::slotted(*) {
   position: absolute;
   left: ${(1 - ORB_SHARE) * 50}%; top: ${(1 - ORB_SHARE) * 50}%;
@@ -127,7 +128,7 @@ export class OrbitRings extends LabkitEffect {
   constructor() {
     super();
     const style = document.createElement('style');
-    style.textContent = STYLE;
+    style.textContent = FRAME_STYLE;
     this.#slot = document.createElement('slot');
     // An orb put in or taken out changes what the rings hide behind it.
     this.#slot.addEventListener('slotchange', () => this.redraw());

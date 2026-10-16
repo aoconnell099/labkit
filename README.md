@@ -242,6 +242,7 @@ three.js chunk is included, so another engine can compile them as they stand.
 | `<labkit-filament-orb>` | a hologram of a mind (#52): thousands of short glowing fragments on nested shells you can see through, in bright clumps, with small panels, partial dials at many angles, a curled ribbon of light at the core, jagged threads over the outer shell, sparks, and streaks breaking the edge, in the accent, burning toward white and blooming as strongly as `--glow`. It never spins: it drifts, floats and pulses (`drift.ts`) |
 | `<labkit-planet-orb>` | a glass ball (#53) in `--effect-tint` (the accent when unset): a bright rim and no highlight dot, glowing marbled clouds inside lit from within, a few jagged threads of light running through it and a scatter of tiny sparks, its inner light, halo and bloom from `--glow`. It no longer spins: it drifts, floats and pulses (`drift.ts`), its threads cracking bright on each pulse, while its marbling slowly swirls |
 | `<labkit-orbit-rings>` | three hairline rings at different tilts, each carrying small nodes that go round it once per loop, in the accent, the rings' glow band and the nodes' halo from `--glow`; a transparent frame that holds either orb inside it |
+| `<labkit-dials>` | flat dials (#56): five concentric dials facing the viewer, like an interface drawn round an orb, in segments with gaps, with ruler ticks, heavy bars, a doubled stretch or two and small marks riding them, in the accent, glowing and blooming from `--glow`; each turns very slowly, some one way and some the other, and pulses. The same transparent frame for an orb as the orbit rings |
 | `<labkit-tendrils>` | hand-drawn vines between points the app gives it, each wandering, kinking and stepping on its way, its colour blending from one end to the other, its glow from `--glow`, swaying a little once per loop; one element, over a transparent background, draws every tendril |
 | `<labkit-star-dust>` | a field of fine points over a transparent background, mostly faint and a few brighter, in the theme's ink (`--text`) touched by the accent, the brighter ones' halo from `--glow`; it drifts slowly once per loop, and shifts by the app's `offset`, nearer points more |
 | `<labkit-orbits>` | orbit paths (#55): one to four wide, nearly flat ellipses seen a little from above, as hairlines in the accent with a faint glow from `--glow`, over a transparent background; app orbs ride them very slowly, placed with `orbitPlace`, the one function the element draws with |
@@ -266,7 +267,7 @@ from floats and pulses at random. So a piece that moves takes its motion from
 All of it is a pure function of the time into the loop, so a still frame under calm
 or off is one moment of it, the same every time. The strand orb and the planet orb
 (#53) use all four. The orbit paths (#55) take `wanderAt` alone, for a path's lean;
-dials take it in their ticket (#56). `seedOf(id)` turns a name an app gives (an orbit
+the dials (#56) take `pulseAt` alone, one seed per dial. `seedOf(id)` turns a name an app gives (an orbit
 path's `id`) into a seed.
 
 **Bloom** (`src/effects/bloom.ts`, #52). A WebGL line is one device pixel wide, so on
@@ -331,6 +332,39 @@ hairline, the glow band along it (pushed sideways on screen, so it keeps its wid
 edge on) and the nodes alike, and one fragment shader draws all three. A piece whose
 look changes on something the base does not watch calls the base's `redraw()`; the
 rings do when an orb is put in or taken out.
+
+**The dials frame an orb flat** (#56). `<labkit-dials>` holds an orb exactly as the
+orbit rings do, with the same style (`FRAME_STYLE` in `orbit-rings.ts`): the orb in the
+middle at `ORB_SHARE`, a transparent background, a touch going through to the orb. But
+nothing in it is tilted: five concentric dials face the viewer, like an interface drawn
+round the orb, where the tilted rings read as an electron's orbits. Swap one for the
+other to taste; the orbit rings stay.
+
+```html
+<labkit-dials><labkit-filament-orb></labkit-filament-orb></labkit-dials>
+```
+
+From the inside out: a dial in three long segments, ruled inward with fine ticks
+(every fifth twice as long), whose ticks reach in under the orb's disc; a ring of twelve
+dashes, doubled along a third of it; a hairline over half the turn that ends in a run of
+short heavy bars; a ruler over most of the turn with ticks outward; and an outer dial in
+a few long arcs, doubled along one. Small bright marks ride three of them. All of it is
+in the accent, with a glow either side of each line and the shared bloom over it, both
+as strong as `--glow`. Where a dial passes under the orb's disc it is drawn at under a
+third of its brightness, so it reads as behind the orb.
+
+Nothing spins. Each dial turns once in 28 to 58 loops of the pace, some one way and
+some the other, its marks sliding along it a little faster, and each dial brightens on
+its own irregular pulses (`pulseAt`). In Cold core the fastest dial takes about four
+minutes a turn. Under `calm` and `off` it draws one still frame. Its `settings` add
+`dials`, each dial's `radius` (a share of the half-width) and `lap` (the loops for one
+turn, negative for the other way). Each dial is walked on the CPU, in pixels, into one
+ribbon mesh drawn with the tendrils' own shaders, and through `bloom.ts`.
+
+The look follows the owner's private references (layered flat interface rings round a
+glowing core, and an orb ringed by concentric circles with bright points on them):
+segments and gaps, dense ruler ticks, short heavy blocks, a second line along part of a
+ring, and a few bright points riding.
 
 **The tendrils join things up.** One `<labkit-tendrils>` draws every tendril on one
 canvas, so an app that lays it behind its orbs pays one WebGL context however many
@@ -523,7 +557,9 @@ from where the pieces sit, only when the panel resizes. Under everything, the st
 fills the panel at no offset.
 
 Beside the theme picker, an **arrangement** picker chooses how the planet orbs relate to
-the filament orb: `tendrils`, as above, or `orbit paths`. Under orbit paths the
+the filament orb: `tendrils`, as above, `orbit paths`, or `dials`. Under dials the
+filament orb sits in a `<labkit-dials>` in place of the orbit rings (only one of the two
+is in the panel), and the planet orbs are joined by the tendrils, as above. Under orbit paths the
 tendrils draw nothing, a `<labkit-orbits>` behind the pieces draws two paths round the
 filament orb (the inner in the accent, the outer in the tint), and the planet orbs ride
 them, one each, placed with `orbitPlace` at the element's `loops` in the gallery's own

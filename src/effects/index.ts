@@ -10,6 +10,8 @@
  *     // <labkit-filament-orb></labkit-filament-orb> inside a themed element
  *     // <labkit-planet-orb style="--effect-tint: #2fb5a0"></labkit-planet-orb>
  *     // <labkit-orbit-rings><labkit-filament-orb></labkit-filament-orb></labkit-orbit-rings>
+ *     // <labkit-dials><labkit-filament-orb></labkit-filament-orb></labkit-dials>: the same
+ *     //   frame, flat and facing the viewer
  *     // <labkit-tendrils style="position: absolute; inset: 0"></labkit-tendrils>,
  *     //   then el.tendrils = [{ id: 'a', from: [40, 40], to: [300, 220] }]
  *     // <labkit-star-dust style="position: absolute; inset: 0"></labkit-star-dust>,
@@ -27,6 +29,7 @@
 import { FilamentOrb } from './filament-orb';
 import { PlanetOrb } from './planet-orb';
 import { OrbitRings, ORB_SHARE } from './orbit-rings';
+import { Dials } from './dials';
 import { Tendrils } from './tendrils';
 import { StarDust } from './star-dust';
 import { Orbits, orbitPlace, orbitLap, MAX_ORBITS } from './orbits';
@@ -40,7 +43,8 @@ export { type PlanetSettings } from './planet-orb';
 export { type Tendril, type TendrilSettings } from './tendrils';
 export { type StarDustSettings } from './star-dust';
 export { type Orbit, type OrbitPlaceAt, type OrbitsSettings } from './orbits';
-export { FilamentOrb, PlanetOrb, OrbitRings, ORB_SHARE, Tendrils, StarDust,
+export { type DialsSettings } from './dials';
+export { FilamentOrb, PlanetOrb, OrbitRings, ORB_SHARE, Dials, Tendrils, StarDust,
          Orbits, orbitPlace, orbitLap, MAX_ORBITS };
 
 /** Guarded, so two copies of the entry in one page don't throw on a second
@@ -53,6 +57,9 @@ if (!customElements.get('labkit-planet-orb')) {
 }
 if (!customElements.get('labkit-orbit-rings')) {
   customElements.define('labkit-orbit-rings', OrbitRings);
+}
+if (!customElements.get('labkit-dials')) {
+  customElements.define('labkit-dials', Dials);
 }
 if (!customElements.get('labkit-tendrils')) {
   customElements.define('labkit-tendrils', Tendrils);
@@ -69,6 +76,7 @@ declare global {
     'labkit-filament-orb': FilamentOrb;
     'labkit-planet-orb': PlanetOrb;
     'labkit-orbit-rings': OrbitRings;
+    'labkit-dials': Dials;
     'labkit-tendrils': Tendrils;
     'labkit-star-dust': StarDust;
     'labkit-orbits': Orbits;
