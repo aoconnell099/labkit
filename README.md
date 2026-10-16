@@ -243,6 +243,7 @@ three.js chunk is included, so another engine can compile them as they stand.
 | `<labkit-planet-orb>` | a glossy, marbled sphere lit from inside, in `--effect-tint` (the accent when unset), its inner light and halo from `--glow`, turning once per loop while its marbling swirls on the theme's curves |
 | `<labkit-orbit-rings>` | three hairline rings at different tilts, each carrying small nodes that go round it once per loop, in the accent, the rings' glow band and the nodes' halo from `--glow`; a transparent frame that holds either orb inside it |
 | `<labkit-tendrils>` | hand-drawn vines between points the app gives it, each wandering, kinking and stepping on its way, its colour blending from one end to the other, its glow from `--glow`, swaying a little once per loop; one element, over a transparent background, draws every tendril |
+| `<labkit-star-dust>` | a field of fine points over a transparent background, mostly faint and a few brighter, in the theme's ink (`--text`) touched by the accent, the brighter ones' halo from `--glow`; it drifts slowly once per loop, and shifts by the app's `offset`, nearer points more |
 
 **What an effect reads from a theme**, from computed style on its own element, with
 no canvas (its `settings`): `--accent`; `--glow`, 0 to 1 (a theme with no glow gets
@@ -351,6 +352,33 @@ side of it. It sways a little once per loop of the theme's pace and holds still 
 every tendril, and `shaders/tendril.vert.glsl` and `tendril.frag.glsl` only place and
 colour it.
 
+**The star dust is the sky behind a page.** `<labkit-star-dust>` draws a field of fine
+points over a transparent background, for a dark, starlit page: most of them faint, a
+few brighter. They are the theme's ink (`--text`), each leaning a little toward
+`--accent`, and the brighter ones carry a halo as strong as `--glow`. Like the
+tendrils, its size and place come from the page: lay it over its parent, first, under
+everything else. A touch goes through it.
+
+```html
+<div style="position: relative">
+  <labkit-star-dust style="position: absolute; inset: 0"></labkit-star-dust>
+  <!-- the page -->
+</div>
+```
+
+Every point has a nearness, 0.2 to 1. The field drifts slowly, mostly sideways, the
+nearest points 1.5% of the element per loop of the theme's pace and the farthest a
+fifth of that, and holds still under `calm` and `off`. Its JS property **`offset`**,
+`[x, y]` in CSS pixels, shifts the field for depth: a point at full nearness moves by
+all of it, the farthest by a fifth. An app sets it as its camera moves; setting it draws
+one frame through the base's `redraw()`, so the field follows the camera under `calm`
+and `off` too while its own loop stays stopped. The field wraps at the element's edges,
+so neither drift nor offset uncovers a bare strip. Its points are seeded, so the same
+page shows the same sky, and how many it draws follows the element's area (one per
+1000 square CSS pixels, at most 2400). Its `settings` add `ink` (`--text` as the theme
+wrote it) and `offset`. `shaders/star.vert.glsl` places each point and
+`star.frag.glsl` draws its dot and halo.
+
 **`readPace(el)`** (`src/effects/pace.ts`) is the one place an effect gets its
 motion, and the motion shelf's first piece. A theme has no speed field, and gets none:
 
@@ -417,7 +445,8 @@ orbit rings. The planet orb is there twice: in the theme's accent, and with
 `--effect-tint` set to `#3cc6a0`. One tendrils element lies behind them all, joining
 the filament orb to both planet orbs: to the plain one half grown, in the accent, and
 to the tinted one blending from the accent to its tint. The gallery sets their ends
-from where the pieces sit, only when the panel resizes.
+from where the pieces sit, only when the panel resizes. Under everything, the star dust
+fills the panel at no offset.
 
 ## Licence
 
@@ -481,6 +510,9 @@ wait for new frames before the Film page shot (3 s) and the `off` settle becomin
 wait for the pieces (2 s, in place of a fixed 0.3 s). The orbit rings (#41) added
 nothing: all their steps run inside the same waits, so the file still uses 104.1 s.
 The tendrils (#49) added nothing either, for the same reason: 104.1 s, leaving 135.9 s.
+Nor did the star dust (#50): 104.1 s. To fit it under the tool's 60 steps a scene,
+"effects" now notes every piece's frame count in one step before each half-second
+wait (as it already did after each pick), not one step per piece.
 
 The effects scenes run at phone width. "effects" picks Cold core in the effects panel,
 waits for the filament orb's first frames, finds its loop running, and takes a
@@ -499,8 +531,8 @@ frame and taken out in the same task, so no canvas), `labkitEffectPick(theme)` (
 the panel in that theme and scrolls to it) and `labkitEffectState(piece)` (`{running,
 frames}` of the panel's live piece). The piece is `'filament'`, `'planet'` (the planet
 orb in the accent), `'tinted'` (the one with `--effect-tint` set), `'rings'` (the
-orbit rings) or `'tendrils'` (the tendrils; its probe is given one tendril with its
-start colour unset and its end in `#3cc6a0`).
+orbit rings), `'tendrils'` (the tendrils; its probe is given one tendril with its
+start colour unset and its end in `#3cc6a0`) or `'stars'` (the star dust).
 
 The planet orbs ride the same steps. Before each screenshot the scene notes every
 piece's frame count right after the pick and waits until all three have drawn a new
@@ -527,6 +559,14 @@ Their count rises under `full` and holds, loop stopped, under `calm` and `off`. 
 exactly one, with no loop started. In "effects: reduced motion" they read every
 theme's accent (the probe's unset start colour too), glow and pace at level `off`
 with no probe or canvas left, then draw a still frame and hold.
+The star dust rides them too (#50): every frame wait and settle counts six pieces. In
+Cold core its loop runs, and it is first in the panel and fills it, its element and
+canvas transparent; in Film page it reads its ink, accent and glow, at no offset. Its
+count rises under `full` and holds, loop stopped, under `calm` and `off`. Under `calm`
+one step sets `offset` to `[12, -6]` and finds the count rose by exactly one, with no
+loop started, and the offset read back. In "effects: reduced motion" it reads every
+theme's ink, accent, glow and pace at level `off` with no probe or canvas left, then
+draws a still frame and holds.
 In "effects: reduced motion", for every theme the plain planet orb's tint is the
 theme's accent, the tinted one's is `#3cc6a0` while its accent is still the theme's,
 both read the theme's glow and pace at level `off`, and no probe or canvas is left;
