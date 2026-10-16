@@ -240,7 +240,7 @@ three.js chunk is included, so another engine can compile them as they stand.
 | piece | what it is |
 |---|---|
 | `<labkit-filament-orb>` | a hologram of a mind (#52): thousands of short glowing fragments on nested shells you can see through, in bright clumps, with small panels, partial dials at many angles, a curled ribbon of light at the core, jagged threads over the outer shell, sparks, and streaks breaking the edge, in the accent, burning toward white and blooming as strongly as `--glow`. It never spins: it drifts, floats and pulses (`drift.ts`) |
-| `<labkit-planet-orb>` | a glossy, marbled sphere lit from inside, in `--effect-tint` (the accent when unset), its inner light and halo from `--glow`, turning once per loop while its marbling swirls on the theme's curves |
+| `<labkit-planet-orb>` | a glass ball (#53) in `--effect-tint` (the accent when unset): a bright rim and no highlight dot, glowing marbled clouds inside lit from within, a few jagged threads of light running through it and a scatter of tiny sparks, its inner light, halo and bloom from `--glow`. It no longer spins: it drifts, floats and pulses (`drift.ts`), its threads cracking bright on each pulse, while its marbling slowly swirls |
 | `<labkit-orbit-rings>` | three hairline rings at different tilts, each carrying small nodes that go round it once per loop, in the accent, the rings' glow band and the nodes' halo from `--glow`; a transparent frame that holds either orb inside it |
 | `<labkit-tendrils>` | hand-drawn vines between points the app gives it, each wandering, kinking and stepping on its way, its colour blending from one end to the other, its glow from `--glow`, swaying a little once per loop; one element, over a transparent background, draws every tendril |
 | `<labkit-star-dust>` | a field of fine points over a transparent background, mostly faint and a few brighter, in the theme's ink (`--text`) touched by the accent, the brighter ones' halo from `--glow`; it drifts slowly once per loop, and shifts by the app's `offset`, nearer points more |
@@ -263,8 +263,8 @@ from floats and pulses at random. So a piece that moves takes its motion from
 - `seeded`: the small seeded random every piece is built with.
 
 All of it is a pure function of the time into the loop, so a still frame under calm
-or off is one moment of it, the same every time. The strand orb uses all four. The
-planet orb, orbit paths and dials take it in their tickets (#53, #55, #56).
+or off is one moment of it, the same every time. The strand orb and the planet orb
+(#53) use all four. Orbit paths and dials take it in their tickets (#55, #56).
 
 **Bloom** (`src/effects/bloom.ts`, #52). A WebGL line is one device pixel wide, so on
 a phone's dense screen it is a hair, and hairs never glow. A piece that wants to glow
@@ -282,7 +282,9 @@ goes fully dark between blinks. On a pulse, everything brightens, the threads cr
 bright, and a shell of light runs out from the core. The far side is dimmer, so it
 reads as depth. A line is drawn brighter by the square root of the pixel ratio,
 because it is thinner on a dense screen. Its look follows the owner's private
-reference images, described here in our own words.
+reference images, described here in our own words. Its line builder (`Lines`), `sph`
+and the jagged walk a thread takes (`thread`) are in `src/effects/strands.ts`, one
+implementation the planet orb's threads share.
 
 **`--effect-tint`** gives the planet orb a colour of its own, set on the element or
 anywhere above it, while it keeps the theme's glow and pace. Unset, it falls back to
@@ -295,9 +297,19 @@ accent).
 <labkit-planet-orb style="--effect-tint: #3cc6a0"></labkit-planet-orb>
 ```
 
-The planet orb is worked out per pixel on one square facing the viewer
-(`shaders/planet.frag.glsl`, on the glow square's `halo.vert.glsl`), with the
-filament orb's glow square behind it, so it needs no sphere mesh.
+The planet orb (#53) blends the glassy planet it was with the strand orb, after the
+owner's private reference images. Its ball is worked out per pixel on one square
+facing the viewer (`shaders/planet.frag.glsl`, on the glow square's `halo.vert.glsl`),
+with the strand orb's glow square behind it, so it needs no sphere mesh. The glass is
+see-through, darkening what is behind it, more solid where the clouds are, with a thin
+bright rim and a faint sheen inside it, and no highlight dot (it read as plastic). The
+clouds are the old marbling's bright parts, lit from within: strongest where the ball
+is thickest, and at two hot spots that ride with it. Under a theme with no glow they
+show in the tint alone. Its threads (`strands.ts`) and sparks are drawn with the strand
+orb's own shaders, over the glass, so they read as inside it. The shell, the threads
+and the sparks each wander on their own lean, the whole bobs, a pulse brightens the
+clouds and halo and cracks the threads bright, and the whole is drawn through
+`bloom.ts`. Nothing turns round.
 
 **The orbit rings hold an orb.** Put either orb inside `<labkit-orbit-rings>` and it
 sits in the middle at `ORB_SHARE` (0.68) of the rings' width, slotted into the rings'
@@ -385,7 +397,8 @@ motion, and the motion shelf's first piece. A theme has no speed field, and gets
 - `period`, the loop, is **10 × the theme's `--motion-dur-enter`**
   (`PERIOD_PER_ENTER`): 8.7 s for Cold core's 870 ms entrance, 5 s for Pen and
   seal's 500 ms. A theme that arrives slowly also moves slowly. Since #52 the strand
-  orb does not turn once per loop. Its drift's cycles are multiples of the loop.
+  orb, and since #53 the planet orb, do not turn once per loop. Their drift's cycles
+  are multiples of the loop.
 - `easeOut` and `easeIn`, the theme's `--motion-ease-out` and `--motion-ease-in`
   parsed into functions by a small cubic-Bézier evaluator of our own (`parseEase`,
   `cubicBezier`).
