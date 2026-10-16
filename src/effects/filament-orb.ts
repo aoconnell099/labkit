@@ -1,93 +1,255 @@
 /**
- * `<labkit-filament-orb>`: a sphere of many thin glowing strands in the
- * theme's accent, its glow as strong as the theme's `--glow`, turning once per
- * loop of the theme's pace (pace.ts).
+ * `<labkit-filament-orb>`: a hologram of a mind. Thousands of short glowing
+ * fragments on nested shells you can see through, partial dials at many angles,
+ * a curled bright ribbon at the core, jagged threads of light, sparks, and
+ * streaks breaking the edge, all in the theme's accent. Where pieces overlap on a
+ * dark ground the light adds up toward white, as strong as the theme's `--glow`.
  *
- * Each strand is an arc of a circle on the sphere, round a random axis, so the
- * whole reads as one wound ball of light. A slow ripple runs along every strand
- * and the brightness breathes once per loop: up on the theme's ease-out, down on
- * its ease-in. The glow is a soft light inside and a ring at the rim; a theme
- * with no glow gets the strands alone.
+ * It does not spin. Each layer wanders on its own slowly changing lean, the
+ * whole floats a hair, and brightness pulses at irregular moments, with a wave
+ * of light running out from the core on each pulse (drift.ts). Fragments flicker
+ * on and off at their own rates. Every cycle is a multiple of the theme's pace,
+ * so a slow theme drifts slowly; under calm and off it holds one still moment.
+ *
+ * The look follows the owner's private reference images (labkit #52, after the
+ * phone check in #42), described here in our own words: a dense, layered sphere
+ * of interface fragments with a bright swirl at its heart, and tangled threads of
+ * light over it.
  *
  * Shaders are plain GLSL in shaders/, through RawShaderMaterial: every uniform
  * and attribute is declared in the shader, and no three.js chunk is included.
  */
 import {
-  BufferAttribute, BufferGeometry, Color, CustomBlending, LineSegments, Mesh,
-  OneFactor, PerspectiveCamera, PlaneGeometry, RawShaderMaterial, Scene,
+  BufferAttribute, BufferGeometry, Color, CustomBlending, Euler, Group, LineSegments, Matrix3,
+  Matrix4, Mesh, OneFactor, PerspectiveCamera, PlaneGeometry, Points, RawShaderMaterial, Scene,
   SRGBColorSpace, Vector2, type WebGLRenderer,
 } from 'three';
 import { LabkitEffect, type EffectSettings } from './base';
+import { Bloom } from './bloom';
+import { bobAt, makeWander, pulseAt, seeded, wanderAt, type Wander } from './drift';
 import filamentVert from './shaders/filament.vert.glsl?raw';
 import filamentFrag from './shaders/filament.frag.glsl?raw';
+import sparkVert from './shaders/spark.vert.glsl?raw';
+import sparkFrag from './shaders/spark.frag.glsl?raw';
 import haloVert from './shaders/halo.vert.glsl?raw';
 import haloFrag from './shaders/halo.frag.glsl?raw';
 
-const STRANDS = 220;
-const SEGMENTS = 72;
 /** The glow square's half-width, in orb radii. */
 const HALO_EXTENT = 1.5;
+/** Layers that wander apart: six shells of fragments, the core, the threads. */
+const LAYERS = 8;
+const CORE = 6, THREADS = 7;
+/** What a vertex is, for the shader (`aKind`). */
+const FRAGMENT = 0, DIAL = 1, RIBBON = 2, THREAD = 3, STREAK = 4;
+/** The shells' radii, inside out. */
+const SHELLS = [0.42, 0.57, 0.7, 0.82, 0.93, 1.02];
 
-/** A small seeded random, so every orb is wound the same way. */
-function seeded(seed: number): () => number {
-  return () => {
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+type V3 = [number, number, number];
+
+/** Line pieces, gathered into one geometry: one draw call for every line. */
+class Lines {
+  pos: number[] = [];
+  layer: number[] = [];
+  seed: number[] = [];
+  gain: number[] = [];
+  along: number[] = [];
+  kind: number[] = [];
+  index: number[] = [];
+
+  /** A polyline through `pts`, as segments. */
+  add(pts: V3[], layer: number, kind: number, gain: number, seed: number): void {
+    const first = this.pos.length / 3;
+    pts.forEach((p, i) => {
+      this.pos.push(...p);
+      this.layer.push(layer);
+      this.seed.push(seed);
+      this.gain.push(gain);
+      this.along.push(pts.length > 1 ? i / (pts.length - 1) : 0);
+      this.kind.push(kind);
+      if (i > 0) this.index.push(first + i - 1, first + i);
+    });
+  }
+
+  geometry(): BufferGeometry {
+    const g = new BufferGeometry();
+    g.setAttribute('position', new BufferAttribute(new Float32Array(this.pos), 3));
+    for (const [name, v] of [['aLayer', this.layer], ['aSeed', this.seed], ['aGain', this.gain],
+                             ['aAlong', this.along], ['aKind', this.kind]] as const) {
+      g.setAttribute(name, new BufferAttribute(new Float32Array(v), 1));
+    }
+    g.setIndex(this.index);
+    return g;
+  }
 }
 
-/** The strands: positions on the unit sphere, how far along each point is, and
- *  each strand's seed; drawn as line segments. */
-function strands(): BufferGeometry {
-  const rand = seeded(71);
-  const per = SEGMENTS + 1;
-  const pos = new Float32Array(STRANDS * per * 3);
-  const along = new Float32Array(STRANDS * per);
-  const seed = new Float32Array(STRANDS * per);
-  const index: number[] = [];
-  for (let s = 0; s < STRANDS; s++) {
-    // A random axis, and two directions across it.
-    const z = rand() * 2 - 1, az = rand() * Math.PI * 2, rr = Math.sqrt(1 - z * z);
-    const a = [rr * Math.cos(az), rr * Math.sin(az), z];
-    const ref = Math.abs(a[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
-    const u = norm(cross(a, ref));
-    const v = cross(a, u);
-    const lat = (rand() - 0.5) * 1.2;
-    const h = Math.sin(lat), r = Math.cos(lat);
-    const start = rand() * Math.PI * 2;
-    const arc = (0.35 + rand() * 0.55) * Math.PI * 2;
-    const sd = rand();
-    for (let i = 0; i < per; i++) {
-      const t = i / SEGMENTS, phi = start + arc * t;
-      const k = s * per + i;
-      for (let j = 0; j < 3; j++) {
-        pos[k * 3 + j] = a[j] * h + (u[j] * Math.cos(phi) + v[j] * Math.sin(phi)) * r;
+/** A point on a sphere of radius `r` at latitude `lat` and longitude `lon`. */
+function sph(r: number, lat: number, lon: number): V3 {
+  return [r * Math.cos(lat) * Math.cos(lon), r * Math.sin(lat), r * Math.cos(lat) * Math.sin(lon)];
+}
+
+/** Rotate `p` so the plane z = 0 tilts by `tx` about x, then `ty` about y. */
+function tilt(p: V3, tx: number, ty: number): V3 {
+  const [x, y, z] = p;
+  const y1 = y * Math.cos(tx) - z * Math.sin(tx), z1 = y * Math.sin(tx) + z * Math.cos(tx);
+  return [x * Math.cos(ty) + z1 * Math.sin(ty), y1, -x * Math.sin(ty) + z1 * Math.cos(ty)];
+}
+
+function build(): { lines: BufferGeometry; sparks: BufferGeometry } {
+  const r = seeded(49);
+  const L = new Lines();
+
+  // Fragments: short circuit-like runs on each shell. A run goes along a line of
+  // latitude, sometimes turns a right angle onto a meridian and back, like a
+  // trace on a board. Bands of latitude are favoured, so rings show through.
+  SHELLS.forEach((radius, layer) => {
+    const count = Math.round(380 + 230 * layer);
+    // Clumps: most fragments gather round a few centres, bright and dense, with
+    // darker gaps between, as the reference's light does.
+    const clumps = Array.from({ length: 10 + 3 * layer }, () =>
+      [Math.asin(r() * 2 - 1) * 0.9, r() * Math.PI * 2, 0.12 + r() * 0.3] as const);
+    for (let n = 0; n < count; n++) {
+      const clumped = r() < 0.62;
+      const c = clumps[Math.floor(r() * clumps.length)];
+      const band = (Math.floor(r() * 9) - 4) / 4.6;
+      let lat = clumped ? c[0] + (r() - 0.5) * c[2] * 2 : band + (r() - 0.5) * (r() < 0.6 ? 0.12 : 0.9);
+      let lon = clumped ? c[1] + ((r() - 0.5) * c[2] * 2.6) / Math.max(0.3, Math.cos(c[0])) : r() * Math.PI * 2;
+      const pts: V3[] = [sph(radius, lat, lon)];
+      const turns = r() < 0.55 ? 0 : r() < 0.7 ? 1 : 2;
+      for (let t = 0; t <= turns; t++) {
+        const along = t % 2 === 0;
+        const len = (along ? 0.025 + r() * 0.14 : 0.015 + r() * 0.05) * (r() < 0.5 ? 1 : -1);
+        const steps = Math.max(1, Math.round(Math.abs(len) / 0.02));
+        for (let s = 1; s <= steps; s++) {
+          if (along) lon += len / steps / Math.max(0.3, Math.cos(lat)); else lat += len / steps;
+          pts.push(sph(radius, lat, lon));
+        }
       }
-      along[k] = t;
-      seed[k] = sd;
-      if (i < SEGMENTS) index.push(k, k + 1);
+      L.add(pts, layer, FRAGMENT, clumped ? 0.6 + 0.6 * r() : 0.3 + 0.4 * r() * r(), r());
+    }
+    // Panels: small closed boxes on the shell, like windows of an interface.
+    for (let n = 0; n < 18 + 8 * layer; n++) {
+      const lat = (r() - 0.5) * 2.4, lon = r() * Math.PI * 2;
+      const w = (0.03 + r() * 0.07) / Math.max(0.3, Math.cos(lat)), h = 0.02 + r() * 0.05;
+      L.add([sph(radius, lat, lon), sph(radius, lat, lon + w), sph(radius, lat + h, lon + w),
+             sph(radius, lat + h, lon), sph(radius, lat, lon)], layer, FRAGMENT, 0.8, r());
+    }
+    // Streaks: lines bristling out of the outer shells in tufts, so the outline
+    // is ragged, not a clean ball.
+    if (layer >= 4) {
+      for (let n = 0; n < 190; n++) {
+        const c = clumps[Math.floor(r() * clumps.length)];
+        const tuft = r() < 0.7;
+        const lat = tuft ? c[0] + (r() - 0.5) * 0.5 : Math.asin(r() * 2 - 1);
+        const lon = tuft ? c[1] + (r() - 0.5) * 0.7 : r() * Math.PI * 2;
+        const out = radius + 0.03 + Math.pow(r(), 2.2) * 0.36;
+        L.add([sph(radius - 0.03, lat, lon), sph((radius + out) / 2, lat + (r() - 0.5) * 0.02, lon),
+               sph(out, lat, lon)], layer, STREAK, 0.55 + 0.5 * r(), r());
+      }
+    }
+  });
+
+  // Dials: partial circles at many angles, some doubled, some with tick marks,
+  // each riding one of the shells.
+  for (let n = 0; n < 18; n++) {
+    const layer = 1 + Math.floor(r() * 5);
+    const radius = SHELLS[layer] * (1.0 + r() * 0.06);
+    const tx = (r() - 0.5) * 2.6, ty = r() * Math.PI;
+    const start = r() * Math.PI * 2, span = (0.22 + r() * 0.42) * Math.PI * 2;
+    const seg = Math.ceil(span / 0.03);
+    const ring = (rad: number): V3[] =>
+      Array.from({ length: seg + 1 }, (_, i) => {
+        const a = start + (span * i) / seg;
+        return tilt([rad * Math.cos(a), rad * Math.sin(a), 0], tx, ty);
+      });
+    const sd = r();
+    // A bold band: three hairlines close together, which the bloom fuses.
+    const bold = r() < 0.4 ? 3 : 1;
+    for (let k = 0; k < bold; k++) L.add(ring(radius * (1 + k * 0.006)), layer, DIAL, 1.0, sd);
+    if (r() < 0.45) L.add(ring(radius * 1.035), layer, DIAL, 0.55, sd);
+    if (r() < 0.55) {
+      const every = 0.05 + r() * 0.07, len = 0.025 + r() * 0.035;
+      for (let a = start; a < start + span; a += every) {
+        const c = Math.cos(a), s = Math.sin(a);
+        L.add([tilt([radius * c, radius * s, 0], tx, ty),
+               tilt([(radius + len) * c, (radius + len) * s, 0], tx, ty)], layer, DIAL, 0.7, sd);
+      }
     }
   }
-  const g = new BufferGeometry();
-  g.setAttribute('position', new BufferAttribute(pos, 3));
-  g.setAttribute('aAlong', new BufferAttribute(along, 1));
-  g.setAttribute('aSeed', new BufferAttribute(seed, 1));
-  g.setIndex(index);
-  return g;
-}
 
-function cross(a: number[], b: number[]): number[] {
-  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-}
-function norm(a: number[]): number[] {
-  const l = Math.hypot(a[0], a[1], a[2]);
-  return [a[0] / l, a[1] / l, a[2] / l];
+  // The core: a swoosh of fine lines curling in toward the heart, seen at a
+  // slant so it reads as a twisted ribbon, its strands braiding and fanning out
+  // at the tail; a small bright eye at the heart; and short arcs round it.
+  for (let k = 0; k < 22; k++) {
+    const off = (k - 10.5) * 0.0065, ph = r() * 6.283, fan = (r() - 0.5) * 0.12;
+    const pts: V3[] = [];
+    for (let i = 0; i <= 120; i++) {
+      const u = i / 120;
+      const th = 0.6 + u * Math.PI * 2.5;
+      const rad = 0.07 + 0.5 * Math.pow(1 - u, 1.25)
+                + off * (1 + 0.7 * Math.sin(u * 7 + ph)) + fan * Math.pow(1 - u, 3);
+      pts.push(tilt([rad * Math.cos(th), rad * Math.sin(th), 0.12 * Math.sin(u * 4.5 + ph * 0.2)], 1.0, 0.55));
+    }
+    L.add(pts, CORE, RIBBON, 0.55 + 0.45 * (1 - Math.abs(k - 10.5) / 11), r());
+  }
+  for (let n = 0; n < 7; n++) {
+    const rad = 0.05 + r() * 0.08, tx = r() * 3, ty = r() * 3;
+    const span = (0.4 + r() * 0.6) * Math.PI * 2, s0 = r() * 6.283;
+    const pts: V3[] = Array.from({ length: 33 }, (_, i) => {
+      const a = s0 + (span * i) / 32;
+      return tilt([rad * Math.cos(a), rad * Math.sin(a), 0], tx, ty);
+    });
+    L.add(pts, CORE, RIBBON, 1, r());
+  }
+  for (let n = 0; n < 6; n++) {
+    const rad = 0.2 + r() * 0.12, tx = (r() - 0.5) * 2.4, ty = r() * 3;
+    const span = (0.15 + r() * 0.3) * Math.PI * 2, s0 = r() * 6.283;
+    const pts: V3[] = Array.from({ length: 41 }, (_, i) => {
+      const a = s0 + (span * i) / 40;
+      return tilt([rad * Math.cos(a), rad * Math.sin(a), 0], tx, ty);
+    });
+    L.add(pts, CORE, DIAL, 0.8, r());
+  }
+
+  // Threads: jagged lines of light wandering over the outer shell, kinked like
+  // a crack in glass.
+  for (let n = 0; n < 34; n++) {
+    let lat = Math.asin(r() * 2 - 1), lon = r() * Math.PI * 2;
+    let heading = r() * Math.PI * 2;
+    const radius = 0.86 + r() * 0.16;
+    const pts: V3[] = [sph(radius, lat, lon)];
+    const steps = 6 + Math.floor(r() * 12);
+    for (let s = 0; s < steps; s++) {
+      heading += (r() - 0.5) * 1.8;
+      const step = 0.03 + r() * 0.07;
+      lat = Math.max(-1.45, Math.min(1.45, lat + Math.sin(heading) * step));
+      lon += (Math.cos(heading) * step) / Math.max(0.3, Math.cos(lat));
+      pts.push(sph(radius * (1 + (r() - 0.5) * 0.04), lat, lon));
+    }
+    L.add(pts, THREADS, THREAD, 0.6 + 0.4 * r(), r());
+  }
+
+  // Sparks: points through the shells, thicker toward the core, and a spray past
+  // the edge that makes the outline ragged.
+  const sp: number[] = [], sl: number[] = [], ss: number[] = [], sg: number[] = [];
+  for (let n = 0; n < 1500; n++) {
+    const outer = r() < 0.22;
+    const radius = outer ? 1.03 + Math.pow(r(), 2) * 0.32 : 0.12 + Math.pow(r(), 0.6) * 0.92;
+    sp.push(...sph(radius, Math.asin(r() * 2 - 1), r() * Math.PI * 2));
+    sl.push(outer ? 5 : Math.min(5, Math.floor((radius / 1.02) * 6)));
+    ss.push(r());
+    sg.push(r() < 0.08 ? 1 : 0.25 + 0.5 * r());
+  }
+  const sparks = new BufferGeometry();
+  sparks.setAttribute('position', new BufferAttribute(new Float32Array(sp), 3));
+  sparks.setAttribute('aLayer', new BufferAttribute(new Float32Array(sl), 1));
+  sparks.setAttribute('aSeed', new BufferAttribute(new Float32Array(ss), 1));
+  sparks.setAttribute('aGain', new BufferAttribute(new Float32Array(sg), 1));
+
+  return { lines: L.geometry(), sparks };
 }
 
 /** Light adds up: premultiplied colour and alpha, both summed. On a dark ground
- *  the dense strands burn toward white; on a light one the accent darkens it. */
+ *  dense pieces burn toward white; on a light one the accent darkens it. */
 const ADD = {
   blending: CustomBlending,
   blendSrc: OneFactor, blendDst: OneFactor,
@@ -98,32 +260,55 @@ const ADD = {
 export class FilamentOrb extends LabkitEffect {
   #scene: Scene | null = null;
   #camera: PerspectiveCamera | null = null;
+  #group: Group | null = null;
   #lines: LineSegments<BufferGeometry, RawShaderMaterial> | null = null;
+  #sparks: Points<BufferGeometry, RawShaderMaterial> | null = null;
   #halo: Mesh<PlaneGeometry, RawShaderMaterial> | null = null;
   #colour = new Color();
   #scratch = new Vector2();
+  /** Each layer's own resting lean, and its own wander. */
+  #rest: Euler[] = [];
+  #wanders: Wander[] = [];
+  #whole = makeWander(4901, 0.22);
+  #rot = Array.from({ length: LAYERS }, () => new Matrix3());
+  #m4 = new Matrix4();
+  #m4b = new Matrix4();
+  #euler = new Euler();
+  #bloom: Bloom | null = null;
 
   protected create(): void {
     this.#scene = new Scene();
     this.#camera = new PerspectiveCamera(35, 1, 0.1, 20);
     this.#camera.position.set(0, 0, 4.6);
+    const r = seeded(4902);
+    this.#rest = Array.from({ length: LAYERS }, (_, i) =>
+      i === CORE ? new Euler(0, 0, 0) : new Euler((r() - 0.5) * 1.2, r() * 6.283, (r() - 0.5) * 0.8));
+    this.#wanders = Array.from({ length: LAYERS }, (_, i) => makeWander(4910 + i, i === CORE ? 0.45 : 0.3));
 
-    const shared = { uColor: { value: [1, 1, 1] }, uGlow: { value: 0 }, uBreath: { value: 0 } };
+    const { lines, sparks } = build();
+    const shared = () => ({
+      uColor: { value: [1, 1, 1] }, uGlow: { value: 0 }, uPulse: { value: 0 },
+      uWave: { value: 1 }, uStrength: { value: 0 }, uTime: { value: 0 }, uRot: { value: this.#rot },
+    });
     this.#halo = new Mesh(
       new PlaneGeometry(HALO_EXTENT * 2, HALO_EXTENT * 2),
       new RawShaderMaterial({
         vertexShader: haloVert, fragmentShader: haloFrag, ...ADD,
-        uniforms: { ...shared, uExtent: { value: HALO_EXTENT } },
+        uniforms: { uColor: { value: [1, 1, 1] }, uGlow: { value: 0 }, uBreath: { value: 0 },
+                    uExtent: { value: HALO_EXTENT } },
       }),
     );
-    this.#lines = new LineSegments(
-      strands(),
-      new RawShaderMaterial({
-        vertexShader: filamentVert, fragmentShader: filamentFrag, ...ADD,
-        uniforms: { ...shared, uAngle: { value: 0 }, uPhase: { value: 0 } },
-      }),
-    );
-    this.#scene.add(this.#halo, this.#lines);
+    this.#lines = new LineSegments(lines, new RawShaderMaterial({
+      vertexShader: filamentVert, fragmentShader: filamentFrag, ...ADD,
+      uniforms: { ...shared(), uThin: { value: 1 } },
+    }));
+    this.#sparks = new Points(sparks, new RawShaderMaterial({
+      vertexShader: sparkVert, fragmentShader: sparkFrag, ...ADD,
+      uniforms: { ...shared(), uPx: { value: 1 } },
+    }));
+    this.#group = new Group();
+    this.#group.add(this.#halo, this.#lines, this.#sparks);
+    this.#scene.add(this.#group);
   }
 
   protected update(settings: EffectSettings): void {
@@ -131,7 +316,7 @@ export class FilamentOrb extends LabkitEffect {
     // they take the accent as the sRGB values the theme wrote.
     this.#colour.set(settings.accent || '#ffffff');
     const rgb = this.#colour.getRGB({ r: 1, g: 1, b: 1 }, SRGBColorSpace);
-    for (const m of [this.#lines?.material, this.#halo?.material]) {
+    for (const m of [this.#lines?.material, this.#sparks?.material, this.#halo?.material]) {
       if (!m) continue;
       m.uniforms.uColor.value = [rgb.r, rgb.g, rgb.b];
       m.uniforms.uGlow.value = settings.glow;
@@ -139,29 +324,50 @@ export class FilamentOrb extends LabkitEffect {
   }
 
   protected draw(renderer: WebGLRenderer, elapsed: number, settings: EffectSettings): void {
-    if (!this.#scene || !this.#camera || !this.#lines || !this.#halo) return;
-    const { period, easeOut, easeIn } = settings.pace;
-    const loops = elapsed / Math.max(1, period);
-    const phase = loops - Math.floor(loops);
-    const breath = phase < 0.5 ? easeOut(phase * 2) : 1 - easeIn((phase - 0.5) * 2);
+    if (!this.#scene || !this.#camera || !this.#group || !this.#lines || !this.#sparks || !this.#halo) return;
+    const pace = settings.pace;
+    const loops = elapsed / Math.max(1, pace.period);
 
     const size = renderer.getDrawingBufferSize(this.#scratch);
     this.#camera.aspect = size.x / Math.max(1, size.y);
     this.#camera.updateProjectionMatrix();
 
-    const lu = this.#lines.material.uniforms;
-    lu.uAngle.value = phase * Math.PI * 2;
-    lu.uPhase.value = phase;
-    lu.uBreath.value = breath;
-    this.#halo.material.uniforms.uBreath.value = breath;
-    renderer.render(this.#scene, this.#camera);
+    // Every layer: its resting lean, its own wander, then the whole's wander.
+    const whole = wanderAt(this.#whole, loops);
+    this.#m4b.makeRotationFromEuler(this.#euler.set(whole[0], whole[1], whole[2]));
+    for (let i = 0; i < LAYERS; i++) {
+      const w = wanderAt(this.#wanders[i], loops), rest = this.#rest[i];
+      this.#m4.makeRotationFromEuler(this.#euler.set(rest.x + w[0], rest.y + w[1], rest.z + w[2]));
+      this.#rot[i].setFromMatrix4(this.#m4.premultiply(this.#m4b));
+    }
+    const [bx, by] = bobAt(loops);
+    this.#group.position.set(bx, by, 0);
+
+    const pulse = pulseAt(pace, loops, 71);
+    for (const m of [this.#lines.material, this.#sparks.material]) {
+      const u = m.uniforms;
+      u.uTime.value = loops;
+      u.uPulse.value = pulse.level;
+      u.uWave.value = pulse.wave;
+      u.uStrength.value = pulse.strength;
+    }
+    // A spark's size in device pixels, scaled with the canvas: 1 at 320 CSS px wide.
+    this.#sparks.material.uniforms.uPx.value = size.x / 320;
+    // Lines are one device pixel wide whatever the screen: on a dense one,
+    // give them back the light a CSS pixel's worth of line would have.
+    this.#lines.material.uniforms.uThin.value = Math.sqrt(renderer.getPixelRatio());
+    this.#halo.material.uniforms.uBreath.value = Math.min(1, pulse.level);
+    this.#bloom ??= new Bloom();
+    this.#bloom.render(renderer, this.#scene, this.#camera, settings.glow * (1.1 + 0.5 * Math.min(1, pulse.level)));
   }
 
   protected destroy(): void {
-    this.#lines?.geometry.dispose();
-    this.#lines?.material.dispose();
-    this.#halo?.geometry.dispose();
-    this.#halo?.material.dispose();
-    this.#scene = this.#camera = this.#lines = this.#halo = null;
+    for (const o of [this.#lines, this.#sparks, this.#halo]) {
+      o?.geometry.dispose();
+      o?.material.dispose();
+    }
+    this.#bloom?.dispose();
+    this.#bloom = null;
+    this.#scene = this.#camera = this.#group = this.#lines = this.#sparks = this.#halo = null;
   }
 }

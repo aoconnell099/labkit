@@ -1,19 +1,21 @@
-// The filament orb's strands: thin lines in the accent, brighter in front,
-// fading out at each end. Output is premultiplied, for additive blending.
+// The filament orb's lines: the accent, burning toward white where it is hot
+// and the theme glows. Output is premultiplied, for additive blending.
 precision mediump float;
 
 // The theme's accent, as sRGB 0 to 1.
 uniform vec3 uColor;
-// The theme's glow, 0 to 1.
+// The theme's glow, 0 to 1. With none (a light theme), nothing burns white:
+// white on a white page would vanish.
 uniform float uGlow;
-// The breath through the loop, 0 to 1, eased by the theme's curves.
-uniform float uBreath;
+// How much brighter to draw a line on a dense screen, where it is thinner:
+// the square root of the pixel ratio.
+uniform float uThin;
 
-varying float vAlong;
-varying float vFront;
+varying float vLight;
+varying float vHeat;
 
 void main() {
-  float ends = sin(3.14159265 * vAlong);
-  float a = (0.35 + 0.5 * uGlow) * (0.65 + 0.35 * uBreath) * ends * mix(0.2, 1.0, vFront);
-  gl_FragColor = vec4(uColor * a, a);
+  float a = clamp(vLight * (0.4 + 0.45 * uGlow) * uThin, 0.0, 1.0);
+  vec3 c = mix(uColor, vec3(1.0), clamp(vHeat * uGlow, 0.0, 0.85));
+  gl_FragColor = vec4(c * a, a);
 }

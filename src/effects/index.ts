@@ -27,6 +27,8 @@ import { Tendrils } from './tendrils';
 export { LabkitEffect, type EffectSettings } from './base';
 export { readPace, readLevel, parseEase, cubicBezier, PERIOD_PER_ENTER,
          type Pace, type Ease } from './pace';
+export { seeded, makeWander, wanderAt, bobAt, pulseAt, type Wander, type Pulse } from './drift';
+export { Bloom } from './bloom';
 export { type PlanetSettings } from './planet-orb';
 export { type Tendril, type TendrilSettings } from './tendrils';
 export { FilamentOrb, PlanetOrb, OrbitRings, ORB_SHARE, Tendrils };
