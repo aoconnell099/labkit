@@ -275,7 +275,9 @@ draws its scene to a texture. A copy shrunk to a third of the CSS size is blurre
 twice, a tight blur and a wide one, and added back over the sharp picture as strongly
 as the theme's `--glow`. A theme with no glow skips the passes and draws straight to
 the canvas. Its shaders are `quad.vert.glsl`, `shrink.frag.glsl`, `blur.frag.glsl` and
-`bloom.frag.glsl`.
+`bloom.frag.glsl`. The glow fades to nothing over the outer 12% of the canvas on every
+side, because the blur stops at the canvas edge still lit; without the fade, each orb
+sat in a faint square over the stars and orbit paths behind it.
 
 **How the strand orb is built.** One `LineSegments` holds every line, in one draw
 call. Each vertex says which of eight layers leans it (six shells, the core and the
