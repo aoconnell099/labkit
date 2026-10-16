@@ -244,6 +244,7 @@ three.js chunk is included, so another engine can compile them as they stand.
 | `<labkit-orbit-rings>` | three hairline rings at different tilts, each carrying small nodes that go round it once per loop, in the accent, the rings' glow band and the nodes' halo from `--glow`; a transparent frame that holds either orb inside it |
 | `<labkit-tendrils>` | hand-drawn vines between points the app gives it, each wandering, kinking and stepping on its way, its colour blending from one end to the other, its glow from `--glow`, swaying a little once per loop; one element, over a transparent background, draws every tendril |
 | `<labkit-star-dust>` | a field of fine points over a transparent background, mostly faint and a few brighter, in the theme's ink (`--text`) touched by the accent, the brighter ones' halo from `--glow`; it drifts slowly once per loop, and shifts by the app's `offset`, nearer points more |
+| `<labkit-orbits>` | orbit paths (#55): one to four wide, nearly flat ellipses seen a little from above, as hairlines in the accent with a faint glow from `--glow`, over a transparent background; app orbs ride them very slowly, placed with `orbitPlace`, the one function the element draws with |
 
 **What an effect reads from a theme**, from computed style on its own element, with
 no canvas (its `settings`): `--accent`; `--glow`, 0 to 1 (a theme with no glow gets
@@ -264,7 +265,9 @@ from floats and pulses at random. So a piece that moves takes its motion from
 
 All of it is a pure function of the time into the loop, so a still frame under calm
 or off is one moment of it, the same every time. The strand orb and the planet orb
-(#53) use all four. Orbit paths and dials take it in their tickets (#55, #56).
+(#53) use all four. The orbit paths (#55) take `wanderAt` alone, for a path's lean;
+dials take it in their ticket (#56). `seedOf(id)` turns a name an app gives (an orbit
+path's `id`) into a seed.
 
 **Bloom** (`src/effects/bloom.ts`, #52). A WebGL line is one device pixel wide, so on
 a phone's dense screen it is a hair, and hairs never glow. A piece that wants to glow
@@ -391,6 +394,64 @@ page shows the same sky, and how many it draws follows the element's area (one p
 wrote it) and `offset`. `shaders/star.vert.glsl` places each point and
 `star.frag.glsl` draws its dot and halo.
 
+**The orbit paths are what the app orbs ride** (#55). `<labkit-orbits>` draws wide,
+nearly flat ellipses, seen a little from above, one to four of them in layers, centred
+in the element: hairlines in the accent with a faint glow, over a transparent
+background. Like the tendrils, its size and place come from the page: lay it over its
+parent and put it under the orbs. A touch goes through it.
+
+```html
+<div style="position: relative">
+  <labkit-orbits style="position: absolute; inset: 0"></labkit-orbits>
+  <!-- the middle orb, and the app orbs that ride the paths -->
+</div>
+```
+
+Its JS property **`orbits`** is the list it draws (at most four, `MAX_ORBITS`), each
+`{id, radius, color, items}`:
+
+- `radius`: the path's size, as a share of the element's half-width.
+- `color`: a CSS colour for this path; the theme's `--accent` when unset.
+- `items`: how many orbs ride it, evenly spaced.
+- `id`: seeds where its items start and its hair of wander, so a path keeps them.
+
+**`orbitPlace(orbit, index, loops, aspect?)`** is where item `index` is at `loops` into
+the pace: `{x, y}` as shares of the element's box (0,0 its top left), `scale` (1 at the
+nearest point, 0.72 at the farthest) and `behind` (true on the far half, where an orb
+should pass behind the middle one). `aspect`, the box's width over its height (1 when
+unset), keeps the path's shape in a box of any proportion. It is a pure function, and
+the one implementation: the element draws its paths and each item's trail with it, and
+an app moves its own orb elements with it at the element's **`loops`** (the loops into
+the pace it last drew at, which hold still under `calm` and `off`), so the two always
+agree:
+
+```js
+const el = document.querySelector('labkit-orbits');
+el.orbits = [{ id: 'inner', radius: 0.6, items: 2 }, { id: 'outer', radius: 0.92, items: 1 }];
+requestAnimationFrame(function place() {
+  const w = el.clientWidth, h = el.clientHeight;
+  const p = orbitPlace(el.orbits[0], 0, el.loops, w / h);
+  orb.style.transform = `translate(${p.x * w}px, ${p.y * h}px) translate(-50%, -50%) scale(${p.scale})`;
+  orb.style.zIndex = p.behind ? '1' : '3';
+  requestAnimationFrame(place);
+});
+```
+
+It is very slow: an item goes round once in 30 loops of the pace on a path of no
+radius, 60 on one as wide as the element (`orbitLap(orbit)`), so the outer paths are
+slower. In Cold core that is four to nine minutes a round. Nothing else turns: each path
+only leans a hair (about two degrees) on its own `wanderAt`. Under `calm` and `off` it
+draws one still frame, and setting `orbits` draws one frame through the base's
+`redraw()`. Its `settings` add `orbits`, each path's `id`, `radius`, `items` and the
+`color` it draws in (the accent filled in).
+
+The look follows a private reference (a star with two planets on wide, nearly flat
+orbits, one path solid and one dotted): every second path in the list is dotted, the
+far half of each path is dimmer than the near half, and the path brightens just behind
+each item and fades back over a short trail. Each path is walked on the CPU, in pixels,
+into one ribbon mesh, drawn with the tendrils' own `tendril.vert.glsl` and
+`tendril.frag.glsl` with a thinner line.
+
 **`readPace(el)`** (`src/effects/pace.ts`) is the one place an effect gets its
 motion, and the motion shelf's first piece. A theme has no speed field, and gets none:
 
@@ -461,6 +522,14 @@ to the tinted one blending from the accent to its tint. The gallery sets their e
 from where the pieces sit, only when the panel resizes. Under everything, the star dust
 fills the panel at no offset.
 
+Beside the theme picker, an **arrangement** picker chooses how the planet orbs relate to
+the filament orb: `tendrils`, as above, or `orbit paths`. Under orbit paths the
+tendrils draw nothing, a `<labkit-orbits>` behind the pieces draws two paths round the
+filament orb (the inner in the accent, the outer in the tint), and the planet orbs ride
+them, one each, placed with `orbitPlace` at the element's `loops` in the gallery's own
+animation frame: in front of the filament orb on the near half, behind it on the far.
+Both elements stay in the panel whichever is picked.
+
 ## Licence
 
 MIT.
@@ -525,7 +594,11 @@ nothing: all their steps run inside the same waits, so the file still uses 104.1
 The tendrils (#49) added nothing either, for the same reason: 104.1 s, leaving 135.9 s.
 Nor did the star dust (#50): 104.1 s. To fit it under the tool's 60 steps a scene,
 "effects" now notes every piece's frame count in one step before each half-second
-wait (as it already did after each pick), not one step per piece.
+wait (as it already did after each pick), not one step per piece. The orbit paths
+(#55) added 6 s, two waits for new frames after picking them (3 s each), so the file
+uses 110.1 s. To fit their steps, "effects" now checks every piece's rise under `full`
+in one step, and the loops running in Cold core and stopped after each settle in one
+step each: 59 steps.
 
 The effects scenes run at phone width. "effects" picks Cold core in the effects panel,
 waits for the filament orb's first frames, finds its loop running, and takes a
@@ -545,7 +618,12 @@ the panel in that theme and scrolls to it) and `labkitEffectState(piece)` (`{run
 frames}` of the panel's live piece). The piece is `'filament'`, `'planet'` (the planet
 orb in the accent), `'tinted'` (the one with `--effect-tint` set), `'rings'` (the
 orbit rings), `'tendrils'` (the tendrils; its probe is given one tendril with its
-start colour unset and its end in `#3cc6a0`) or `'stars'` (the star dust).
+start colour unset and its end in `#3cc6a0`) or `'stars'` (the star dust), or
+`'orbits'` (the orbit paths; its probe is given the gallery's two paths, the inner
+one's colour unset and the outer's `#3cc6a0`, and its live state adds `placed`: whether
+each planet orb's centre is within a pixel of where `orbitPlace` puts it).
+`labkitArrangement(name)` picks `'tendrils'` or `'orbits'`, and `labkitOrbits` holds
+`orbitPlace` and `orbitLap` as the entry exports them.
 
 The planet orbs ride the same steps. Before each screenshot the scene notes every
 piece's frame count right after the pick and waits until all three have drawn a new
@@ -580,6 +658,21 @@ one step sets `offset` to `[12, -6]` and finds the count rose by exactly one, wi
 loop started, and the offset read back. In "effects: reduced motion" it reads every
 theme's ink, accent, glow and pace at level `off` with no probe or canvas left, then
 draws a still frame and holds.
+The orbit paths ride them too (#55): every frame wait and settle counts seven pieces.
+In Cold core, after the tendrils' shot, `labkitArrangement('orbits')` picks them: their
+loop runs, two paths fill the panel on a transparent canvas, the tendrils are emptied,
+and each planet orb sits where `orbitPlace` puts it, in front of the filament orb or
+behind it; then a shot. Film page takes its tendrils shot, picks the orbit paths, finds
+them wearing its glow, the inner path its accent and the outer the tint, and takes a
+second. They stay picked from there: their count rises under `full` and holds, loop
+stopped and the planet orbs still on them, under `calm` and `off`. Under `calm` one step
+sets `orbits` and finds the count rose by exactly one, with no loop started and `loops`
+unchanged. In "effects: reduced motion" they read every theme's accent (the unset
+colour falling back to it, the set one kept), glow and pace at level `off` with no probe
+or canvas left. Three steps test `orbitPlace` and `orbitLap` with no element: a round
+takes 30 to 60 loops, the outer path slower; four items on a path sit opposite in pairs;
+and over a round about half is behind, higher on the screen and smaller. Then they draw
+a still frame and hold.
 In "effects: reduced motion", for every theme the plain planet orb's tint is the
 theme's accent, the tinted one's is `#3cc6a0` while its accent is still the theme's,
 both read the theme's glow and pace at level `off`, and no probe or canvas is left;

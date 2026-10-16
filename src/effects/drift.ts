@@ -29,6 +29,17 @@ export function seeded(seed: number): () => number {
   };
 }
 
+/** A seed from a string, the same every time (FNV-1a): for a piece the app
+ *  names, such as an orbit path by its id. */
+export function seedOf(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
 /** One number from two, the same every time: for a slot's pulse. */
 function hash(a: number, b: number): number {
   return seeded((Math.imul(a | 0, 0x9e3779b1) ^ Math.imul(b | 0, 0x85ebca77)) | 0)();

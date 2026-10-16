@@ -13,7 +13,7 @@
            type ContrastCheck } from 'labkit';
   // The effects shelf: its own entry, so this import is what loads three.js.
   import 'labkit/effects';
-  import type { LabkitEffect, Tendrils } from 'labkit/effects';
+  import { orbitLap, orbitPlace, type LabkitEffect, type Orbit, type Orbits, type Tendrils } from 'labkit/effects';
 
   let showBoth = $state(false);
   let narrow = $state(false);
@@ -27,15 +27,28 @@
    *  the theme's accent, and in a tint of its own, as an app would set it. The
    *  orbit rings frame the filament orb, as an app would place them, and one
    *  tendrils element behind them all joins it to both planet orbs, with the
-   *  star dust behind everything. */
+   *  star dust behind everything. The arrangement picker chooses how the
+   *  planet orbs relate to the filament orb: joined by the tendrils, or riding
+   *  two orbit paths round it. Both elements stay in the panel, and the one not
+   *  picked draws nothing. */
   const PIECES = { filament: 'labkit-filament-orb', planet: 'labkit-planet-orb',
                    tinted: 'labkit-planet-orb', rings: 'labkit-orbit-rings',
-                   tendrils: 'labkit-tendrils', stars: 'labkit-star-dust' } as const;
+                   tendrils: 'labkit-tendrils', stars: 'labkit-star-dust',
+                   orbits: 'labkit-orbits' } as const;
   const TINT = '#3cc6a0';
   type Piece = keyof typeof PIECES;
+  const ARRANGEMENTS = { tendrils: 'tendrils', orbits: 'orbit paths' } as const;
+  type Arrangement = keyof typeof ARRANGEMENTS;
+  /** The two paths: the plain planet orb on the inner one, in the accent, and
+   *  the tinted one on the outer, in its tint. */
+  const ORBITS: Orbit[] = [{ id: 'inner', radius: 0.55, items: 1 },
+                           { id: 'outer', radius: 0.8, color: TINT, items: 1 }];
+  const RIDERS = [['planet', 0], ['tinted', 1]] as const;
   let effectTheme = $state(CHOSEN[0].theme.name);
+  let arrangement = $state<Arrangement>('tendrils');
   let effectPanel = $state<HTMLDivElement>();
   let tendrilsEl = $state<Tendrils>();
+  let orbitsEl = $state<Orbits>();
   $effect(() => {
     const t = CHOSEN.find((c) => c.theme.name === effectTheme)!;
     if (effectPanel) applyTheme(t.theme, t.primary, level, effectPanel);
@@ -47,6 +60,10 @@
    *  resize, as an app would, so under calm and off they stay still. */
   function joinOrbs() {
     if (!effectPanel || !tendrilsEl) return;
+    if (arrangement !== 'tendrils') {
+      tendrilsEl.tendrils = [];
+      return;
+    }
     const box = effectPanel.getBoundingClientRect();
     const at = (piece: Piece) => {
       const r = effectPanel!.querySelector(`[data-piece="${piece}"]`)!.getBoundingClientRect();
@@ -70,6 +87,41 @@
     const ro = new ResizeObserver(joinOrbs);
     ro.observe(effectPanel);
     return () => ro.disconnect();
+  });
+
+  /** Where a planet orb's figure goes on its path, in pixels inside the orbit
+   *  element's box (the planets share it), from orbitPlace at the element's
+   *  own loops: the one function the element draws with. */
+  function riderAt(path: number) {
+    const w = orbitsEl!.clientWidth, h = Math.max(1, orbitsEl!.clientHeight);
+    const p = orbitPlace(ORBITS[path], 0, orbitsEl!.loops, w / h);
+    return { x: p.x * w, y: p.y * h, scale: p.scale, behind: p.behind };
+  }
+
+  /** The arrangement: the paths drawn or not, the tendrils joined or emptied,
+   *  and under orbit paths the gallery's own animation frame moving the planet
+   *  orbs' figures, in front of the filament orb on the near half and behind it
+   *  on the far half. Under calm and off the element's loops hold, so they do. */
+  $effect(() => {
+    if (!effectPanel || !orbitsEl) return;
+    const orbiting = arrangement === 'orbits';
+    orbitsEl.orbits = orbiting ? ORBITS : [];
+    joinOrbs();
+    if (!orbiting) return;
+    const figs = RIDERS.map(([piece, path]) =>
+      [effectPanel!.querySelector<HTMLElement>(`[data-piece="${piece}"]`)!.closest('figure')!, path] as const);
+    let raf = requestAnimationFrame(function place() {
+      for (const [fig, path] of figs) {
+        const p = riderAt(path);
+        fig.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -50%) scale(${p.scale})`;
+        fig.style.zIndex = p.behind ? '1' : '3';
+      }
+      raf = requestAnimationFrame(place);
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      for (const [fig] of figs) fig.style.transform = fig.style.zIndex = '';
+    };
   });
 
   /** The modes a theme frame is shown in. ⚠️ Only modes the theme ships:
@@ -137,6 +189,8 @@
       if (piece === 'tendrils') {
         (probe as Tendrils).tendrils = [{ id: 'probe', from: [0, 0], to: [100, 100], toColor: TINT }];
       }
+      // The gallery's two paths: the inner one's colour unset, the outer's the tint.
+      if (piece === 'orbits') (probe as Orbits).orbits = ORBITS;
       frame(name).append(probe);
       try {
         return probe.settings;
@@ -151,10 +205,28 @@
       document.getElementById('effects')!.scrollIntoView();
       return true;
     },
-    /** The panel's live piece: whether its loop runs, and the frames it drew. */
+    /** The panel's live piece: whether its loop runs, and the frames it drew.
+     *  For the orbit paths, also `placed`: whether each planet orb's centre is
+     *  within a pixel of where orbitPlace puts it at the element's loops. */
     labkitEffectState: (piece: Piece) => {
       const el = effectPanel!.querySelector<LabkitEffect>(`[data-piece="${piece}"]`)!;
-      return { running: el.running, frames: el.frames };
+      if (piece !== 'orbits') return { running: el.running, frames: el.frames };
+      const box = el.getBoundingClientRect();
+      const placed = RIDERS.every(([rider, path]) => {
+        const r = effectPanel!.querySelector(`[data-piece="${rider}"]`)!.getBoundingClientRect();
+        const p = riderAt(path);
+        return Math.hypot(r.left + r.width / 2 - box.left - p.x, r.top + r.height / 2 - box.top - p.y) < 1;
+      });
+      return { running: el.running, frames: el.frames, placed };
+    },
+    /** The orbit paths' pure functions, as labkit/effects exports them, so the
+     *  render check can test them with no element. */
+    labkitOrbits: { place: orbitPlace, lap: orbitLap },
+    /** Pick how the planet orbs relate to the filament orb: 'tendrils' or 'orbits'. */
+    labkitArrangement: (name: Arrangement) => {
+      arrangement = name;
+      flushSync();
+      return true;
     },
   });
 
@@ -249,21 +321,33 @@
         one theme at a time. The motion picker above applies: under calm and off
         it draws one still frame and stops.
       </p>
-      <label class="controls">
-        theme
-        <select id="effect-theme" bind:value={effectTheme}>
-          {#each CHOSEN as t (t.theme.name)}
-            <option value={t.theme.name}>{t.theme.name}</option>
-          {/each}
-        </select>
-      </label>
-      <div class="effect-panel" bind:this={effectPanel} data-effect-theme={effectTheme}>
+      <div class="controls">
+        <label>
+          theme
+          <select id="effect-theme" bind:value={effectTheme}>
+            {#each CHOSEN as t (t.theme.name)}
+              <option value={t.theme.name}>{t.theme.name}</option>
+            {/each}
+          </select>
+        </label>
+        <label>
+          arrangement
+          <select id="effect-arrangement" bind:value={arrangement}>
+            {#each Object.entries(ARRANGEMENTS) as [value, label] (value)}
+              <option {value}>{label}</option>
+            {/each}
+          </select>
+        </label>
+      </div>
+      <div class="effect-panel" class:orbiting={arrangement === 'orbits'} bind:this={effectPanel}
+           data-effect-theme={effectTheme} data-arrangement={arrangement}>
         <labkit-star-dust data-piece="stars"></labkit-star-dust>
         <labkit-tendrils data-piece="tendrils" bind:this={tendrilsEl}></labkit-tendrils>
+        <labkit-orbits data-piece="orbits" bind:this={orbitsEl}></labkit-orbits>
         <labkit-orbit-rings data-piece="rings">
           <labkit-filament-orb data-piece="filament"></labkit-filament-orb>
         </labkit-orbit-rings>
-        <span class="lbl">filament orb in orbit rings &middot; {effectTheme} &middot; motion {level}</span>
+        <span class="lbl">filament orb in orbit rings &middot; {effectTheme} &middot; motion {level} &middot; {ARRANGEMENTS[arrangement]}</span>
         <div class="planets">
           <figure>
             <labkit-planet-orb data-piece="planet"></labkit-planet-orb>
@@ -330,13 +414,26 @@
     background: var(--surface);
     position: relative;
   }
-  /* Behind the pieces: first in the panel, the star dust under the tendrils,
-     and everything after them positioned, captions too, so it all paints over
-     both. */
-  .effect-panel labkit-star-dust, .effect-panel labkit-tendrils { position: absolute; inset: 0; }
-  .effect-panel > :not(labkit-star-dust, labkit-tendrils) { position: relative; }
+  /* Behind the pieces: first in the panel, the star dust under the tendrils
+     and the orbit paths, and everything after them positioned, captions too,
+     so it all paints over them. */
+  .effect-panel labkit-star-dust, .effect-panel labkit-tendrils,
+  .effect-panel labkit-orbits { position: absolute; inset: 0; }
+  .effect-panel > :not(labkit-star-dust, labkit-tendrils, labkit-orbits) { position: relative; }
   .effect-panel labkit-orbit-rings { width: min(100%, 400px); }
   .planets { display: flex; gap: 16px; justify-content: center; width: 100%; }
   .planets figure { margin: 0; display: grid; justify-items: center; gap: 6px; flex: 0 1 150px; }
   .planets labkit-planet-orb { width: 100%; }
+  /* Orbit paths: the filament orb alone in the flow, so it sits in the middle
+     of the panel where the paths are centred; the planet orbs ride over the
+     same box as the paths, placed by the script, in front of the rings (3) or
+     behind them (1). */
+  .effect-panel.orbiting { padding-block: 56px; }
+  .effect-panel.orbiting labkit-orbit-rings { width: min(50%, 300px); z-index: 2; }
+  .effect-panel.orbiting > .lbl { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; }
+  .effect-panel.orbiting .planets { position: absolute; inset: 0; display: block; }
+  .effect-panel.orbiting .planets figure {
+    position: absolute; left: 0; top: 0; width: clamp(56px, 11vw, 96px);
+  }
+  .effect-panel.orbiting .planets figcaption { display: none; }
 </style>

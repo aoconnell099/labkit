@@ -14,6 +14,9 @@
  *     //   then el.tendrils = [{ id: 'a', from: [40, 40], to: [300, 220] }]
  *     // <labkit-star-dust style="position: absolute; inset: 0"></labkit-star-dust>,
  *     //   and el.offset = [x, y] as the app's camera moves
+ *     // <labkit-orbits style="position: absolute; inset: 0"></labkit-orbits>,
+ *     //   then el.orbits = [{ id: 'inner', radius: 0.6, items: 2 }], and each
+ *     //   orb placed at orbitPlace(el.orbits[0], i, el.loops, width / height)
  *
  * A piece's colour is the theme's `--accent`; the planet orb takes
  * `--effect-tint` first, so each app's orb can wear its own colour.
@@ -26,16 +29,19 @@ import { PlanetOrb } from './planet-orb';
 import { OrbitRings, ORB_SHARE } from './orbit-rings';
 import { Tendrils } from './tendrils';
 import { StarDust } from './star-dust';
+import { Orbits, orbitPlace, orbitLap, MAX_ORBITS } from './orbits';
 
 export { LabkitEffect, type EffectSettings } from './base';
 export { readPace, readLevel, parseEase, cubicBezier, PERIOD_PER_ENTER,
          type Pace, type Ease } from './pace';
-export { seeded, makeWander, wanderAt, bobAt, pulseAt, type Wander, type Pulse } from './drift';
+export { seeded, seedOf, makeWander, wanderAt, bobAt, pulseAt, type Wander, type Pulse } from './drift';
 export { Bloom } from './bloom';
 export { type PlanetSettings } from './planet-orb';
 export { type Tendril, type TendrilSettings } from './tendrils';
 export { type StarDustSettings } from './star-dust';
-export { FilamentOrb, PlanetOrb, OrbitRings, ORB_SHARE, Tendrils, StarDust };
+export { type Orbit, type OrbitPlaceAt, type OrbitsSettings } from './orbits';
+export { FilamentOrb, PlanetOrb, OrbitRings, ORB_SHARE, Tendrils, StarDust,
+         Orbits, orbitPlace, orbitLap, MAX_ORBITS };
 
 /** Guarded, so two copies of the entry in one page don't throw on a second
  *  define. */
@@ -54,6 +60,9 @@ if (!customElements.get('labkit-tendrils')) {
 if (!customElements.get('labkit-star-dust')) {
   customElements.define('labkit-star-dust', StarDust);
 }
+if (!customElements.get('labkit-orbits')) {
+  customElements.define('labkit-orbits', Orbits);
+}
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -62,5 +71,6 @@ declare global {
     'labkit-orbit-rings': OrbitRings;
     'labkit-tendrils': Tendrils;
     'labkit-star-dust': StarDust;
+    'labkit-orbits': Orbits;
   }
 }
