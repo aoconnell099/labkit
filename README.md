@@ -220,7 +220,7 @@ It is **its own entry, `labkit/effects`, and the only place three.js loads**. `l
 itself never imports it, so an app that draws no 3D never loads three.js.
 
 ```bash
-npm install three        # an optional peer dependency: only apps that use effects
+npm install three@0.170  # an optional peer dependency: only apps that use effects
 ```
 
 ```js
@@ -350,7 +350,13 @@ MIT.
 
 `labkit/effects` builds on **three.js**, MIT licensed. It is an optional peer
 dependency, not bundled: an app that imports the entry installs it, under its own
-licence.
+licence. The peer range is `^0.170.0`, the one version the effects are built and
+render-checked against. three changes its API between 0.x releases, so an app
+should not pair these effects with an untested one: with this range a plain
+`npm install three` picks 0.170, and asking for a newer three fails with `ERESOLVE`
+(checked against 0.186). Moving to a newer three is its own change: the
+devDependency, its types and this range together, with the render check's shots
+compared.
 
 ## Previews
 

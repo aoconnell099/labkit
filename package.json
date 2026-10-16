@@ -20,7 +20,7 @@
   },
   "peerDependencies": {
     "svelte": "^5.0.0",
-    "three": ">=0.160.0"
+    "three": "^0.170.0"
   },
   "peerDependenciesMeta": {
     "three": {
