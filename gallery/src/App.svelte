@@ -6,7 +6,7 @@
    *  drift survives. The whole reason this page exists is that a difference
    *  between two palettes is invisible sequentially and obvious in parallel.
    */
-  import { flushSync } from 'svelte';
+  import { flushSync, untrack } from 'svelte';
   import Frame from './Frame.svelte';
   import { EXAMPLES, THEMES, CHOSEN } from './palettes';
   import { auditPalette, auditTheme, applyTheme, shippedModes, type Mode, type MotionLevel,
@@ -56,10 +56,59 @@
     if (effectPanel) applyTheme(t.theme, t.primary, level, effectPanel);
   });
 
+  /** How far the plain planet's tendril has grown in, 0 to 1 (see growIn). */
+  let grow = 1;
+  /** Its growth takes this many loops of the pace. */
+  const GROW_LOOPS = 2;
+  let growRaf = 0;
+  let panelOnScreen = false;
+  let growPending = false;
+
+  /** Set the plain tendril's grow, leaving its ends where they are. */
+  function setGrow(g: number) {
+    grow = g;
+    if (tendrilsEl) tendrilsEl.tendrils = tendrilsEl.tendrils.map((t) => (t.id === 'planet' ? { ...t, grow } : t));
+  }
+
+  /** Stop growing and draw it reached. */
+  function grown() {
+    cancelAnimationFrame(growRaf);
+    growRaf = 0;
+    growPending = false;
+    setGrow(1);
+  }
+
+  /** Grow the plain planet's tendril in from nothing, as an app would show
+   *  `grow`: over GROW_LOOPS loops of the pace (pace.ts, the one drift.ts
+   *  moves by), on the theme's ease-out, then it stays reached. Its clock
+   *  starts when the panel is on screen. Under calm and off, and with reduce
+   *  motion (the pace's level reads off), it is drawn reached at once. */
+  function growIn() {
+    if (!tendrilsEl) return;
+    if (tendrilsEl.settings.pace.level !== 'full') return grown();
+    cancelAnimationFrame(growRaf);
+    growRaf = 0;
+    setGrow(0);
+    growPending = true;
+    if (panelOnScreen) startGrow();
+  }
+
+  function startGrow() {
+    growPending = false;
+    const started = performance.now();
+    growRaf = requestAnimationFrame(function step(now) {
+      const pace = tendrilsEl!.settings.pace;
+      const t = Math.min(1, Math.max(0, now - started) / (GROW_LOOPS * pace.period));
+      if (pace.level !== 'full' || t >= 1) return grown();
+      setGrow(pace.easeOut(t));
+      growRaf = requestAnimationFrame(step);
+    });
+  }
+
   /** The tendrils' ends, from where the pieces sit in the panel: from the
-   *  filament orb's rim to each planet orb's, the plain one half grown and in
-   *  the accent, the tinted one blending from the accent to its tint. Only on a
-   *  resize, as an app would, so under calm and off they stay still. */
+   *  filament orb's rim to each planet orb's, the plain one in the accent and
+   *  growing in (growIn), the tinted one blending from the accent to its tint.
+   *  Only on a resize, as an app would, so under calm and off they stay still. */
   function joinOrbs() {
     if (!effectPanel || !tendrilsEl) return;
     if (arrangement === 'orbits') {
@@ -81,14 +130,23 @@
     tendrilsEl.tendrils = (['planet', 'tinted'] as const).map((piece) => {
       const p = at(piece);
       return { id: piece, from: toward(orb, p, 0.55), to: toward(p, orb, 0.6),
-               toColor: piece === 'tinted' ? TINT : undefined, grow: piece === 'planet' ? 0.5 : 1 };
+               toColor: piece === 'tinted' ? TINT : undefined, grow: piece === 'planet' ? grow : 1 };
     });
   }
   $effect(() => {
     if (!effectPanel) return;
     const ro = new ResizeObserver(joinOrbs);
     ro.observe(effectPanel);
-    return () => ro.disconnect();
+    const io = new IntersectionObserver((entries) => {
+      panelOnScreen = entries[entries.length - 1].isIntersecting;
+      if (panelOnScreen && growPending) startGrow();
+    });
+    io.observe(effectPanel);
+    return () => {
+      ro.disconnect();
+      io.disconnect();
+      cancelAnimationFrame(growRaf);
+    };
   });
 
   /** Where a planet orb's figure goes on its path, in pixels inside the orbit
@@ -124,6 +182,20 @@
       cancelAnimationFrame(raf);
       for (const [fig] of figs) fig.style.transform = fig.style.zIndex = '';
     };
+  });
+
+  /** The plain tendril grows in again whenever the panel shows the tendrils
+   *  anew: on load, on a theme change, and on picking tendrils or dials. After
+   *  the theme's effect, so the pace it reads is the new theme's. */
+  $effect(() => {
+    void effectTheme;
+    if (!effectPanel || !tendrilsEl || arrangement === 'orbits') return;
+    untrack(growIn);
+  });
+  /** A level change only finishes the growth, under calm and off. */
+  $effect(() => {
+    void level;
+    if (tendrilsEl && untrack(() => tendrilsEl!.settings.pace.level) !== 'full') untrack(grown);
   });
 
   /** The modes a theme frame is shown in. ⚠️ Only modes the theme ships:
