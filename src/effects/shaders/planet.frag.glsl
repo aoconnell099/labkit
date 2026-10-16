@@ -1,16 +1,18 @@
-// The planet orb: a glossy, marbled sphere lit from inside, drawn on a square
-// facing the viewer (halo.vert.glsl). The sphere is worked out per pixel, so it
-// needs no mesh. Output is premultiplied, for normal blending.
+// The planet orb: a glass ball with glowing clouds inside, lit from within, and a
+// bright rim where the glass turns away, drawn on a square facing the viewer
+// (halo.vert.glsl). The sphere is worked out per pixel, so it needs no mesh.
+// No highlight dot: it read as plastic (labkit #53). Output is premultiplied:
+// the glass darkens what is behind it by its alpha and adds its own light.
 precision highp float;
 
 // The orb's colour, as sRGB 0 to 1: its tint, or the theme's accent.
 uniform vec3 uColor;
 // The theme's glow, 0 to 1: how strongly it is lit from inside.
 uniform float uGlow;
-// The breath through the loop, 0 to 1, eased by the theme's curves.
+// How bright the pulse is now, 0 to about 1 (drift.ts).
 uniform float uBreath;
-// The turn about the vertical axis, in radians.
-uniform float uAngle;
+// The shell's lean right now: the clouds wander with it, never turning round.
+uniform mat3 uRot;
 // How far the marbling has swirled, in loops.
 uniform float uSwirl;
 // The square's half-width, in orb radii.
@@ -54,36 +56,40 @@ void main() {
   float inside = 1.0 - smoothstep(0.985, 1.0, r);
   if (inside <= 0.0) discard;
 
-  // The surface normal facing the viewer, and the same point turned with the orb.
+  // The surface normal facing the viewer, and the same point in the shell's own
+  // frame (n times the matrix is the matrix's inverse, for a rotation).
   vec3 n = vec3(p, sqrt(max(0.0, 1.0 - r * r)));
-  float c = cos(uAngle);
-  float s = sin(uAngle);
-  vec3 q = vec3(c * n.x + s * n.z, n.y, -s * n.x + c * n.z);
+  vec3 q = n * uRot;
 
-  // Marbling: bands across the sphere, bent by noise that slowly swirls.
+  // Marbling, as before: bands across the sphere, bent by noise that swirls.
   float t = uSwirl * 6.2831853;
   vec3 w = q * 1.6 + vec3(sin(t) * 0.35, 0.0, cos(t) * 0.35);
   float warp = fbm(w);
   float bands = 0.5 + 0.5 * sin(q.y * 5.0 + warp * 7.0 + t);
-  float marble = mix(bands, fbm(q * 3.0 + warp * 1.5), 0.35);
+  float marble = mix(bands, fbm(q * 3.0 + warp * 1.5), 0.5);
+  // Clouds: the marbling's bright parts, soft-edged, with clear glass between.
+  float cloud = smoothstep(0.3, 0.72, marble) * (0.6 + 0.4 * fbm(q * 5.0 - warp));
 
-  // Lit from inside: brightest where the orb is thickest toward the viewer,
-  // breathing with the loop, as strong as the theme's glow.
-  float core = pow(n.z, 1.4);
-  // With no glow the marbling still shows, faintly, even on a near-black colour.
-  float inner = (0.45 + 0.55 * uGlow) * (0.8 + 0.2 * uBreath);
-  vec3 deep = uColor * 0.22;
-  vec3 lit = mix(uColor, vec3(1.0), 0.15 + 0.3 * uGlow);
-  vec3 col = mix(deep, lit, marble * (0.4 + 0.6 * core) * inner + 0.2 * core * uGlow);
+  // Lit from within: strongest where the ball is thickest toward the viewer, and
+  // at two hot spots deep in the clouds that ride with the shell.
+  float core = pow(n.z, 1.3);
+  float hot = pow(max(dot(q, normalize(vec3(-0.35, 0.3, 0.88))), 0.0), 6.0)
+            + 0.8 * pow(max(dot(q, normalize(vec3(0.5, -0.45, 0.74))), 0.0), 9.0);
+  float pulse = 0.75 + 0.35 * uBreath;
+  // With no glow (a light theme) the clouds still show, in the tint alone.
+  float light = cloud * (0.35 + 0.65 * core + 2.0 * hot) * (0.5 + 0.6 * uGlow) * pulse;
+  vec3 glass = uColor * 0.06;
+  vec3 col = glass + uColor * light;
+  col = mix(col, vec3(1.0), clamp(light * light * 0.7 * uGlow, 0.0, 0.85));
 
-  // Gloss: a fixed light up and to the left, a sharp highlight and a broad sheen,
-  // and a bright rim where the glass turns away.
-  vec3 l = normalize(vec3(-0.45, 0.55, 0.7));
-  vec3 h = normalize(l + vec3(0.0, 0.0, 1.0));
-  float spec = pow(max(dot(n, h), 0.0), 60.0);
-  float sheen = pow(max(dot(n, h), 0.0), 6.0) * 0.12;
-  float rim = pow(1.0 - n.z, 3.0) * (0.25 + 0.35 * uGlow);
-  col += vec3(spec * 0.85 + sheen) + uColor * rim;
+  // The rim: a bright ring where the glass turns away, thin, and a broad faint
+  // sheen inside it, both in the tint, burning toward white as the theme glows.
+  float edge = 1.0 - n.z;
+  float rim = pow(edge, 5.0) * 1.6 + pow(edge, 2.0) * 0.18;
+  rim *= 0.6 + 0.4 * uGlow;
+  col += mix(uColor, vec3(1.0), 0.35 * uGlow) * rim;
 
-  gl_FragColor = vec4(min(col, vec3(1.0)) * inside, inside);
+  // Glass: see-through where it is clear, more solid in the clouds and the rim.
+  float a = clamp(0.5 + 0.4 * cloud + rim, 0.0, 1.0) * inside;
+  gl_FragColor = vec4(min(col, vec3(1.0)) * inside, a);
 }

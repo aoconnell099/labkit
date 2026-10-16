@@ -27,6 +27,7 @@ import {
 import { LabkitEffect, type EffectSettings } from './base';
 import { Bloom } from './bloom';
 import { bobAt, makeWander, pulseAt, seeded, wanderAt, type Wander } from './drift';
+import { DIAL, FRAGMENT, Lines, RIBBON, sph, STREAK, thread, THREAD, type V3 } from './strands';
 import filamentVert from './shaders/filament.vert.glsl?raw';
 import filamentFrag from './shaders/filament.frag.glsl?raw';
 import sparkVert from './shaders/spark.vert.glsl?raw';
@@ -39,53 +40,8 @@ const HALO_EXTENT = 1.5;
 /** Layers that wander apart: six shells of fragments, the core, the threads. */
 const LAYERS = 8;
 const CORE = 6, THREADS = 7;
-/** What a vertex is, for the shader (`aKind`). */
-const FRAGMENT = 0, DIAL = 1, RIBBON = 2, THREAD = 3, STREAK = 4;
 /** The shells' radii, inside out. */
 const SHELLS = [0.42, 0.57, 0.7, 0.82, 0.93, 1.02];
-
-type V3 = [number, number, number];
-
-/** Line pieces, gathered into one geometry: one draw call for every line. */
-class Lines {
-  pos: number[] = [];
-  layer: number[] = [];
-  seed: number[] = [];
-  gain: number[] = [];
-  along: number[] = [];
-  kind: number[] = [];
-  index: number[] = [];
-
-  /** A polyline through `pts`, as segments. */
-  add(pts: V3[], layer: number, kind: number, gain: number, seed: number): void {
-    const first = this.pos.length / 3;
-    pts.forEach((p, i) => {
-      this.pos.push(...p);
-      this.layer.push(layer);
-      this.seed.push(seed);
-      this.gain.push(gain);
-      this.along.push(pts.length > 1 ? i / (pts.length - 1) : 0);
-      this.kind.push(kind);
-      if (i > 0) this.index.push(first + i - 1, first + i);
-    });
-  }
-
-  geometry(): BufferGeometry {
-    const g = new BufferGeometry();
-    g.setAttribute('position', new BufferAttribute(new Float32Array(this.pos), 3));
-    for (const [name, v] of [['aLayer', this.layer], ['aSeed', this.seed], ['aGain', this.gain],
-                             ['aAlong', this.along], ['aKind', this.kind]] as const) {
-      g.setAttribute(name, new BufferAttribute(new Float32Array(v), 1));
-    }
-    g.setIndex(this.index);
-    return g;
-  }
-}
-
-/** A point on a sphere of radius `r` at latitude `lat` and longitude `lon`. */
-function sph(r: number, lat: number, lon: number): V3 {
-  return [r * Math.cos(lat) * Math.cos(lon), r * Math.sin(lat), r * Math.cos(lat) * Math.sin(lon)];
-}
 
 /** Rotate `p` so the plane z = 0 tilts by `tx` about x, then `ty` about y. */
 function tilt(p: V3, tx: number, ty: number): V3 {
@@ -211,22 +167,8 @@ function build(): { lines: BufferGeometry; sparks: BufferGeometry } {
   }
 
   // Threads: jagged lines of light wandering over the outer shell, kinked like
-  // a crack in glass.
-  for (let n = 0; n < 34; n++) {
-    let lat = Math.asin(r() * 2 - 1), lon = r() * Math.PI * 2;
-    let heading = r() * Math.PI * 2;
-    const radius = 0.86 + r() * 0.16;
-    const pts: V3[] = [sph(radius, lat, lon)];
-    const steps = 6 + Math.floor(r() * 12);
-    for (let s = 0; s < steps; s++) {
-      heading += (r() - 0.5) * 1.8;
-      const step = 0.03 + r() * 0.07;
-      lat = Math.max(-1.45, Math.min(1.45, lat + Math.sin(heading) * step));
-      lon += (Math.cos(heading) * step) / Math.max(0.3, Math.cos(lat));
-      pts.push(sph(radius * (1 + (r() - 0.5) * 0.04), lat, lon));
-    }
-    L.add(pts, THREADS, THREAD, 0.6 + 0.4 * r(), r());
-  }
+  // a crack in glass (strands.ts).
+  for (let n = 0; n < 34; n++) L.add(thread(r, 0.86, 0.16), THREADS, THREAD, 0.6 + 0.4 * r(), r());
 
   // Sparks: points through the shells, thicker toward the core, and a spray past
   // the edge that makes the outline ragged.
