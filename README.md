@@ -518,17 +518,35 @@ reach a canvas, so an effect follows them itself:
 
 The fade-in and the brighten on touch are CSS on the element (`opacity` and
 `filter`), timed by `--dur-enter` and `--dur-state`, so they follow the levels like
-everything else in labkit. An effect makes its three.js renderer only while it is
-connected and on screen (an `IntersectionObserver`) and disposes it when it is not,
-because a browser keeps only a handful of WebGL contexts alive. It re-reads the theme
-and the level when an ancestor's `style` or `data-motion` changes, and when the
-reduce-motion setting does. A resize clears the canvas, so it draws a frame straight
-after, whether or not its loop runs, rather than leave the canvas blank until the
-loop's next tick. It reports `running` (whether its loop runs) and `frames` (frames
-drawn).
+everything else in labkit. An effect draws only while it is connected and on screen
+(an `IntersectionObserver`) and gives its WebGL context back when it is not, because a
+browser keeps only a handful alive: Chrome about 16 per renderer process, losing the
+oldest past that, and a lost one paints as a white box. So a page draws one of two
+ways (`src/effects/base.ts`):
+
+- **own** (the default): each piece on screen has a context of its own. Fastest.
+- **shared**: the pieces share ONE context. Each draws into a corner of a hidden canvas
+  and shows that as a bitmap on its own canvas, keeping its place, transforms and fade.
+
+A page starts own and switches to shared for good the first time the browser takes a
+context away that the page didn't give back (two copies of the hub in one process did
+that, 2026-10-17). `<html data-labkit-gl="shared">` starts it shared; the gallery's
+`?gl=shared` sets that. `webglContexts()` and `webglShared()` say how a page is
+drawing. Shared isn't the default because its copy was measured only where Chrome
+composites in software, as the lab's checks do, and there it read the GPU back once per
+piece: 9 frames a second instead of 60. On a phone, which composites on the GPU, it is
+not measured yet.
+
+It re-reads the theme and the level when an ancestor's `style` or `data-motion`
+changes, and when the reduce-motion setting does. A resize clears the canvas, so it
+draws a frame straight after, whether or not its loop runs, rather than leave the
+canvas blank until the loop's next tick. It reports `running` (whether its loop runs),
+`frames` (frames drawn) and `drawing` (whether it has a renderer now).
 
 New pieces extend `LabkitEffect` (`src/effects/base.ts`): `create`, `update`, `draw`
-and `destroy`; the base owns the renderer, the loop, the levels and the observers.
+and `destroy`; the base owns the renderer, the loop, the levels and the observers. A
+piece sizes things by the base's `cssSize`, `drawingSize` and `pixelRatio`, never by
+the renderer's own size, which in shared mode is the biggest piece's.
 
 ## Gallery
 

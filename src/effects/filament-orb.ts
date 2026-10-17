@@ -270,7 +270,7 @@ export class FilamentOrb extends LabkitEffect {
     const pace = settings.pace;
     const loops = elapsed / Math.max(1, pace.period);
 
-    const size = renderer.getDrawingBufferSize(this.#scratch);
+    const size = this.drawingSize(this.#scratch);
     this.#camera.aspect = size.x / Math.max(1, size.y);
     this.#camera.updateProjectionMatrix();
 
@@ -297,10 +297,12 @@ export class FilamentOrb extends LabkitEffect {
     this.#sparks.material.uniforms.uPx.value = size.x / 320;
     // Lines are one device pixel wide whatever the screen: on a dense one,
     // give them back the light a CSS pixel's worth of line would have.
-    this.#lines.material.uniforms.uThin.value = Math.sqrt(renderer.getPixelRatio());
+    this.#lines.material.uniforms.uThin.value = Math.sqrt(this.pixelRatio);
     this.#halo.material.uniforms.uBreath.value = Math.min(1, pulse.level);
     this.#bloom ??= new Bloom();
-    this.#bloom.render(renderer, this.#scene, this.#camera, settings.glow * (1.1 + 0.5 * Math.min(1, pulse.level)));
+    const d = this.drawingSize(this.#scratch);
+    this.#bloom.render(renderer, this.#scene, this.#camera, settings.glow * (1.1 + 0.5 * Math.min(1, pulse.level)),
+                       d.x, d.y, this.pixelRatio);
   }
 
   protected destroy(): void {

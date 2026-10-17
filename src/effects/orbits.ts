@@ -236,7 +236,7 @@ export class Orbits extends LabkitEffect {
     if (!this.#scene || !this.#mesh) return;
     const loops = elapsed / Math.max(1, settings.pace.period);
     this.#loops = loops;
-    const size = renderer.getSize(this.#scratch);
+    const size = this.cssSize(this.#scratch);
     const w = Math.max(1, size.x), h = Math.max(1, size.y);
     const half = this.#mesh.material.uniforms.uHalf.value as number;
 

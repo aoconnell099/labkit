@@ -180,7 +180,7 @@ export class PlanetOrb extends LabkitEffect {
     const pace = settings.pace;
     const loops = elapsed / Math.max(1, pace.period);
 
-    const size = renderer.getDrawingBufferSize(this.#scratch);
+    const size = this.drawingSize(this.#scratch);
     this.#camera.aspect = size.x / Math.max(1, size.y);
     this.#camera.updateProjectionMatrix();
 
@@ -211,9 +211,10 @@ export class PlanetOrb extends LabkitEffect {
     this.#halo.material.uniforms.uBreath.value = level;
     // As the strand orb: sparks scale with the canvas, lines with the screen.
     this.#sparks.material.uniforms.uPx.value = size.x / 320;
-    this.#lines.material.uniforms.uThin.value = Math.sqrt(renderer.getPixelRatio());
+    this.#lines.material.uniforms.uThin.value = Math.sqrt(this.pixelRatio);
     this.#bloom ??= new Bloom();
-    this.#bloom.render(renderer, this.#scene, this.#camera, settings.glow * (0.8 + 0.4 * level));
+    const d = this.drawingSize(this.#scratch);
+    this.#bloom.render(renderer, this.#scene, this.#camera, settings.glow * (0.8 + 0.4 * level), d.x, d.y, this.pixelRatio);
   }
 
   protected destroy(): void {

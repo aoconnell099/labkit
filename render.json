@@ -54,7 +54,15 @@
         {"shot": "theme-frame"},
         {"note": "(() => { const el = document.querySelector('.frame[data-theme] .enter'); const a = el.getAnimations().find(x => x.animationName === 'labkit-enter'); a.pause(); a.currentTime = 0; return getComputedStyle(el).transform; })()", "as": "start"},
         {"expect": "notes.start === 'matrix(1, 0, 0, 1, 0, 12)'", "says": "under full the rise entrance starts 12px down"},
-        {"expect": "document.querySelector('.frame[data-theme] .is-loading').getAnimations().some(a => a.playState === 'running')", "says": "under full the loading pulse runs"}
+        {"expect": "document.querySelector('.frame[data-theme] .is-loading').getAnimations().some(a => a.playState === 'running')", "says": "under full the loading pulse runs"},
+        {"note": "(location.search = '?gl=shared', 1)", "as": "shared_url"},
+        {"wait_until": "location.search === '?gl=shared' && typeof window.labkitEffectPick === 'function'", "ms": 8000},
+        {"note": "window.labkitEffectPick('Cold core')", "as": "shared_picked"},
+        {"note": "JSON.stringify(window.sharedFrames = ['filament', 'planet', 'tinted', 'rings', 'tendrils', 'stars', 'orbits'].map(p => window.labkitEffectState(p).frames))", "as": "shared_frames"},
+        {"wait_until": "['filament', 'planet', 'tinted', 'rings', 'tendrils', 'stars', 'orbits'].every((p, i) => window.labkitEffectState(p).frames > window.sharedFrames[i])", "ms": 5000},
+        {"expect": "(w => w.shared && w.contexts === 1)(window.labkitWebgl()) && ['filament', 'planet', 'tinted', 'rings', 'tendrils', 'stars'].every(p => window.labkitEffectState(p).drawing && window.labkitEffectState(p).running)", "says": "asked to share, every piece on screen draws, its loop running, through the page's one WebGL context"},
+        {"expect": "[...document.querySelectorAll('#effects labkit-filament-orb, #effects labkit-planet-orb, #effects labkit-orbit-rings, #effects labkit-tendrils, #effects labkit-star-dust')].filter(e => e.drawing).every(e => e.shadowRoot.querySelector('canvas').getContext('bitmaprenderer'))", "says": "each piece shows its frames on a bitmap canvas of its own, in its place in the page"},
+        {"shot": "shared"}
       ]
     },
     {

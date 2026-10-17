@@ -170,7 +170,7 @@ export class Dials extends LabkitEffect {
   protected draw(renderer: WebGLRenderer, elapsed: number, settings: EffectSettings): void {
     if (!this.#scene || !this.#mesh) return;
     const loops = elapsed / Math.max(1, settings.pace.period);
-    const size = renderer.getSize(this.#scratch);
+    const size = this.cssSize(this.#scratch);
     const w = Math.max(1, size.x), h = Math.max(1, size.y);
     const cx = w / 2, cy = h / 2, unit = Math.min(w, h) / 2;
     const half = this.#mesh.material.uniforms.uHalf.value as number;
@@ -253,7 +253,8 @@ export class Dials extends LabkitEffect {
 
     this.#mesh.material.uniforms.uView.value = [w, h];
     this.#bloom ??= new Bloom();
-    this.#bloom.render(renderer, this.#scene, this.#camera, settings.glow * 0.9);
+    const d = this.drawingSize(this.#scratch);
+    this.#bloom.render(renderer, this.#scene, this.#camera, settings.glow * 0.9, d.x, d.y, this.pixelRatio);
   }
 
   /** Room in the mesh for this many vertices and indices, replaced (the old

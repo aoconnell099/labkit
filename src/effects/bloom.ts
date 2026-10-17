@@ -50,15 +50,20 @@ export class Bloom {
     this.#scene.add(this.#quad);
   }
 
-  /** Draw `scene` to the canvas with a bloom of `strength` (0 for none). */
-  render(renderer: WebGLRenderer, scene: Scene, camera: Camera, strength: number): void {
+  /** Draw `scene` to the canvas with a bloom of `strength` (0 for none). `width` x
+   *  `height` is the piece's drawing size in device pixels and `css` its pixel ratio.
+   *  A labkit piece always passes them: a shared renderer's own size and ratio are not
+   *  the piece's (base.ts). Left out, they are the renderer's own, as before. */
+  render(renderer: WebGLRenderer, scene: Scene, camera: Camera, strength: number,
+         width?: number, height?: number, css?: number): void {
     if (strength <= 0) {
       renderer.setRenderTarget(null);
       renderer.render(scene, camera);
       return;
     }
-    const size = renderer.getDrawingBufferSize(this.#size);
-    const css = renderer.getPixelRatio();
+    const size = width !== undefined && height !== undefined ? this.#size.set(width, height)
+      : renderer.getDrawingBufferSize(this.#size);
+    css ??= renderer.getPixelRatio();
     const qw = Math.max(1, Math.round(size.x / css / SHRINK));
     const qh = Math.max(1, Math.round(size.y / css / SHRINK));
     this.#targets(size.x, size.y, qw, qh);

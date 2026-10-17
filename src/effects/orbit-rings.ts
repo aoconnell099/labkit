@@ -183,12 +183,12 @@ export class OrbitRings extends LabkitEffect {
     const phase = loops - Math.floor(loops);
     const breath = phase < 0.5 ? easeOut(phase * 2) : 1 - easeIn((phase - 0.5) * 2);
 
-    const size = renderer.getDrawingBufferSize(this.#scratch);
+    const size = this.drawingSize(this.#scratch);
     this.#camera.aspect = size.x / Math.max(1, size.y);
     this.#camera.updateProjectionMatrix();
 
     // Pixels to the shaders' units: the band in clip units, the node in device px.
-    const dpr = renderer.getPixelRatio();
+    const dpr = this.pixelRatio;
     const nodePx = CORE_PX + 10 * settings.glow;
     const hole = this.#hole;
     for (const m of this.#materials) {
