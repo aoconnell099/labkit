@@ -13,7 +13,8 @@
            type ContrastCheck } from 'labkit';
   // The effects shelf: its own entry, so this import is what loads three.js.
   import 'labkit/effects';
-  import { orbitLap, orbitPlace, type LabkitEffect, type Orbit, type Orbits, type Tendrils } from 'labkit/effects';
+  import { orbitLap, orbitPlace, webglContexts, webglShared, type LabkitEffect, type Orbit, type Orbits,
+           type Tendrils } from 'labkit/effects';
 
   let showBoth = $state(false);
   let narrow = $state(false);
@@ -21,9 +22,9 @@
   const LEVELS: MotionLevel[] = ['full', 'calm', 'off'];
 
   /** The effects panel shows ONE theme at a time, unlike the frames: each
-   *  piece holds a WebGL context while on screen, and a browser keeps only a
-   *  handful alive. Reading a theme needs no canvas (labkitEffectRead), so the
-   *  render check still covers all of them. The planet orb is shown twice: in
+   *  piece holds a WebGL context while on screen (or shares the page's one,
+   *  base.ts), and a browser keeps only a handful alive. Reading a theme needs
+   *  no canvas (labkitEffectRead), so the render check still covers all of them. The planet orb is shown twice: in
    *  the theme's accent, and in a tint of its own, as an app would set it. The
    *  orbit rings frame the filament orb, as an app would place them, and one
    *  tendrils element behind them all joins it to both planet orbs, with the
@@ -284,15 +285,18 @@
      *  within a pixel of where orbitPlace puts it at the element's loops. */
     labkitEffectState: (piece: Piece) => {
       const el = effectPanel!.querySelector<LabkitEffect>(`[data-piece="${piece}"]`)!;
-      if (piece !== 'orbits') return { running: el.running, frames: el.frames };
+      if (piece !== 'orbits') return { running: el.running, frames: el.frames, drawing: el.drawing };
       const box = el.getBoundingClientRect();
       const placed = RIDERS.every(([rider, path]) => {
         const r = effectPanel!.querySelector(`[data-piece="${rider}"]`)!.getBoundingClientRect();
         const p = riderAt(path);
         return Math.hypot(r.left + r.width / 2 - box.left - p.x, r.top + r.height / 2 - box.top - p.y) < 1;
       });
-      return { running: el.running, frames: el.frames, placed };
+      return { running: el.running, frames: el.frames, drawing: el.drawing, placed };
     },
+    /** How the page's pieces draw: the WebGL contexts they hold, and whether they
+     *  share one (after the browser took one away, or `?gl=shared`). */
+    labkitWebgl: () => ({ contexts: webglContexts(), shared: webglShared() }),
     /** The orbit paths' pure functions, as labkit/effects exports them, so the
      *  render check can test them with no element. */
     labkitOrbits: { place: orbitPlace, lap: orbitLap },

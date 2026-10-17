@@ -34,7 +34,7 @@ import { Tendrils } from './tendrils';
 import { StarDust } from './star-dust';
 import { Orbits, orbitPlace, orbitLap, MAX_ORBITS } from './orbits';
 
-export { LabkitEffect, type EffectSettings } from './base';
+export { LabkitEffect, webglContexts, webglShared, type EffectSettings } from './base';
 export { readPace, readLevel, parseEase, cubicBezier, PERIOD_PER_ENTER,
          type Pace, type Ease } from './pace';
 export { seeded, seedOf, makeWander, wanderAt, bobAt, pulseAt, type Wander, type Pulse } from './drift';

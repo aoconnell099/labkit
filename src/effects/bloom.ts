@@ -50,15 +50,17 @@ export class Bloom {
     this.#scene.add(this.#quad);
   }
 
-  /** Draw `scene` to the canvas with a bloom of `strength` (0 for none). */
-  render(renderer: WebGLRenderer, scene: Scene, camera: Camera, strength: number): void {
+  /** Draw `scene` to the canvas with a bloom of `strength` (0 for none). `width` x
+   *  `height` is the piece's drawing size in device pixels and `css` its pixel ratio:
+   *  the renderer is shared, so its own size is not the piece's (base.ts). */
+  render(renderer: WebGLRenderer, scene: Scene, camera: Camera, strength: number,
+         width: number, height: number, css: number): void {
     if (strength <= 0) {
       renderer.setRenderTarget(null);
       renderer.render(scene, camera);
       return;
     }
-    const size = renderer.getDrawingBufferSize(this.#size);
-    const css = renderer.getPixelRatio();
+    const size = this.#size.set(width, height);
     const qw = Math.max(1, Math.round(size.x / css / SHRINK));
     const qh = Math.max(1, Math.round(size.y / css / SHRINK));
     this.#targets(size.x, size.y, qw, qh);

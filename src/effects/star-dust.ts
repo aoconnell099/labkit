@@ -177,12 +177,12 @@ export class StarDust extends LabkitEffect {
   protected draw(renderer: WebGLRenderer, elapsed: number, settings: EffectSettings): void {
     if (!this.#scene || !this.#points) return;
     const u = this.#points.material.uniforms;
-    const size = renderer.getSize(this.#scratch);
+    const size = this.cssSize(this.#scratch);
     const w = Math.max(1, size.x), h = Math.max(1, size.y);
     const along = (elapsed / Math.max(1, settings.pace.period)) * DRIFT;
     const wrap = (x: number) => x - Math.floor(x / DRIFT_WRAP) * DRIFT_WRAP;
     u.uView.value = [w, h];
-    u.uPixelRatio.value = renderer.getPixelRatio();
+    u.uPixelRatio.value = this.pixelRatio;
     // Across in shares of the width, down in shares of the height scaled to
     // match, so the drift keeps its direction on a wide element. Each wraps
     // on its own.

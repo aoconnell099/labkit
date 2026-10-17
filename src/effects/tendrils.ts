@@ -295,7 +295,7 @@ export class Tendrils extends LabkitEffect {
     g.index!.needsUpdate = true;
     g.setDrawRange(0, index.length);
 
-    const size = renderer.getSize(this.#scratch);
+    const size = this.cssSize(this.#scratch);
     this.#mesh.material.uniforms.uView.value = [Math.max(1, size.x), Math.max(1, size.y)];
     renderer.render(this.#scene, this.#camera);
   }
