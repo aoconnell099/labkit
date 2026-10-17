@@ -19,11 +19,17 @@
  *   draws its scene into the canvas's bottom-left corner, the size of the
  *   piece, and takes that corner as a bitmap for its own canvas straight away
  *   (#frame), keeping its place in the page, its CSS transforms, fade and
- *   stacking. A page in this mode can never be starved of contexts.
+ *   stacking. A page in this mode never holds more than one context.
  *
- * The page starts in own mode and switches to shared, for good, the first time
- * the browser takes a context away that the page did not give back itself:
- * every piece lets go, and the ones on screen come back through one context.
+ * When the browser takes away a context the page didn't give back, every piece
+ * lets go at once (so nothing shows white), and then:
+ *
+ * - **some** of the page's contexts were lost: the browser was evicting the
+ *   oldest for someone else's. The page switches to shared, for good.
+ * - **all** of them were lost at once: a GPU reset, or a phone reclaiming the
+ *   GPU in the background. The pieces come back in own mode after a second,
+ *   unless that already happened in the last minute (then: shared).
+ *
  * `<html data-labkit-gl="shared">` starts a page shared. Why not always shared:
  * the copy is cheap where Chrome composites on the GPU, but this lab's checks
  * run where it composites in software, and there the copy read the GPU back
@@ -31,8 +37,9 @@
  * 2026-10-17). Whether a phone keeps 60 shared is not measured yet.
  *
  * A piece sizes things by `cssSize`, `drawingSize` and `pixelRatio`, never by
- * the renderer's own size, which in shared mode is the biggest piece's.
- * `webglContexts()` and `webglShared()` say how the page is drawing.
+ * the renderer's own size or ratio: the shared renderer is the biggest piece's
+ * size, at a ratio of 1, in device pixels. `webglContexts()` and
+ * `webglShared()` say how the page is drawing.
  *
  * Motion levels, which labkit otherwise applies in CSS, cannot reach a canvas.
  * So the element follows them itself:
@@ -80,15 +87,26 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 interface Shared {
   renderer: WebGLRenderer;
   users: Set<LabkitEffect>;
-  /** The hidden canvas's size in CSS pixels: grows to the biggest piece, never shrinks. */
+  /** The hidden canvas's size in device pixels: grows to the biggest piece, never shrinks. */
   width: number;
   height: number;
+  /** When it was made (performance.now()). */
+  made: number;
 }
 
-/** Times the shared context may be taken away and made again, per page. */
-const RETRIES = 3;
+/** After a reset, the pieces come back in own mode this long after. */
+const RESET_WAIT_MS = 1000;
+/** A second reset this soon after the last is taken as crowding after all. */
+const RESET_AGAIN_MS = 60_000;
+/** The shared context's retries back off from 1 s, doubling to this... */
+const SHARED_WAIT_MAX_MS = 30_000;
+/** ...and start from 1 s again once a shared context has lasted this long. */
+const SHARED_SETTLED_MS = 30_000;
 
-function newRenderer(): WebGLRenderer | null {
+/** Device pixels to a CSS pixel, at most 2. */
+const deviceRatio = (): number => Math.min(2, window.devicePixelRatio || 1);
+
+function newRenderer(pixelRatio: number): WebGLRenderer | null {
   let renderer: WebGLRenderer;
   try {
     renderer = new WebGLRenderer({ antialias: true, alpha: true, premultipliedAlpha: true,
@@ -96,7 +114,7 @@ function newRenderer(): WebGLRenderer | null {
   } catch {
     return null;
   }
-  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.setPixelRatio(pixelRatio);
   renderer.setClearColor(0x000000, 0);
   return renderer;
 }
@@ -111,13 +129,20 @@ export abstract class LabkitEffect extends HTMLElement {
   /** null until the first piece comes on screen and reads the page's choice. */
   static #mode: 'own' | 'shared' | null = null;
   static #shared: Shared | null = null;
-  static #retries = RETRIES;
-  /** Every piece holding a context now, in either mode. */
+  /** Every connected piece, and those holding a context now (either mode). */
+  static #connected = new Set<LabkitEffect>();
   static #holding = new Set<LabkitEffect>();
   /** Own-mode canvases whose context the page gave back itself. Chrome fires
    *  `webglcontextlost` for those too, and maybe later, so a flag set around
    *  the call would be gone by then. */
   static #givenBack = new WeakSet<HTMLCanvasElement>();
+  /** No piece attaches before this (performance.now()): a loss is being waited out. */
+  static #waitUntil = 0;
+  static #waitTimer = 0;
+  /** A taken loss is judged once, at the end of the task it arrived in. */
+  static #judging = false;
+  static #lastReset = -Infinity;
+  static #sharedWait = 1000;
 
   /** How many WebGL contexts the pieces on this page hold right now. */
   static get contexts(): number {
@@ -138,6 +163,7 @@ export abstract class LabkitEffect extends HTMLElement {
   #shownFrame = 0;
   #size = new Vector2(1, 1);
   #drawing = new Vector2(1, 1);
+  #pr = 1;
   #visible = false;
   #raf = 0;
   #frames = 0;
@@ -196,9 +222,9 @@ export abstract class LabkitEffect extends HTMLElement {
     return target.copy(this.#drawing);
   }
 
-  /** Device pixels to a CSS pixel, at most 2. */
+  /** Device pixels to a CSS pixel, at most 2 (the shared renderer's own is 1). */
   protected get pixelRatio(): number {
-    return this.#renderer?.getPixelRatio() ?? Math.min(2, window.devicePixelRatio || 1);
+    return this.#renderer ? this.#pr : deviceRatio();
   }
 
   /** Draw one frame now, where the loop stands, running or not: for a piece
@@ -218,6 +244,7 @@ export abstract class LabkitEffect extends HTMLElement {
   protected abstract destroy(): void;
 
   connectedCallback(): void {
+    LabkitEffect.#connected.add(this);
     this.#io = new IntersectionObserver((entries) => {
       this.#visible = entries[entries.length - 1].isIntersecting;
       if (this.#visible) this.#attach(); else this.#detach();
@@ -235,6 +262,7 @@ export abstract class LabkitEffect extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    LabkitEffect.#connected.delete(this);
     this.#io?.disconnect();
     this.#mo?.disconnect();
     this.#ro?.disconnect();
@@ -266,25 +294,48 @@ export abstract class LabkitEffect extends HTMLElement {
     return LabkitEffect.#mode;
   }
 
-  /** The browser took a context this page did not give back: every piece lets
-   *  go first (so the page holds none for a moment), then the ones on screen
-   *  come back through one shared context. Own mode is not tried again. */
+  /** Hold every attach for `ms`, then bring back the pieces on screen. */
+  static #waitThenAttach(ms: number): void {
+    LabkitEffect.#waitUntil = performance.now() + ms;
+    clearTimeout(LabkitEffect.#waitTimer);
+    LabkitEffect.#waitTimer = window.setTimeout(() => {
+      LabkitEffect.#waitUntil = 0;
+      for (const p of LabkitEffect.#connected) if (p.#visible) p.#attach();
+    }, ms);
+  }
+
+  /** The browser took an own-mode context the page didn't give back. Judged once
+   *  the task it arrived in is over, when every loss of that moment has landed. */
   static #takenAway(): void {
-    if (LabkitEffect.#mode === 'shared') return;
-    LabkitEffect.#mode = 'shared';
-    console.info('labkit: the browser took a WebGL context away; this page\'s pieces now share one');
-    const pieces = [...LabkitEffect.#holding];
-    for (const p of pieces) p.#detach();
-    for (const p of pieces) if (p.#visible) p.#attach();
+    if (LabkitEffect.#mode !== 'own' || LabkitEffect.#judging) return;
+    LabkitEffect.#judging = true;
+    setTimeout(() => {
+      LabkitEffect.#judging = false;
+      if (LabkitEffect.#mode !== 'own') return;
+      const held = [...LabkitEffect.#holding];
+      const lost = held.filter((p) => p.#renderer!.getContext().isContextLost()).length;
+      const now = performance.now();
+      const reset = held.length > 0 && lost === held.length && now - LabkitEffect.#lastReset > RESET_AGAIN_MS;
+      for (const p of held) p.#detach();           // nothing left showing white
+      if (reset) {
+        LabkitEffect.#lastReset = now;
+        console.info(`labkit: all ${held.length} WebGL contexts were lost at once (a GPU reset?); drawing again shortly`);
+        LabkitEffect.#waitThenAttach(RESET_WAIT_MS);
+      } else {
+        LabkitEffect.#mode = 'shared';
+        console.info(`labkit: the browser took ${lost} of this page's ${held.length} WebGL contexts away; its pieces now share one`);
+        LabkitEffect.#waitThenAttach(0);
+      }
+    }, 0);
   }
 
   /** The page's shared renderer, made by the first piece to need it; null without WebGL. */
   static #join(piece: LabkitEffect): WebGLRenderer | null {
     let s = LabkitEffect.#shared;
     if (!s) {
-      const renderer = newRenderer();
+      const renderer = newRenderer(1);
       if (!renderer) return null;
-      const fresh: Shared = { renderer, users: new Set(), width: 1, height: 1 };
+      const fresh: Shared = { renderer, users: new Set(), width: 1, height: 1, made: performance.now() };
       // three's own listener calls preventDefault; this one hands the pieces back.
       renderer.domElement.addEventListener('webglcontextlost', () => LabkitEffect.#sharedLost(fresh));
       s = LabkitEffect.#shared = fresh;
@@ -301,39 +352,41 @@ export abstract class LabkitEffect extends HTMLElement {
     release(s.renderer);
   }
 
-  /** Make the hidden canvas big enough for a piece of w x h CSS pixels. One over,
-   *  so its floor never falls short of the piece's rounded viewport. */
+  /** Make the hidden canvas big enough for a piece of w x h device pixels. */
   static #fit(w: number, h: number): void {
     const s = LabkitEffect.#shared;
-    if (!s || (w < s.width && h < s.height)) return;
-    s.width = Math.max(s.width, w + 1);
-    s.height = Math.max(s.height, h + 1);
+    if (!s || (w <= s.width && h <= s.height)) return;
+    s.width = Math.max(s.width, w);
+    s.height = Math.max(s.height, h);
     s.renderer.setSize(s.width, s.height, false);
   }
 
-  /** The browser took the shared context away (a GPU reset, say): every piece
-   *  lets go, and the ones on screen try a fresh one shortly, a few times at most. */
+  /** The browser took the shared context away: every piece lets go, and the ones
+   *  on screen try a fresh one after a wait that doubles each time (to 30 s), and
+   *  starts from 1 s again once a context has lasted 30 s. */
   static #sharedLost(s: Shared): void {
     if (LabkitEffect.#shared !== s) return;      // our own release, or old news
     LabkitEffect.#shared = null;
-    const pieces = [...s.users];
-    for (const p of pieces) p.#drop();
+    for (const p of [...s.users]) p.#drop();
     s.renderer.dispose();
-    if (LabkitEffect.#retries-- <= 0) return;
-    setTimeout(() => { for (const p of pieces) if (p.#visible) p.#attach(); }, 1000);
+    if (performance.now() - s.made > SHARED_SETTLED_MS) LabkitEffect.#sharedWait = 1000;
+    const wait = LabkitEffect.#sharedWait;
+    LabkitEffect.#sharedWait = Math.min(SHARED_WAIT_MAX_MS, wait * 2);
+    LabkitEffect.#waitThenAttach(wait);
   }
 
   #attach(): void {
-    if (this.#renderer || !this.isConnected) return;
+    if (this.#renderer || !this.isConnected || performance.now() < LabkitEffect.#waitUntil) return;
     this.#watch();
     if (LabkitEffect.#pageMode() === 'own') {
-      const renderer = newRenderer();
+      this.#pr = deviceRatio();
+      const renderer = newRenderer(this.#pr);
       if (!renderer) { this.dataset.shown = ''; return; }    // no WebGL: an empty, faded-in box
       const canvas = renderer.domElement;
       canvas.addEventListener('webglcontextlost', () => {
         if (!LabkitEffect.#givenBack.has(canvas)) LabkitEffect.#takenAway();
       });
-      this.#canvas = renderer.domElement;
+      this.#canvas = canvas;
       this.#renderer = renderer;
     } else {
       const renderer = LabkitEffect.#join(this);
@@ -344,6 +397,7 @@ export abstract class LabkitEffect extends HTMLElement {
         this.dataset.shown = '';
         return;
       }
+      this.#pr = deviceRatio();
       this.#canvas = canvas;
       this.#bitmaps = bitmaps;
       this.#renderer = renderer;
@@ -381,14 +435,14 @@ export abstract class LabkitEffect extends HTMLElement {
     if (!r || !this.#canvas) return;
     const w = Math.max(1, Math.round(this.clientWidth));
     const h = Math.max(1, Math.round(this.clientHeight));
-    const pr = r.getPixelRatio();
     this.#size.set(w, h);
     if (this.#bitmaps) {
-      // Rounded, as three rounds the viewport the piece is drawn in.
-      this.#drawing.set(Math.max(1, Math.round(w * pr)), Math.max(1, Math.round(h * pr)));
+      // Device pixels, whole: the shared renderer works at a ratio of 1, so the
+      // viewport, the render targets and the corner taken all agree exactly.
+      this.#drawing.set(Math.max(1, Math.round(w * this.#pr)), Math.max(1, Math.round(h * this.#pr)));
       this.#canvas.width = this.#drawing.x;
       this.#canvas.height = this.#drawing.y;
-      LabkitEffect.#fit(w, h);
+      LabkitEffect.#fit(this.#drawing.x, this.#drawing.y);
     } else {
       r.setSize(w, h, false);
       r.getDrawingBufferSize(this.#drawing);
@@ -435,15 +489,15 @@ export abstract class LabkitEffect extends HTMLElement {
     const r = this.#renderer;
     if (!r || !this.#current) return;
     const bitmaps = this.#bitmaps;
+    const { x: w, y: h } = this.#drawing;
     if (bitmaps) {
       r.setRenderTarget(null);
-      r.setViewport(0, 0, this.#size.x, this.#size.y);
+      r.setViewport(0, 0, w, h);
     }
     this.draw(r, elapsed, this.#current);
     this.#frames++;
     if (!bitmaps) return;
     const src = r.domElement;
-    const { x: w, y: h } = this.#drawing;
     const n = ++this.#taken;
     createImageBitmap(src, 0, src.height - h, w, h).then((bitmap) => {
       // A later frame got there first, or the piece let go meanwhile.
@@ -459,7 +513,7 @@ export function webglContexts(): number {
   return LabkitEffect.contexts;
 }
 
-/** Whether this page's pieces share one context (after the browser took one
+/** Whether this page's pieces share one context (after the browser took some
  *  away, or because `<html data-labkit-gl="shared">` asked). */
 export function webglShared(): boolean {
   return LabkitEffect.shared;
