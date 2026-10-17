@@ -323,7 +323,9 @@ export abstract class LabkitEffect extends HTMLElement {
         LabkitEffect.#waitThenAttach(RESET_WAIT_MS);
       } else {
         LabkitEffect.#mode = 'shared';
-        console.info(`labkit: the browser took ${lost} of this page's ${held.length} WebGL contexts away; its pieces now share one`);
+        console.info(lost === held.length
+          ? `labkit: all ${lost} WebGL contexts were lost at once again within a minute; this page's pieces now share one`
+          : `labkit: the browser took ${lost} of this page's ${held.length} WebGL contexts away; its pieces now share one`);
         LabkitEffect.#waitThenAttach(0);
       }
     }, 0);
