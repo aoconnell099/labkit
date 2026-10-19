@@ -62,7 +62,11 @@
         {"wait_until": "['filament', 'planet', 'tinted', 'rings', 'tendrils', 'stars', 'orbits'].every((p, i) => window.labkitEffectState(p).frames > window.sharedFrames[i])", "ms": 5000},
         {"expect": "(w => w.shared && w.contexts === 1)(window.labkitWebgl()) && ['filament', 'planet', 'tinted', 'rings', 'tendrils', 'stars'].every(p => window.labkitEffectState(p).drawing && window.labkitEffectState(p).running)", "says": "asked to share, every piece on screen draws, its loop running, through the page's one WebGL context"},
         {"expect": "[...document.querySelectorAll('#effects labkit-filament-orb, #effects labkit-planet-orb, #effects labkit-orbit-rings, #effects labkit-tendrils, #effects labkit-star-dust')].filter(e => e.drawing).every(e => e.shadowRoot.querySelector('canvas').getContext('bitmaprenderer'))", "says": "each piece shows its frames on a bitmap canvas of its own, in its place in the page"},
-        {"shot": "shared"}
+        {"shot": "shared"},
+        {"note": "(document.querySelector('[data-piece=stars]').scrollIntoView(), 1)", "as": "to_stars"},
+        {"note": "(e => (e.value = 'violet', e.dispatchEvent(new Event('change')), 1))(document.querySelector('#effect-sky'))", "as": "sky_pick"},
+        {"wait_until": "document.querySelector('[data-piece=stars]').skyReady === true", "ms": 5000},
+        {"expect": "(e => e.getAttribute('sky') === 'violet' && e.settings.sky === 'violet' && e.skyReady === true && e.settings.strands === 'below')(document.querySelector('[data-piece=stars]'))", "says": "picking a sky gives the star dust that sky, drawn, its strands from below"}
       ]
     },
     {

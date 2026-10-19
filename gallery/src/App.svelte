@@ -51,6 +51,9 @@
   let arrangement = $state<Arrangement>('tendrils');
   // The tinted planet as Apps wears it: every hue at once.
   let rainbow = $state(false);
+  // The star dust's sky, and where the colourful sky's strands start (labkit sky.ts).
+  let sky = $state('');
+  let strandsFrom = $state('below');
   let effectPanel = $state<HTMLDivElement>();
   let tendrilsEl = $state<Tendrils>();
   let starsEl = $state<StarDust>();
@@ -414,6 +417,22 @@
         </label>
         <label><input type="checkbox" id="effect-rainbow" bind:checked={rainbow} /> rainbow</label>
         <label>
+          sky
+          <select id="effect-sky" bind:value={sky}>
+            <option value="">none</option>
+            <option value="deep-blue">deep blue</option>
+            <option value="violet">blue, violet and pink</option>
+            <option value="colourful">colourful</option>
+          </select>
+        </label>
+        <label>
+          strands from
+          <select id="effect-strands" bind:value={strandsFrom}>
+            <option value="below">below</option>
+            <option value="band">the band</option>
+          </select>
+        </label>
+        <label>
           arrangement
           <select id="effect-arrangement" bind:value={arrangement}>
             {#each Object.entries(ARRANGEMENTS) as [value, label] (value)}
@@ -426,7 +445,7 @@
       </div>
       <div class="effect-panel" class:orbiting={arrangement === 'orbits'} bind:this={effectPanel}
            data-effect-theme={effectTheme} data-arrangement={arrangement}>
-        <labkit-star-dust data-piece="stars" bind:this={starsEl}></labkit-star-dust>
+        <labkit-star-dust data-piece="stars" bind:this={starsEl} sky={sky || undefined} strands={strandsFrom}></labkit-star-dust>
         <labkit-tendrils data-piece="tendrils" bind:this={tendrilsEl}></labkit-tendrils>
         <labkit-orbits data-piece="orbits" bind:this={orbitsEl}></labkit-orbits>
         {#if arrangement === 'dials'}

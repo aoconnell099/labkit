@@ -49,12 +49,17 @@ import starVert from './shaders/star.vert.glsl?raw';
 import starFrag from './shaders/star.frag.glsl?raw';
 import meteorVert from './shaders/meteor.vert.glsl?raw';
 import meteorFrag from './shaders/meteor.frag.glsl?raw';
+import { Sky, skyKind, STRAND_COLOURS, type SkyKind, type StrandOrigin } from './sky';
 
 export interface StarDustSettings extends EffectSettings {
   /** The theme's `--text`, as the theme wrote it: the points' colour. */
   ink: string;
   /** The app's offset, in CSS pixels. */
   offset: [number, number];
+  /** The `sky` attribute (sky.ts), or null for none. */
+  sky: SkyKind | null;
+  /** Where the colourful sky's strands start: the `strands` attribute, `below` unless `band`. */
+  strands: StrandOrigin;
 }
 
 /** The most points it ever draws, and the CSS pixels of area per point. */
@@ -233,6 +238,8 @@ export class StarDust extends LabkitEffect {
   #shotSeed = 0;
   #pending = false;
   #shooting = false;
+  #sky: Sky | null = null;
+  #strandColours: string[] = [...STRAND_COLOURS];
 
   constructor() {
     super();
@@ -250,6 +257,31 @@ export class StarDust extends LabkitEffect {
     const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
     this.#offset = Array.isArray(value) ? [n(value[0]), n(value[1])] : [0, 0];
     this.redraw();
+  }
+
+  static get observedAttributes(): string[] {
+    return ['sky', 'strands'];
+  }
+
+  /** A new sky or strand origin draws a frame now, still or not. */
+  attributeChangedCallback(): void {
+    this.redraw();
+  }
+
+  /** The colourful sky's strands' colours, CSS colours taken in turn (sky.ts's
+   *  STRAND_COLOURS until set). Setting it draws a frame. */
+  get strandColours(): string[] {
+    return [...this.#strandColours];
+  }
+
+  set strandColours(value: string[]) {
+    this.#strandColours = Array.isArray(value) ? value.filter((c) => typeof c === 'string' && c) : [];
+    this.redraw();
+  }
+
+  /** Whether the last frame drew the sky its `sky` attribute asks for (false with none). */
+  get skyReady(): boolean {
+    return !!this.#sky?.ready;
   }
 
   /** Whether the last frame drew a shooting star. */
@@ -272,6 +304,8 @@ export class StarDust extends LabkitEffect {
       ...base,
       ink: getComputedStyle(this).getPropertyValue('--text').trim(),
       offset: this.offset,
+      sky: skyKind(this.getAttribute('sky')),
+      strands: this.getAttribute('strands') === 'band' ? 'band' : 'below',
     };
   }
 
@@ -294,6 +328,8 @@ export class StarDust extends LabkitEffect {
     }));
     this.#points.frustumCulled = false;
     this.#scene.add(this.#points);
+    // The sky goes under the stars (its pieces' renderOrder is below theirs).
+    this.#sky = new Sky(this.#scene, BAND_AT);
     const g = strip();
     for (let i = 0; i < 2; i++) {
       const m = new Mesh(g, new RawShaderMaterial({
@@ -396,6 +432,14 @@ export class StarDust extends LabkitEffect {
     const b = this.#place(shotMesh, full ? this.#shot : null, elapsed, w, h);
     if (this.#shot && elapsed - this.#shot.at >= this.#shot.dur) this.#shot = null;
     this.#shooting = a || b;
+
+    // The sky slides with the farthest stars (nearness 0.2), as they wrap.
+    const shift: [number, number] = [(u.uDrift.value[0] + this.#offset[0] / w) * 0.2,
+                                      (u.uDrift.value[1] + this.#offset[1] / h) * 0.2];
+    this.#sky?.draw(renderer, skyKind(this.getAttribute('sky')),
+                    this.getAttribute('strands') === 'band' ? 'band' : 'below',
+                    u.uAccent.value as [number, number, number], settings.glow, this.#strandColours,
+                    w, h, shift, elapsed / period, BAND_AT);
     renderer.render(this.#scene, this.#camera);
   }
 
@@ -405,6 +449,8 @@ export class StarDust extends LabkitEffect {
     this.#meteors[0]?.geometry.dispose();
     for (const m of this.#meteors) m.material.dispose();
     this.#meteors = [];
+    this.#sky?.dispose();
+    this.#sky = null;
     this.#scene = this.#points = null;
     this.#shot = null;
     this.#shooting = false;
