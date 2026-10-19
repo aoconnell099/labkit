@@ -2,9 +2,12 @@
  * `<labkit-star-dust>`: a field of fine points over a transparent background,
  * for a dark, starlit page to lay behind everything else on it.
  *
- * Most of the points are faint and a few are brighter. They are the theme's
- * ink (`--text`), each leaning a little toward `--accent`, and the brighter
- * ones carry a halo as strong as the theme's `--glow`. The field drifts slowly,
+ * Nearly all of the points are dust, pinpoints most of them barely there; some
+ * are middling and a very few bright. They are the theme's ink (`--text`), each
+ * leaning a little toward `--accent` (a few lean warm, rose or violet instead),
+ * and the bright ones carry a halo as strong as the theme's `--glow`. Two in
+ * five gather along a band, a diagonal across the field like the galaxy's plane
+ * in a night photograph, wrapping with it. The field drifts slowly,
  * a little of the element's width once per loop of the theme's pace, and holds
  * still under calm and off.
  *
@@ -55,10 +58,25 @@ export interface StarDustSettings extends EffectSettings {
 }
 
 /** The most points it ever draws, and the CSS pixels of area per point. */
-const MAX_STARS = 6000;
-const AREA_PER_STAR = 380;
-/** The share of the points that are bright. */
-const BRIGHT = 0.025;
+const MAX_STARS = 12000;
+const AREA_PER_STAR = 160;
+/** The share of the points that are bright, with a halo, and that are middling.
+ *  The rest are dust: pinpoints, most of them barely there. */
+const BRIGHT = 0.012;
+const MIDDLING = 0.07;
+/** The share that gather along the band, a diagonal across the field, as in a
+ *  photograph of the galaxy's plane: where it crosses (x + y, wrapping) and how
+ *  wide it spreads (one standard deviation, in shares of the field). */
+const IN_BAND = 0.4;
+const BAND_AT = 0.37;
+const BAND_SPREAD = 0.07;
+/** A few points lean warm, rose or violet instead of toward the accent: the
+ *  colour, as sRGB, and the share of the points. */
+const SHADES: readonly [[number, number, number], number][] = [
+  [[1, 0.78, 0.55], 0.06],
+  [[1, 0.7, 0.85], 0.04],
+  [[0.78, 0.68, 1], 0.05],
+];
 /** How far the nearest points drift in one loop, as a share of the element. */
 const DRIFT = 0.015;
 /** The drift's direction: mostly across, a little down. */
@@ -117,20 +135,43 @@ function field(): BufferGeometry {
   const bright = new Float32Array(MAX_STARS);
   const touch = new Float32Array(MAX_STARS);
   const twinkle = new Float32Array(MAX_STARS * 4);
+  const shade = new Float32Array(MAX_STARS * 4);
   for (let i = 0; i < MAX_STARS; i++) {
-    pos[i * 3] = r();
-    pos[i * 3 + 1] = r();
+    if (r() < IN_BAND) {
+      // Along the band, spread across it on a bell curve: x + y stays near
+      // BAND_AT, and both wrap, so the band wraps with the field.
+      const along = r();
+      const across = BAND_SPREAD * Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
+      pos[i * 3] = (((along + across / 2) % 1) + 1) % 1;
+      pos[i * 3 + 1] = (((BAND_AT - along + across / 2) % 1) + 1) % 1;
+    } else {
+      pos[i * 3] = r();
+      pos[i * 3 + 1] = r();
+    }
     // Far points outnumber near ones.
     near[i] = (2 + Math.floor(r() * r() * (NEAR_STEPS - 1))) / NEAR_STEPS;
-    const lit = r() < BRIGHT;
+    const kind = r();
+    const lit = kind < BRIGHT;
     if (lit) {
       bright[i] = 0.7 + 0.3 * r();
       touch[i] = 0.3 + 0.3 * r();
+    } else if (kind < BRIGHT + MIDDLING) {
+      bright[i] = 0.32 + 0.26 * r();
+      touch[i] = 0.2 + 0.35 * r();
     } else {
-      // Mostly near the faint end.
+      // Dust: most of it at the faint end, but never so faint the grain is lost.
       const b = r();
-      bright[i] = 0.06 + 0.28 * b * b;
+      bright[i] = 0.13 + 0.27 * b * b;
       touch[i] = 0.1 + 0.35 * r();
+    }
+    // A few lean warm, rose or violet; the rest keep the ink and accent.
+    let pick = r();
+    for (const [rgb, share] of SHADES) {
+      if (pick < share) {
+        shade.set([...rgb, 0.35 + 0.35 * r()], i * 4);
+        break;
+      }
+      pick -= share;
     }
     // Two waves, whole cycles per twinkle loop; a phase; how deep it dims.
     twinkle[i * 4] = 6 + Math.floor(tw() * 10);
@@ -144,6 +185,7 @@ function field(): BufferGeometry {
   g.setAttribute('aBright', new BufferAttribute(bright, 1));
   g.setAttribute('aTouch', new BufferAttribute(touch, 1));
   g.setAttribute('aTwinkle', new BufferAttribute(twinkle, 4));
+  g.setAttribute('aShade', new BufferAttribute(shade, 4));
   return g;
 }
 

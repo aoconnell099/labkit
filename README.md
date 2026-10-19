@@ -244,7 +244,7 @@ three.js chunk is included, so another engine can compile them as they stand.
 | `<labkit-orbit-rings>` | three hairline rings at different tilts, each carrying small nodes that go round it once per loop, in the accent, the rings' glow band and the nodes' halo from `--glow`; a transparent frame that holds either orb inside it |
 | `<labkit-dials>` | flat dials (#56): five concentric dials facing the viewer, like an interface drawn round an orb, in segments with gaps, with ruler ticks, heavy bars, a doubled stretch or two and small marks riding them, in the accent, glowing and blooming from `--glow`; each turns very slowly, some one way and some the other, and pulses. The same transparent frame for an orb as the orbit rings |
 | `<labkit-tendrils>` | hand-drawn vines between points the app gives it, each wandering, kinking and stepping on its way, its colour blending from one end to the other, its glow from `--glow`, swaying a little once per loop; one element, over a transparent background, draws every tendril |
-| `<labkit-star-dust>` | a field of fine points over a transparent background, mostly faint and a few brighter, in the theme's ink (`--text`) touched by the accent, the brighter ones' halo from `--glow`; each twinkles at its own pace, a shooting star crosses about once a minute (`shoot()` sends one), it drifts slowly once per loop, and shifts by the app's `offset`, nearer points more |
+| `<labkit-star-dust>` | a field of fine points over a transparent background, nearly all faint dust gathering along a diagonal band and a few brighter, in the theme's ink (`--text`) touched by the accent, the brighter ones' halo from `--glow`; each twinkles at its own pace, a shooting star crosses about once a minute (`shoot()` sends one), it drifts slowly once per loop, and shifts by the app's `offset`, nearer points more |
 | `<labkit-orbits>` | orbit paths (#55): one to four wide, nearly flat ellipses seen a little from above, as hairlines in the accent with a faint glow from `--glow`, over a transparent background; app orbs ride them very slowly, placed with `orbitPlace`, the one function the element draws with |
 
 **What an effect reads from a theme**, from computed style on its own element, with
@@ -427,8 +427,11 @@ one frame through the base's `redraw()`, so the field follows the camera under `
 and `off` too while its own loop stays stopped. The field wraps at the element's edges,
 so neither drift nor offset uncovers a bare strip. Its points are seeded, so the same
 page shows the same sky, and how many it draws follows the element's area (one per
-380 square CSS pixels, at most 6000: about 870 on a phone). Only 2.5% are bright; the
-rest are faint, most of them very faint. Its `settings` add `ink` (`--text` as the theme
+160 square CSS pixels, at most 12000: about 2000 on a phone). 1.2% are bright, with a
+halo, and 7% middling; the rest are dust, pinpoints most of them barely there. Two in
+five gather along a band, a diagonal across the field (where `x + y` is near 0.37,
+spread on a bell curve), like the galaxy's plane in a night photograph; it wraps with the
+field. One in seven leans warm, rose or violet instead of toward the accent. Its `settings` add `ink` (`--text` as the theme
 wrote it) and `offset`. `shaders/star.vert.glsl` places each point and
 `star.frag.glsl` draws its dot and halo.
 

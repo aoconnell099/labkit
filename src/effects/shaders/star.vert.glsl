@@ -27,11 +27,14 @@ attribute float aBright;
 attribute float aTouch;
 // The twinkle: two waves' whole cycles per loop, a phase, and how deep it dims.
 attribute vec4 aTwinkle;
+// A colour some points lean toward instead (warm, rose, violet), and how far: 0 for most.
+attribute vec4 aShade;
 
 varying float vBright;
 varying float vTouch;
 // The twinkle's share of its light now, about 0.2 to 1.4.
 varying float vLit;
+varying vec4 vShade;
 // The point's size, and its solid core's radius, in CSS pixels.
 varying float vSize;
 varying float vCore;
@@ -45,6 +48,7 @@ void main() {
   vSize = 2.0 * (vCore + halo);
   vBright = aBright;
   vTouch = aTouch;
+  vShade = aShade;
   // Mostly a gentle swell and fade, catching brighter for a moment near the
   // top of a swell; the two waves keep any two points from keeping time.
   float t = 0.5 + 0.3 * sin(aTwinkle.x * uTwinkle + aTwinkle.z)
