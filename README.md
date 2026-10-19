@@ -474,6 +474,31 @@ with the drift: under `calm` and `off` the field is one still moment, with no sh
 star in it. `shaders/meteor.vert.glsl` lays a crossing's quad and `meteor.frag.glsl`
 draws it.
 
+**A sky behind the stars** (the owner's polish list, 2026-10-18, after three folders of
+night-sky photographs): the `sky` attribute gives the band the stars gather along a glow of
+its own, in one of three looks, and is none when unset, as before.
+- `deep-blue`: a quiet navy haze in the theme's accent, with dark lanes of dust down its heart.
+- `violet`: blue at the band's edges, violet then pink at its heart, and soft nebulae along it.
+- `colourful`: warm gold dust at the heart, teal at the edges, brown lanes; and seven faint
+  **strands** of light in the page's colours (the `strandColours` property, CSS colours taken
+  in turn; `STRAND_COLOURS`, the hub's orb colours, until set), each a soft wide glow with
+  three fine lines in it, swaying slowly. `strands="below"` (the default) fans them up from
+  one point just under the bottom edge, so they cross an app's vines rather than run beside
+  them; `strands="band"` grows them out of the band to either side. The owner asked to see
+  both. Either way they stay wide and faint, so they never read as vines.
+
+The glow is drawn once into a 512-texel square (`shaders/sky.frag.glsl`) whenever the sky, the
+theme's accent or the element's shape changes, four times brighter than shown so its faint
+gradient keeps more of an 8-bit texture's steps, then slid with the farthest stars every frame
+(`skyquad.frag.glsl`, a quarter of it plus a hair of dither): it doesn't billow, as a real
+sky doesn't, and costs a frame one texture read a pixel. Its noise lattice repeats exactly over
+the field (whole cells across and down, four on the shorter side at its broadest), so the
+slide never shows a seam. The strands are laid out in CSS pixels every frame (about 2,700
+vertices) and drawn by `skystrand.*.glsl`. Setting `sky` or `strands` draws a frame;
+`skyReady` says whether the last frame drew the sky asked for, and `settings` add `sky` and
+`strands`. All of it lives in `sky.ts`; `SKY_KINDS`, `STRAND_COLOURS` and the types are
+exported. The gallery's effects panel has a **sky** and a **strands from** picker.
+
 **The orbit paths are what the app orbs ride** (#55). `<labkit-orbits>` draws wide,
 nearly flat ellipses, seen a little from above, one to four of them in layers, centred
 in the element: hairlines in the accent with a faint glow, over a transparent

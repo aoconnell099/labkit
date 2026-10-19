@@ -42,6 +42,7 @@ export { Bloom } from './bloom';
 export { type PlanetSettings } from './planet-orb';
 export { type Tendril, type TendrilSettings } from './tendrils';
 export { type StarDustSettings } from './star-dust';
+export { SKY_KINDS, STRAND_COLOURS, type SkyKind, type StrandOrigin } from './sky';
 export { type Orbit, type OrbitPlaceAt, type OrbitsSettings } from './orbits';
 export { type DialsSettings } from './dials';
 export { FilamentOrb, PlanetOrb, OrbitRings, ORB_SHARE, Dials, Tendrils, StarDust,
