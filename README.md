@@ -529,6 +529,22 @@ vertices) and drawn by `skystrand.*.glsl`. Setting `sky` or `strands` draws a fr
 `strands`. All of it lives in `sky.ts`; `SKY_KINDS`, `STRAND_COLOURS` and the types are
 exported. The gallery's effects panel has a **sky** and a **strands from** picker.
 
+**Inside a planet** (the owner's polish list, 2026-10-18: "backgrounds inside of the
+planets shouldn't be blank walls of the planet color"): `<labkit-planet-inside>` is the level
+an app dives into, full-bleed, the planet orb's smoke seen from within. Two layers of noise
+bent by noise, a near one and a dimmer far one, drifting so they billow; thin bright
+filaments where the warped noise folds; the page's dark showing through where the smoke
+thins; a little darker toward the edges. Now and then lightning flickers in the clouds
+(slots of 1.4 loops, 55% holding a flash at a seeded moment and place, a quick double
+flicker over 0.07 loops that lights the clouds round it). It holds still under `calm` and
+`off`, with no lightning. Its colour is `--effect-tint` or the accent, and `rainbow` runs
+every hue at once, as the rainbow planet does. It draws small, one texel per 3 CSS pixels
+and at most 480 on its longer side, into a texture it scales up over its canvas
+(`shaders/inside.frag.glsl`, `texquad.frag.glsl`): smoke is soft, so a phone pays for a
+fraction of its pixels. Like the star dust it takes its size from the page: lay it over the
+level, under its contents. The gallery's **inside a planet** box draws it over the effects
+panel, in the tinted planet's colour (rainbow with the rainbow box).
+
 **The orbit paths are what the app orbs ride** (#55). `<labkit-orbits>` draws wide,
 nearly flat ellipses, seen a little from above, one to four of them in layers, centred
 in the element: hairlines in the accent with a faint glow, over a transparent
