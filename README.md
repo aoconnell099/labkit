@@ -240,7 +240,7 @@ three.js chunk is included, so another engine can compile them as they stand.
 | piece | what it is |
 |---|---|
 | `<labkit-filament-orb>` | a hologram of a mind (#52): thousands of short glowing fragments on nested shells you can see through, in bright clumps, with small panels, partial dials at many angles, a curled ribbon of light at the core, jagged threads over the outer shell, sparks, and streaks breaking the edge, in the accent, burning toward white and blooming as strongly as `--glow`. It never spins: it drifts, floats and pulses (`drift.ts`) |
-| `<labkit-planet-orb>` | a glass ball (#53) in `--effect-tint` (the accent when unset), or every hue at once with the `rainbow` attribute: a bright rim and no highlight dot, slow smoke inside at two depths lit from within, a few jagged threads of light running through it and a scatter of tiny sparks, and outside the glass a sparse coat of the strand orb's fragments, threads and streaks; its inner light, halo and bloom from `--glow`. It no longer spins: it drifts, floats and pulses (`drift.ts`), its threads cracking bright on each pulse, while its smoke billows |
+| `<labkit-planet-orb>` | a glass ball (#53) in `--effect-tint` (the accent when unset), or every hue at once with the `rainbow` attribute: a bright rim and no highlight dot, slow smoke inside at two depths lit from within, a few jagged threads of light running through it and a scatter of tiny sparks, and outside the glass a sparse coat of the strand orb's fragments, threads and streaks with arcs and long strands of light wrapping round; its inner light, halo and bloom from `--glow`. It no longer spins: it drifts, floats and pulses (`drift.ts`), its threads cracking bright on each pulse, while its smoke billows |
 | `<labkit-orbit-rings>` | three hairline rings at different tilts, each carrying small nodes that go round it once per loop, in the accent, the rings' glow band and the nodes' halo from `--glow`; a transparent frame that holds either orb inside it |
 | `<labkit-dials>` | flat dials (#56): five concentric dials facing the viewer, like an interface drawn round an orb, in segments with gaps, with ruler ticks, heavy bars, a doubled stretch or two and small marks riding them, in the accent, glowing and blooming from `--glow`; each turns very slowly, some one way and some the other, and pulses. The same transparent frame for an orb as the orbit rings |
 | `<labkit-tendrils>` | hand-drawn vines between points the app gives it, each wandering, kinking and stepping on its way, its colour blending from one end to the other, its glow from `--glow`, swaying a little once per loop; one element, over a transparent background, draws every tendril |
@@ -332,8 +332,14 @@ surrounding it"): the strand orb's own fragments on two sparse shells (1.1 and 1
 radii, 350 in all, gathered in eleven clumps with dark gaps), six threads wrapping round
 outside, and 90 streaks bristling out in tufts so the outline is ragged, about a sixth
 of the strand orb's, so Jarvis stays the richest thing on a page. The vines will leave
-from it. The shell, the threads, the sparks, the coat and its streaks each wander on
-their own lean, the whole bobs, a pulse brightens the smoke and halo and cracks the
+from it. **Strands of light** wrap round it too (the owner, after the coat: "moreso outer
+filament strands, but some inner strands wouldn't hurt either"): ten partial arcs at
+many angles between 1.05 and 1.25 radii (the strand orb's dials, steady, a third of them
+doubled) and twelve long smooth curves wrapping round, leaning slowly as they go and
+blinking gently like the fragments. Inside, under the smoke, one sparse shell of 120
+fragments at 0.62 and a small curled ribbon of eight lines at the heart. `tilt`, which
+sets a dial at its angle, moved from the strand orb into `strands.ts` so both share it. The shell, the threads, the sparks, the coat, its streaks, the arcs, the strands and
+the inner pieces each wander on their own lean (all eight of the shaders' leans), the whole bobs, a pulse brightens the smoke and halo and cracks the
 threads bright, and the whole is drawn through `bloom.ts`. Nothing turns round.
 
 **The orbit rings hold an orb.** Put either orb inside `<labkit-orbit-rings>` and it

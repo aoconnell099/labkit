@@ -27,7 +27,7 @@ import {
 import { LabkitEffect, type EffectSettings } from './base';
 import { Bloom } from './bloom';
 import { bobAt, makeWander, pulseAt, seeded, wanderAt, type Wander } from './drift';
-import { DIAL, FRAGMENT, Lines, RIBBON, sph, STREAK, thread, THREAD, type V3 } from './strands';
+import { DIAL, FRAGMENT, Lines, RIBBON, sph, STREAK, thread, THREAD, tilt, type V3 } from './strands';
 import filamentVert from './shaders/filament.vert.glsl?raw';
 import filamentFrag from './shaders/filament.frag.glsl?raw';
 import sparkVert from './shaders/spark.vert.glsl?raw';
@@ -42,13 +42,6 @@ const LAYERS = 8;
 const CORE = 6, THREADS = 7;
 /** The shells' radii, inside out. */
 const SHELLS = [0.42, 0.57, 0.7, 0.82, 0.93, 1.02];
-
-/** Rotate `p` so the plane z = 0 tilts by `tx` about x, then `ty` about y. */
-function tilt(p: V3, tx: number, ty: number): V3 {
-  const [x, y, z] = p;
-  const y1 = y * Math.cos(tx) - z * Math.sin(tx), z1 = y * Math.sin(tx) + z * Math.cos(tx);
-  return [x * Math.cos(ty) + z1 * Math.sin(ty), y1, -x * Math.sin(ty) + z1 * Math.cos(ty)];
-}
 
 function build(): { lines: BufferGeometry; sparks: BufferGeometry } {
   const r = seeded(49);
