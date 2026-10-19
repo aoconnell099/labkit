@@ -438,7 +438,7 @@ goes through it.
 ```
 
 Its JS property **`tendrils`** is the list it draws, each
-`{id, from: [x, y], to: [x, y], fromColor, toColor, grow}`:
+`{id, from: [x, y], to: [x, y], fromColor, toColor, grow, fromRadius}`:
 
 - `from` and `to`: its ends, in CSS pixels from the element's top left.
 - `fromColor` and `toColor`: CSS colours at each end, blended along its length; the
@@ -447,6 +447,11 @@ Its JS property **`tendrils`** is the list it draws, each
   grow one in.
 - `id`: seeds its wander, so a tendril keeps its shape from frame to frame and as its
   ends move.
+- `fromRadius`: for a tendril that starts at the middle of an orb's ball, the ball's
+  radius in CSS pixels. It fades in across the ball, so it grows out of the glass instead
+  of ending at a cut, and the bundle's fan is never wider than the ball (the owner,
+  2026-10-19: "the tendrils getting cut off"). Unset, a tendril starts at `from`, fading
+  in over 6% of its length.
 
 Setting `tendrils` draws one frame through the base's `redraw()`, so an app may move
 the ends every frame (its orbs float) while the element's own loop stays stopped under
