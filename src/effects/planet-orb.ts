@@ -1,12 +1,14 @@
 /**
- * `<labkit-planet-orb>`: a glass ball in its own tint, with glowing clouds inside
- * lit from within, a bright rim, a few jagged threads of light running through
- * it and a scatter of tiny sparks, its light as strong as the theme's `--glow`.
+ * `<labkit-planet-orb>`: a glass ball in its own tint (or every hue at once,
+ * with the `rainbow` attribute), full of slow smoke lit from within, a bright
+ * rim, a few jagged threads of light running through it and a scatter of tiny
+ * sparks, and outside the glass a sparse coat of the strand orb's fragments,
+ * threads and streaks, its light as strong as the theme's `--glow`.
  *
  * It does not spin (labkit #53, after the phone check in #42). The shell, the
  * threads and the sparks each wander on their own slow lean, the whole floats a
  * hair, and its light pulses at irregular moments, the threads cracking bright
- * on each pulse (drift.ts), while the marbling slowly swirls.
+ * on each pulse (drift.ts), while the smoke billows.
  *
  * Its colour is `--effect-tint` when one is set on it or above it, and the
  * theme's `--accent` when none is: the app orbs are the planet orb in different
@@ -28,7 +30,7 @@ import {
 import { LabkitEffect, type EffectSettings } from './base';
 import { Bloom } from './bloom';
 import { bobAt, makeWander, pulseAt, seeded, wanderAt, type Wander } from './drift';
-import { Lines, sph, thread, THREAD } from './strands';
+import { FRAGMENT, Lines, sph, STREAK, thread, THREAD, type V3 } from './strands';
 import haloVert from './shaders/halo.vert.glsl?raw';
 import haloFrag from './shaders/halo.frag.glsl?raw';
 import planetFrag from './shaders/planet.frag.glsl?raw';
@@ -41,13 +43,18 @@ import sparkFrag from './shaders/spark.frag.glsl?raw';
 const HALO_EXTENT = 1.5;
 /** The planet's square: a hair wider than the orb, for its soft edge. */
 const PLANET_EXTENT = 1.02;
-/** Layers that wander apart: the shell, the threads, the sparks. The strand
- *  orb's shaders take eight leans; the rest are unused. */
-const SHELL = 0, THREADS = 1, SPARKS = 2, LEANS = 8;
+/** Layers that wander apart: the shell, the threads, the sparks, and outside
+ *  the glass the coat of light and its streaks. The strand orb's shaders take
+ *  eight leans; the rest are unused. */
+const SHELL = 0, THREADS = 1, SPARKS = 2, COAT = 3, STREAKS = 4, LEANS = 8;
+/** A rainbow planet's glow, as sRGB: every hue added up, a soft cool white. */
+const RAINBOW_GLOW: [number, number, number] = [0.85, 0.85, 0.95];
 
 export interface PlanetSettings extends EffectSettings {
   /** `--effect-tint` as written, or the theme's `--accent` when it is unset. */
   tint: string;
+  /** The `rainbow` attribute: every hue at once instead of the tint. */
+  rainbow: boolean;
 }
 
 /** Light adds up, as in the strand orb's glow. */
@@ -82,6 +89,42 @@ function build(): { lines: BufferGeometry; sparks: BufferGeometry } {
     ss.push(r());
     sg.push(r() < 0.08 ? 1 : 0.3 + 0.4 * r());
   }
+  // Outside the glass, a coat of light (the owner's polish list: "light and
+  // filament orb effect surrounding it"): the strand orb's fragments, threads
+  // and streaks, thinned to a sixth or so, so Jarvis stays the richest thing on
+  // a page. Fragments gather in a few clumps with dark gaps between; the threads
+  // wrap round outside and crack bright on a pulse; streaks bristle out in
+  // tufts, so the outline is ragged, not a clean ball. After everything above,
+  // so the glass's own threads and sparks keep their seeds.
+  const clumps = Array.from({ length: 11 }, () =>
+    [Math.asin(r() * 2 - 1) * 0.9, r() * Math.PI * 2, 0.15 + r() * 0.3] as const);
+  for (const [radius, count] of [[1.1, 200], [1.2, 150]] as const) {
+    for (let n = 0; n < count; n++) {
+      const c = clumps[Math.floor(r() * clumps.length)];
+      const clumped = r() < 0.55;
+      const lat = clumped ? c[0] + (r() - 0.5) * c[2] * 2 : Math.asin(r() * 2 - 1);
+      let lon = clumped ? c[1] + ((r() - 0.5) * c[2] * 2.6) / Math.max(0.3, Math.cos(c[0])) : r() * Math.PI * 2;
+      const pts: V3[] = [sph(radius, lat, lon)];
+      const len = (0.03 + r() * 0.12) * (r() < 0.5 ? 1 : -1);
+      const steps = Math.max(1, Math.round(Math.abs(len) / 0.02));
+      for (let k = 1; k <= steps; k++) {
+        lon += len / steps / Math.max(0.3, Math.cos(lat));
+        pts.push(sph(radius, lat, lon));
+      }
+      L.add(pts, COAT, FRAGMENT, clumped ? 0.9 + 0.7 * r() : 0.4 + 0.4 * r(), r());
+    }
+  }
+  for (let n = 0; n < 6; n++) L.add(thread(r, 1.08, 0.16, 10, 14), COAT, THREAD, 1.5 + 0.6 * r(), r());
+  for (let n = 0; n < 90; n++) {
+    const c = clumps[Math.floor(r() * clumps.length)];
+    const tuft = r() < 0.7;
+    const lat = tuft ? c[0] + (r() - 0.5) * 0.5 : Math.asin(r() * 2 - 1);
+    const lon = tuft ? c[1] + (r() - 0.5) * 0.7 : r() * Math.PI * 2;
+    const out = 1.08 + Math.pow(r(), 2.2) * 0.3;
+    L.add([sph(1.02, lat, lon), sph((1.02 + out) / 2, lat + (r() - 0.5) * 0.02, lon), sph(out, lat, lon)],
+          STREAKS, STREAK, 0.7 + 0.5 * r(), r());
+  }
+
   const sparks = new BufferGeometry();
   sparks.setAttribute('position', new BufferAttribute(new Float32Array(sp), 3));
   sparks.setAttribute('aLayer', new BufferAttribute(new Float32Array(sl), 1));
@@ -100,6 +143,7 @@ export class PlanetOrb extends LabkitEffect {
   #sparks: Points<BufferGeometry, RawShaderMaterial> | null = null;
   #bloom: Bloom | null = null;
   #colour = new Color();
+  #tint: [number, number, number] = [1, 1, 1];
   #scratch = new Vector2();
   /** Each layer's own resting lean, and its own wander. */
   #rest: Euler[] = [];
@@ -110,11 +154,20 @@ export class PlanetOrb extends LabkitEffect {
   #m4b = new Matrix4();
   #euler = new Euler();
 
-  /** The base's settings, and the tint. No canvas needed. */
+  static get observedAttributes(): string[] {
+    return ['rainbow'];
+  }
+
+  /** `rainbow` on or off draws a frame now, still or not. */
+  attributeChangedCallback(): void {
+    this.redraw();
+  }
+
+  /** The base's settings, the tint and the rainbow. No canvas needed. */
   get settings(): PlanetSettings {
     const base = super.settings;
     const tint = getComputedStyle(this).getPropertyValue('--effect-tint').trim();
-    return { ...base, tint: tint || base.accent };
+    return { ...base, tint: tint || base.accent, rainbow: this.hasAttribute('rainbow') };
   }
 
   protected create(): void {
@@ -128,7 +181,7 @@ export class PlanetOrb extends LabkitEffect {
 
     const { lines, sparks } = build();
     const strands = () => ({
-      uColor: { value: [1, 1, 1] }, uGlow: { value: 0 }, uPulse: { value: 0 },
+      uColor: { value: [1, 1, 1] }, uGlow: { value: 0 }, uPulse: { value: 0 }, uRainbow: { value: 0 },
       uWave: { value: 1 }, uStrength: { value: 0 }, uTime: { value: 0 }, uRot: { value: this.#rot },
     });
     this.#halo = new Mesh(
@@ -146,6 +199,7 @@ export class PlanetOrb extends LabkitEffect {
         uniforms: {
           uColor: { value: [1, 1, 1] }, uGlow: { value: 0 }, uBreath: { value: 0 },
           uExtent: { value: PLANET_EXTENT }, uRot: { value: this.#rot[SHELL] }, uSwirl: { value: 0 },
+          uRainbow: { value: 0 },
         },
       }),
     );
@@ -167,9 +221,10 @@ export class PlanetOrb extends LabkitEffect {
     // As the strand orb: the shaders take the colour as the sRGB it was written in.
     this.#colour.set((settings as PlanetSettings).tint || '#ffffff');
     const rgb = this.#colour.getRGB({ r: 1, g: 1, b: 1 }, SRGBColorSpace);
+    this.#tint = [rgb.r, rgb.g, rgb.b];
     for (const m of [this.#planet?.material, this.#halo?.material, this.#lines?.material, this.#sparks?.material]) {
       if (!m) continue;
-      m.uniforms.uColor.value = [rgb.r, rgb.g, rgb.b];
+      m.uniforms.uColor.value = this.#tint;
       m.uniforms.uGlow.value = settings.glow;
     }
   }
@@ -205,8 +260,12 @@ export class PlanetOrb extends LabkitEffect {
       u.uStrength.value = pulse.strength;
     }
     const pu = this.#planet.material.uniforms;
-    // The marbling flows a quarter of the way round its swirl each loop.
+    // The smoke drifts a quarter of a turn of its warp each loop.
     pu.uSwirl.value = loops * 0.25;
+    const rainbow = this.hasAttribute('rainbow') ? 1 : 0;
+    for (const m of [pu, this.#lines.material.uniforms, this.#sparks.material.uniforms]) m.uRainbow.value = rainbow;
+    // A rainbow's glow is every hue added up: a soft white, not the tint.
+    this.#halo.material.uniforms.uColor.value = rainbow ? RAINBOW_GLOW : this.#tint;
     pu.uBreath.value = level;
     this.#halo.material.uniforms.uBreath.value = level;
     // As the strand orb: sparks scale with the canvas, lines with the screen.

@@ -49,6 +49,8 @@
   const RIDERS = [['planet', 0], ['tinted', 1]] as const;
   let effectTheme = $state(CHOSEN[0].theme.name);
   let arrangement = $state<Arrangement>('tendrils');
+  // The tinted planet as Apps wears it: every hue at once.
+  let rainbow = $state(false);
   let effectPanel = $state<HTMLDivElement>();
   let tendrilsEl = $state<Tendrils>();
   let starsEl = $state<StarDust>();
@@ -410,6 +412,7 @@
             {/each}
           </select>
         </label>
+        <label><input type="checkbox" id="effect-rainbow" bind:checked={rainbow} /> rainbow</label>
         <label>
           arrangement
           <select id="effect-arrangement" bind:value={arrangement}>
@@ -442,7 +445,7 @@
             <figcaption class="lbl">planet orb &middot; accent</figcaption>
           </figure>
           <figure>
-            <labkit-planet-orb data-piece="tinted" style:--effect-tint={TINT}></labkit-planet-orb>
+            <labkit-planet-orb data-piece="tinted" style:--effect-tint={TINT} rainbow={rainbow ? '' : undefined}></labkit-planet-orb>
             <figcaption class="lbl">planet orb &middot; tint {TINT}</figcaption>
           </figure>
         </div>

@@ -388,7 +388,10 @@
         {"note": "window.labkitEffectState('dials').frames", "as": "dials_still_before"},
         {"wait_ms": 500},
         {"expect": "window.labkitEffectState('dials').running === false && window.labkitEffectState('dials').frames === notes.dials_still_before", "says": "with reduce motion on, the dials drew a still frame, their loop is stopped and their frame count holds"},
-        {"shot": "dials-still"}
+        {"shot": "dials-still"},
+        {"note": "window.labkitEffectState('tinted').frames", "as": "tinted_before"},
+        {"click": "#effect-rainbow"},
+        {"expect": "(e => e.hasAttribute('rainbow') && e.settings.rainbow === true && window.labkitEffectState('tinted').running === false && window.labkitEffectState('tinted').frames === notes.tinted_before + 1)(document.querySelector('[data-piece=tinted]'))", "says": "with reduce motion on, rainbow on draws the tinted planet one new frame, still, in every hue"}
       ]
     }
   ]

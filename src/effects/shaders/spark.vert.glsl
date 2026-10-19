@@ -22,6 +22,8 @@ attribute float aGain;
 
 varying float vLight;
 varying float vHeat;
+// The piece's own random number, for a hue of its own when the piece is a rainbow.
+varying float vSeed;
 
 void main() {
   vec3 p = uRot[int(aLayer + 0.5)] * position;
@@ -30,5 +32,6 @@ void main() {
   vLight = aGain * mix(0.25, 1.0, tw) * (0.6 + 0.6 * uPulse) * near;
   vHeat = aGain * near;
   gl_PointSize = uPx * (1.2 + 2.6 * aGain) * near;
+  vSeed = aSeed;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }
