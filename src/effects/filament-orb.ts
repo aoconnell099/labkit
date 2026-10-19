@@ -282,7 +282,8 @@ export class FilamentOrb extends LabkitEffect {
       vertexShader: sparkVert, fragmentShader: sparkFrag, ...ADD,
       uniforms: { ...shared(), uPx: { value: 1 } },
     }));
-    // The cloud (`cloud`): a nebula round the orb, drifting like a jellyfish (cloud.frag.glsl).
+    // The cloud (`cloud`): a nebula round the orb, drifting and beating like a jellyfish's
+    // bell (cloud.frag.glsl).
     this.#cloud = new Mesh(
       new PlaneGeometry(CLOUD_EXTENT * 2, CLOUD_EXTENT * 2),
       new RawShaderMaterial({
