@@ -56,6 +56,8 @@
   let strandsFrom = $state('below');
   // The tendrils' look: the hand-drawn vine, or the rope of two threads or of many.
   let vine = $state('vine');
+  // Inside a planet: the level an app dives into, drawn over the panel while on.
+  let inside = $state(false);
   let effectPanel = $state<HTMLDivElement>();
   let tendrilsEl = $state<Tendrils>();
   let starsEl = $state<StarDust>();
@@ -420,6 +422,7 @@
           </select>
         </label>
         <label><input type="checkbox" id="effect-rainbow" bind:checked={rainbow} /> rainbow</label>
+        <label><input type="checkbox" id="effect-inside" bind:checked={inside} /> inside a planet</label>
         <label>
           vine
           <select id="effect-vine" bind:value={vine}>
@@ -457,6 +460,10 @@
       </div>
       <div class="effect-panel" class:orbiting={arrangement === 'orbits'} bind:this={effectPanel}
            data-effect-theme={effectTheme} data-arrangement={arrangement}>
+        {#if inside}
+          <labkit-planet-inside data-piece="inside" style:--effect-tint={TINT}
+                                rainbow={rainbow ? '' : undefined}></labkit-planet-inside>
+        {/if}
         <labkit-star-dust data-piece="stars" bind:this={starsEl} sky={sky || undefined} strands={strandsFrom}></labkit-star-dust>
         <labkit-tendrils data-piece="tendrils" bind:this={tendrilsEl} variant={vine}
           onlabkit-arrive={() => (document.querySelector('[data-piece=filament]') as (HTMLElement & { flare?: () => boolean }) | null)?.flare?.()}></labkit-tendrils>
@@ -507,6 +514,8 @@
   h1 { font-size: 1.4rem; margin: 0 0 6px; font-weight: 600; }
   header p { margin: 0 0 10px; opacity: .75; max-width: 62ch; }
   .controls { display: flex; gap: 18px; flex-wrap: wrap; margin: 14px 0; font-size: .85rem; }
+  /* Over the whole panel, as the level an app dives into covers the page. */
+  .effect-panel labkit-planet-inside { z-index: 3; background: #05070b; }
   .controls label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
   .alarm, .ok { font-size: .82rem; padding: 8px 12px; border-radius: 6px; border: 1px solid #8886; }
   .alarm { border-color: #c0392b; }
@@ -541,8 +550,8 @@
      and the orbit paths, and everything after them positioned, captions too,
      so it all paints over them. */
   .effect-panel labkit-star-dust, .effect-panel labkit-tendrils,
-  .effect-panel labkit-orbits { position: absolute; inset: 0; }
-  .effect-panel > :not(labkit-star-dust, labkit-tendrils, labkit-orbits) { position: relative; }
+  .effect-panel labkit-orbits, .effect-panel labkit-planet-inside { position: absolute; inset: 0; }
+  .effect-panel > :not(labkit-star-dust, labkit-tendrils, labkit-orbits, labkit-planet-inside) { position: relative; }
   .effect-panel labkit-orbit-rings, .effect-panel labkit-dials { width: min(100%, 400px); }
   .planets { display: flex; gap: 16px; justify-content: center; width: 100%; }
   .planets figure { margin: 0; display: grid; justify-items: center; gap: 6px; flex: 0 1 150px; }

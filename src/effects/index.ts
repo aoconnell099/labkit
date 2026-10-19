@@ -32,6 +32,7 @@ import { OrbitRings, ORB_SHARE } from './orbit-rings';
 import { Dials } from './dials';
 import { Tendrils } from './tendrils';
 import { StarDust } from './star-dust';
+import { PlanetInside } from './planet-inside';
 import { Orbits, orbitPlace, orbitLap, MAX_ORBITS } from './orbits';
 
 export { LabkitEffect, webglContexts, webglShared, type EffectSettings } from './base';
@@ -45,7 +46,8 @@ export { type StarDustSettings } from './star-dust';
 export { SKY_KINDS, STRAND_COLOURS, type SkyKind, type StrandOrigin } from './sky';
 export { type Orbit, type OrbitPlaceAt, type OrbitsSettings } from './orbits';
 export { type DialsSettings } from './dials';
-export { FilamentOrb, PlanetOrb, OrbitRings, ORB_SHARE, Dials, Tendrils, StarDust,
+export { type PlanetInsideSettings } from './planet-inside';
+export { FilamentOrb, PlanetOrb, OrbitRings, ORB_SHARE, Dials, Tendrils, StarDust, PlanetInside,
          Orbits, orbitPlace, orbitLap, MAX_ORBITS };
 
 /** Guarded, so two copies of the entry in one page don't throw on a second
@@ -71,6 +73,9 @@ if (!customElements.get('labkit-star-dust')) {
 if (!customElements.get('labkit-orbits')) {
   customElements.define('labkit-orbits', Orbits);
 }
+if (!customElements.get('labkit-planet-inside')) {
+  customElements.define('labkit-planet-inside', PlanetInside);
+}
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -81,5 +86,6 @@ declare global {
     'labkit-tendrils': Tendrils;
     'labkit-star-dust': StarDust;
     'labkit-orbits': Orbits;
+    'labkit-planet-inside': PlanetInside;
   }
 }
