@@ -139,7 +139,9 @@
     tendrilsEl.tendrils = (['planet', 'tinted'] as const).map((piece) => {
       const p = at(piece);
       return { id: piece, from: toward(orb, p, 0.55), to: toward(p, orb, 0.6),
-               toColor: piece === 'tinted' ? TINT : undefined, grow: piece === 'planet' ? grow : 1 };
+               toColor: piece === 'tinted' ? TINT : undefined, grow: piece === 'planet' ? grow : 1,
+               // Beads run from each planet (`to`) to the filament orb (`from`), which flares as one lands.
+               beads: 'idle' as const };
     });
   }
   $effect(() => {
@@ -456,7 +458,8 @@
       <div class="effect-panel" class:orbiting={arrangement === 'orbits'} bind:this={effectPanel}
            data-effect-theme={effectTheme} data-arrangement={arrangement}>
         <labkit-star-dust data-piece="stars" bind:this={starsEl} sky={sky || undefined} strands={strandsFrom}></labkit-star-dust>
-        <labkit-tendrils data-piece="tendrils" bind:this={tendrilsEl} variant={vine}></labkit-tendrils>
+        <labkit-tendrils data-piece="tendrils" bind:this={tendrilsEl} variant={vine}
+          onlabkit-arrive={() => (document.querySelector('[data-piece=filament]') as (HTMLElement & { flare?: () => boolean }) | null)?.flare?.()}></labkit-tendrils>
         <labkit-orbits data-piece="orbits" bind:this={orbitsEl}></labkit-orbits>
         {#if arrangement === 'dials'}
           <labkit-dials data-piece="dials">

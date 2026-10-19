@@ -104,24 +104,37 @@ const SLOT = 0.55;
  * slots of SLOT loops; each slot holds one pulse at a random moment, of random
  * strength, and one slot in four a second, weaker pulse just after. Rise and
  * fall take the theme's own curves.
+ *
+ * `flares` are pulses an app asked for (a piece's `flare()`: the hub flares a
+ * planet when a bead of light reaches it down its vine), as (when, in loops;
+ * strength 0 to 1), and `own` false leaves out the piece's own random pulses
+ * (its `pulse="off"`), so only the asked-for ones show. Both rise and fall the
+ * same way, through the one envelope.
  */
-export function pulseAt(pace: Pace, loops: number, seed: number): Pulse {
-  const slot = Math.floor(loops / SLOT);
-  let level = 0, last = -Infinity, strength = 0;
-  for (let k = slot - 3; k <= slot; k++) {
-    const at = (k + 0.15 + 0.7 * hash(seed, k)) * SLOT;
-    const amp = 0.35 + 0.65 * hash(seed + 1, k);
-    const beats: [number, number][] = [[at, amp]];
-    if (hash(seed + 2, k) < 0.25) beats.push([at + 0.04 + 0.03 * hash(seed + 3, k), amp * 0.6]);
-    for (const [t0, a] of beats) {
-      const dt = loops - t0;
-      if (dt < 0) continue;
-      const e = dt < RISE ? pace.easeOut(dt / RISE)
-                          : dt < RISE + FALL ? 1 - pace.easeIn((dt - RISE) / FALL) : 0;
-      level += a * e;
-      if (t0 > last) { last = t0; strength = a; }
+export function pulseAt(pace: Pace, loops: number, seed: number, flares: readonly [number, number][] = [],
+                        own = true): Pulse {
+  const beats: [number, number][] = [...flares];
+  if (own) {
+    const slot = Math.floor(loops / SLOT);
+    for (let k = slot - 3; k <= slot; k++) {
+      const at = (k + 0.15 + 0.7 * hash(seed, k)) * SLOT;
+      const amp = 0.35 + 0.65 * hash(seed + 1, k);
+      beats.push([at, amp]);
+      if (hash(seed + 2, k) < 0.25) beats.push([at + 0.04 + 0.03 * hash(seed + 3, k), amp * 0.6]);
     }
+  }
+  let level = 0, last = -Infinity, strength = 0;
+  for (const [t0, a] of beats) {
+    const dt = loops - t0;
+    if (dt < 0) continue;
+    const e = dt < RISE ? pace.easeOut(dt / RISE)
+                        : dt < RISE + FALL ? 1 - pace.easeIn((dt - RISE) / FALL) : 0;
+    level += a * e;
+    if (t0 > last) { last = t0; strength = a; }
   }
   const since = loops - last;
   return { level: Math.min(1.2, level), wave: Math.min(1, since / WAVE), strength };
 }
+
+/** How long, in loops, an asked-for flare still shows: a piece may forget older ones. */
+export const FLARE_LOOPS = RISE + FALL;

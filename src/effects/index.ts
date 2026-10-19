@@ -37,10 +37,10 @@ import { Orbits, orbitPlace, orbitLap, MAX_ORBITS } from './orbits';
 export { LabkitEffect, webglContexts, webglShared, type EffectSettings } from './base';
 export { readPace, readLevel, parseEase, cubicBezier, PERIOD_PER_ENTER,
          type Pace, type Ease } from './pace';
-export { seeded, seedOf, makeWander, wanderAt, bobAt, pulseAt, type Wander, type Pulse } from './drift';
+export { seeded, seedOf, makeWander, wanderAt, bobAt, pulseAt, FLARE_LOOPS, type Wander, type Pulse } from './drift';
 export { Bloom } from './bloom';
 export { type PlanetSettings } from './planet-orb';
-export { TENDRIL_VARIANTS, type Tendril, type TendrilSettings, type TendrilVariant } from './tendrils';
+export { TENDRIL_VARIANTS, type Arrival, type Tendril, type TendrilSettings, type TendrilVariant } from './tendrils';
 export { type StarDustSettings } from './star-dust';
 export { SKY_KINDS, STRAND_COLOURS, type SkyKind, type StrandOrigin } from './sky';
 export { type Orbit, type OrbitPlaceAt, type OrbitsSettings } from './orbits';

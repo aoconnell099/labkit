@@ -57,6 +57,15 @@ export interface Tendril {
   grow?: number;
   /** Twist and bundle: the `fromColor` threads run through every hue instead. */
   rainbow?: boolean;
+  /** Beads of light running down it from `to` to `from`: `idle`, now and then, one idle
+   *  tendril at a time; or a number, a heartbeat every that many ms (lub, then dub). */
+  beads?: 'idle' | number;
+}
+
+/** A bead reached a tendril's `from`: dispatched on the element as `labkit-arrive`. */
+export interface Arrival {
+  id: string;
+  kind: 'idle' | 'beat';
 }
 
 export type TendrilVariant = 'vine' | 'twist' | 'bundle';
@@ -104,6 +113,20 @@ const BUNDLE_FAN = 0.12;
 /** Each bundle thread's share of a single line's light: its threads add up where they
  *  cross, and at full strength twenty of them burned into one solid band. */
 const BUNDLE_LIGHT = 0.38;
+/** Beads: idle ones come in slots of IDLE_SLOT loops, a slot holding one on one idle
+ *  tendril with IDLE_CHANCE (about every 12 s at Cold core's pace), each taking IDLE_TRAVEL
+ *  loops to run its length (1.1 s there); a heartbeat's take HEART_TRAVEL (0.7 s), its
+ *  dub DUB loops after its lub (0.19 s). A bead is BEAD_SPAN of the length across, and
+ *  brightens what it passes by BEAD_GAIN (twice that on the bundle's faint threads). */
+const IDLE_SLOT = 0.95;
+const IDLE_CHANCE = 0.7;
+const IDLE_TRAVEL = 0.13;
+const HEART_TRAVEL = 0.085;
+const DUB = 0.022;
+const BEAD_SPAN = 0.035;
+const BEAD_GAIN = 2.5;
+const BEAD_SEED = 0x6eadb0;
+
 /** Each look's line: the solid core's half-width, and the glow's at full glow. */
 const LINE: Record<TendrilVariant, [number, number]> = {
   vine: [CORE_PX, GLOW_PX],
@@ -221,6 +244,10 @@ export class Tendrils extends LabkitEffect {
   #rgbs: number[] = [];
   #fade: number[] = [];
   #index: number[] = [];
+  /** The beads drawn last frame, per tendril, as (along 0..1, strength); and the last
+   *  frame's time, in loops, so a bead that arrived between frames is told once. */
+  #beads = new Map<string, [number, number][]>();
+  #lastLoops: number | null = null;
 
   static get observedAttributes(): string[] {
     return ['variant'];
@@ -246,6 +273,12 @@ export class Tendrils extends LabkitEffect {
   set tendrils(list: Tendril[]) {
     this.#tendrils = Array.isArray(list) ? [...list] : [];
     this.redraw();
+  }
+
+  /** The beads on each tendril in the last frame: its id, and how far along each is
+   *  (1 at `to`, 0 at `from`). None under calm and off. */
+  get beads(): { id: string; at: number[] }[] {
+    return [...this.#beads].map(([id, list]) => ({ id, at: list.map(([at]) => at) }));
   }
 
   /** The look: the `variant` attribute, `vine` unless it names another. */
@@ -317,12 +350,14 @@ export class Tendrils extends LabkitEffect {
     const half = u.uHalf.value as number;
 
     this.#pos = []; this.#side = []; this.#rgbs = []; this.#fade = []; this.#index = [];
+    const arrived = this.#schedule(loops, settings);
     for (const t of this.#tendrils) {
       const grow = grown(t);
       const length = Math.hypot(t.to[0] - t.from[0], t.to[1] - t.from[1]);
       if (!(length > 1) || grow <= 0) continue;
-      if (variant === 'vine') this.#vine(t, grow, length, loops, half, settings.accent);
-      else this.#threads(t, grow, length, loops, half, settings.accent, variant);
+      const beads = (this.#beads.get(t.id) ?? []).filter(([at]) => at <= grow);
+      if (variant === 'vine') this.#vine(t, grow, length, loops, half, settings.accent, beads);
+      else this.#threads(t, grow, length, loops, half, settings.accent, variant, beads);
     }
 
     const pos = this.#pos, index = this.#index;
@@ -341,10 +376,60 @@ export class Tendrils extends LabkitEffect {
     const size = this.cssSize(this.#scratch);
     u.uView.value = [Math.max(1, size.x), Math.max(1, size.y)];
     renderer.render(this.#scene, this.#camera);
+    for (const a of arrived) this.dispatchEvent(new CustomEvent<Arrival>('labkit-arrive', { detail: a }));
+  }
+
+  /** Where every bead is at `loops`, into #beads, and the ones that reached their
+   *  tendril's `from` since the last frame. None under calm and off: a still frame never
+   *  holds a bead, and none is told after a pause of half a loop or more. */
+  #schedule(loops: number, settings: EffectSettings): Arrival[] {
+    this.#beads.clear();
+    const last = this.#lastLoops;
+    if (settings.pace.level !== 'full') { this.#lastLoops = null; return []; }
+    this.#lastLoops = loops;
+    const fresh = last !== null && loops > last && loops - last < 0.5;
+    const arrived: Arrival[] = [];
+    const add = (id: string, start: number, travel: number, strength: number, kind: Arrival['kind']) => {
+      const p = (loops - start) / travel;
+      if (p >= 0 && p < 1) {
+        const list = this.#beads.get(id) ?? [];
+        list.push([1 - p, strength]);
+        this.#beads.set(id, list);
+      }
+      if (fresh && last! < start + travel && start + travel <= loops) arrived.push({ id, kind });
+    };
+    // Idle: one idle tendril at a time, picked by the slot's seed.
+    const idle = this.#tendrils.filter((t) => t.beads === 'idle').map((t) => t.id).sort();
+    if (idle.length) {
+      for (let n = Math.floor((loops - IDLE_TRAVEL) / IDLE_SLOT) - 1; n <= Math.floor(loops / IDLE_SLOT); n++) {
+        const r = random(BEAD_SEED ^ Math.imul(n, 7919));
+        if (r() >= IDLE_CHANCE) continue;
+        const id = idle[Math.floor(r() * idle.length)];
+        add(id, n * IDLE_SLOT + r() * (IDLE_SLOT - IDLE_TRAVEL), IDLE_TRAVEL, 1, 'idle');
+      }
+    }
+    // Heartbeats: a lub, then a weaker dub, every so many ms.
+    for (const t of this.#tendrils) {
+      if (typeof t.beads !== 'number' || !(t.beads > 0)) continue;
+      const period = t.beads / Math.max(1, settings.pace.period);
+      for (let k = Math.floor((loops - HEART_TRAVEL - DUB) / period) - 1; k <= Math.floor(loops / period); k++) {
+        add(t.id, k * period, HEART_TRAVEL, 1, 'beat');
+        add(t.id, k * period + DUB, HEART_TRAVEL, 0.7, 'beat');
+      }
+    }
+    return arrived;
+  }
+
+  /** How bright the beads make the point `s` along a tendril: 0 away from every bead. */
+  #lit(s: number, beads: [number, number][]): number {
+    let b = 0;
+    for (const [at, strength] of beads) b += strength * Math.exp(-(((s - at) / BEAD_SPAN) ** 2));
+    return b;
   }
 
   /** The hand-drawn vine. */
-  #vine(t: Tendril, grow: number, length: number, loops: number, half: number, accent: string): void {
+  #vine(t: Tendril, grow: number, length: number, loops: number, half: number, accent: string,
+        beads: [number, number][]): void {
     const turn = (loops - Math.floor(loops)) * Math.PI * 2;
     const [ax, ay] = t.from;
     const ux = (t.to[0] - ax) / length, uy = (t.to[1] - ay) / length;
@@ -378,14 +463,15 @@ export class Tendrils extends LabkitEffect {
     // Into pixels; the colour blends along the whole tendril, so a half-grown
     // one reaches only halfway to `toColor`.
     const pts = path.map(([s, c]) => [ax + ux * s * length - uy * c, ay + uy * s * length + ux * c]);
-    const rgb = path.map(([s]) => [a[0] + (b[0] - a[0]) * s, a[1] + (b[1] - a[1]) * s, a[2] + (b[2] - a[2]) * s]);
-    const fade = path.map(([s]) => smooth(s / FADE) * smooth((grow - s) / FADE));
+    const rgb = path.map(([s]) => lighten([a[0] + (b[0] - a[0]) * s, a[1] + (b[1] - a[1]) * s,
+                                           a[2] + (b[2] - a[2]) * s], this.#lit(s, beads), t));
+    const fade = path.map(([s]) => smooth(s / FADE) * smooth((grow - s) / FADE) * (1 + BEAD_GAIN * this.#lit(s, beads)));
     this.#ribbon(pts, rgb, fade, half, [-uy, ux], 2);
   }
 
   /** Twist and bundle: threads winding round a smooth rope. */
   #threads(t: Tendril, grow: number, length: number, loops: number, half: number, accent: string,
-           variant: 'twist' | 'bundle'): void {
+           variant: 'twist' | 'bundle', beads: [number, number][]): void {
     const tau = Math.PI * 2;
     const [ax, ay] = t.from;
     const ux = (t.to[0] - ax) / length, uy = (t.to[1] - ay) / length;
@@ -432,12 +518,12 @@ export class Tendrils extends LabkitEffect {
         pts.push([x + normals[i][0] * across, y + normals[i][1] * across]);
         // In front brighter than behind, so the winding reads.
         const depth = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(theta));
-        fade.push(smooth(s / FADE) * smooth((grow - s) / FADE) * depth * (variant === 'bundle' ? BUNDLE_LIGHT : 1));
-        if (own && t.rainbow) {
-          rgb.push(hue((variant === 'twist' ? s * 0.9 : j / count) + loops * 0.03));
-        } else {
-          rgb.push(own ? a : b);
-        }
+        const lit = this.#lit(s, beads);
+        const light = variant === 'bundle' ? BUNDLE_LIGHT * (1 + 2 * BEAD_GAIN * lit) : 1 + BEAD_GAIN * lit;
+        fade.push(smooth(s / FADE) * smooth((grow - s) / FADE) * depth * light);
+        const colour = own && t.rainbow ? hue((variant === 'twist' ? s * 0.9 : j / count) + loops * 0.03)
+          : own ? a : b;
+        rgb.push(lighten(colour, lit, t));
       }
       this.#ribbon(pts, rgb, fade, half, [nx0, ny0], 1.6);
     }
@@ -508,6 +594,14 @@ function upTo(walked: [number, number][], grow: number): [number, number][] {
     break;
   }
   return path;
+}
+
+/** A colour where a bead is passing: an idle bead burns toward white; a heartbeat keeps
+ *  its tendril's own colour (red, in an alarm), only brighter. */
+function lighten(c: number[], lit: number, t: Tendril): number[] {
+  if (lit <= 0.001 || typeof t.beads === 'number') return c;
+  const w = Math.min(0.6, 0.6 * lit);
+  return [c[0] + (1 - c[0]) * w, c[1] + (1 - c[1]) * w, c[2] + (1 - c[2]) * w];
 }
 
 /** A tendril's grow, 0 to 1; all of it when unset. */
