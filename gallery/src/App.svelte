@@ -142,6 +142,9 @@
     };
     tendrilsEl.tendrils = (['planet', 'tinted'] as const).map((piece) => {
       const p = at(piece);
+      // Each planet turns a few outer threads to meet its vine.
+      const planetEl = effectPanel!.querySelector(`[data-piece="${piece}"]`) as (Element & { reach?: number | null }) | null;
+      if (planetEl) planetEl.reach = Math.atan2(orb.y - p.y, orb.x - p.x);
       return { id: piece, from: toward(orb, p, 0.55), to: toward(p, orb, 0.6),
                toColor: piece === 'tinted' ? TINT : undefined, grow: piece === 'planet' ? grow : 1,
                // Beads run from each planet (`to`) to the filament orb (`from`), which flares as one lands.

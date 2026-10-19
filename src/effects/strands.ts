@@ -9,7 +9,7 @@ import { BufferAttribute, BufferGeometry } from 'three';
 export type V3 = [number, number, number];
 
 /** What a vertex is, for the shader (`aKind`). */
-export const FRAGMENT = 0, DIAL = 1, RIBBON = 2, THREAD = 3, STREAK = 4;
+export const FRAGMENT = 0, DIAL = 1, RIBBON = 2, THREAD = 3, STREAK = 4, REACH = 5;
 
 /** Line pieces, gathered into one geometry: one draw call for every line. */
 export class Lines {

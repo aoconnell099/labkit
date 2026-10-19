@@ -41,9 +41,9 @@ import cloudFrag from './shaders/cloud.frag.glsl?raw';
 const HALO_EXTENT = 1.5;
 /** The cloud's square's half-width, in orb radii, and how far back the camera stands while
  *  the cloud shows (4.6 without), so the orb sits a little smaller inside it. */
-const CLOUD_EXTENT = 1.85;
+const CLOUD_EXTENT = 2.05;
 const CAMERA_Z = 4.6;
-const CLOUD_CAMERA_Z = 6.1;
+const CLOUD_CAMERA_Z = 6.6;
 /** Layers that wander apart: six shells of fragments, the core, the threads. */
 const LAYERS = 8;
 const CORE = 6, THREADS = 7;

@@ -17,6 +17,8 @@ uniform float uPulse;
 uniform float uWave;
 // The latest pulse's strength, 0 to 1.
 uniform float uStrength;
+// 1 when the planet orb has a `reach` (its threads toward its vine show), else 0.
+uniform float uReach;
 
 // A point on the piece, in orb radii, before its layer's lean.
 attribute vec3 position;
@@ -28,7 +30,7 @@ attribute float aSeed;
 attribute float aGain;
 // How far along its piece the point is, 0 to 1.
 attribute float aAlong;
-// 0 fragment, 1 dial, 2 core ribbon, 3 thread, 4 streak.
+// 0 fragment, 1 dial, 2 core ribbon, 3 thread, 4 streak, 5 reach (a planet's toward its vine).
 attribute float aKind;
 
 // How much light the point gives, before the colour.
@@ -67,9 +69,12 @@ void main() {
   } else if (aKind < 3.5) {     // thread: dim until a pulse cracks through it
     light = aGain * (0.3 + 1.3 * uPulse * blink);
     heat = 0.55;
-  } else {                      // streak
+  } else if (aKind < 4.5) {     // streak
     light = aGain * blink * (0.4 + 0.8 * uPulse);
     heat = 0.2;
+  } else {                      // reach: steady, shimmering, only with a reach
+    light = aGain * (0.8 + 0.2 * sin(6.2831853 * (uTime * 0.7 + aSeed))) * (0.75 + 0.45 * uPulse) * uReach;
+    heat = 0.35;
   }
   light += ring * 1.6;
   heat += ring;

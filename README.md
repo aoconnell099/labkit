@@ -303,11 +303,12 @@ accent), and `rainbow`.
 **`cloud`**, an attribute on the filament orb (the owner's polish list, 2026-10-18, after
 private references described in our own words): a nebula round the orb, a soft lumpy haze
 with no clean outline and folded sheets of fine glowing net in it, the accent deepening to
-violet and lifting to teal in places, out to about 1.6 radii. It drifts in place like a
+violet and lifting to teal in places, with fine specks of light caught in it, out to about
+1.75 radii (more of it since 2026-10-19). It drifts in place like a
 jellyfish: three lobes' worth of swell go round its outline at their own slow rates, so one
 side swells as another settles, and it never turns. The pulse swells it a little. While it
-shows, the camera stands back (6.1 for 4.6), so the orb sits smaller inside it. Drawn on its
-own square behind the orb (`shaders/cloud.frag.glsl`, 1.85 radii), in the orb's canvas, so it
+shows, the camera stands back (6.6 for 4.6), so the orb sits smaller inside it. Drawn on its
+own square behind the orb (`shaders/cloud.frag.glsl`, 2.05 radii), in the orb's canvas, so it
 costs no context. Setting it draws a frame. The gallery's **cloud** box turns it on.
 
 **`flare(strength)`** brightens the planet orb (and the filament orb) now, as one of its
@@ -315,6 +316,20 @@ own pulses does, through the same envelope in `drift.ts` (`pulseAt` takes the as
 flares): the hub flares a planet when a bead lands on it. False, and nothing, under `calm`
 and `off`. **`pulse="off"`** leaves out the piece's own random pulses, so only asked-for
 flares show (the hub's planets, and Jarvis until it is working). Setting it draws a frame.
+
+**`seed`**, an attribute (any text, read as the planet comes on screen), gives a planet its
+own threads, sparks, coat and strands; unset it keeps the one look it always had. **`reach`**,
+a property, is which way a vine leaves the planet, in radians on the page (0 right, a quarter
+turn down, CSS's y), or null: a planet with a reach turns nine threads from its glass out to
+its canvas's edge (1.28 to 1.42 radii) to meet the vine there, steady and shimmering, on a
+layer that faces the vine instead of wandering (the tufts of streaks ride it too). With no
+reach they never show (`uReach` 0). Setting it draws a frame only while the piece is still.
+
+**Glow is light, never coverage** (the owner, 2026-10-19: "the tendrils just hit the black
+circle and stop"). The halo writes no alpha, and the bloom's blurred copy adds only its
+colour: its alpha was the glass ball's opacity spread round it, a dark disc round every planet
+(and the filament orb) that hid the vines and stars behind. Coverage is now exactly the sharp
+picture's: the glass, the lines and the sparks.
 
 **`rainbow`**, an attribute, draws the planet in every hue at once instead of its tint
 (the hub's Apps orb, which holds every app): the smoke's hue follows the same warp that

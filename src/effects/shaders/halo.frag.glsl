@@ -19,5 +19,6 @@ void main() {
   float core = exp(-d * d * 2.5) * 0.35;
   float rim = exp(-pow((d - 1.0) * 4.0, 2.0)) * 0.3;
   float a = uGlow * (core + rim) * (0.7 + 0.3 * uBreath);
-  gl_FragColor = vec4(uColor * a, a);
+  // Light only, no coverage: a glow round an orb must not hide what is behind it.
+  gl_FragColor = vec4(uColor * a, 0.0);
 }
