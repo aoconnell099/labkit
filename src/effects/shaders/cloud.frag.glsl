@@ -68,7 +68,7 @@ void main() {
 
   // The outline: three lobes' worth of swell going round at their own slow rates, so
   // one side swells as another settles, like a jellyfish's bell. The pulse swells it all.
-  float edge = 1.6 + 0.15 * sin(3.0 * a + t * 0.9) + 0.11 * sin(5.0 * a - t * 0.7 + 1.3)
+  float edge = 1.75 + 0.16 * sin(3.0 * a + t * 0.9) + 0.12 * sin(5.0 * a - t * 0.7 + 1.3)
              + 0.08 * sin(2.0 * a + t * 0.5 + 2.1) + 0.06 * uBreath;
 
   vec3 q = vec3(p * 1.3, t * 0.06);
@@ -76,7 +76,7 @@ void main() {
   float d = fbm(vec3(p * 1.6 + warp * 1.4, t * 0.05));
   // Soft, lumpy, a ragged edge where the noise pushes it in and out.
   float body = smoothstep(edge, edge * 0.4, r + (d - 0.5) * 0.45);
-  float cloud = body * (0.4 + 0.6 * smoothstep(0.35, 0.75, d));
+  float cloud = body * (0.5 + 0.6 * smoothstep(0.3, 0.75, d));
   // Folded sheets of fine glowing net: thin ridges where the warped noise folds.
   float ridge = 1.0 - abs(2.0 * fbm3(vec3(p * 2.4 + warp * 2.2, t * 0.08)) - 1.0);
   float net = pow(ridge, 10.0) * body;
@@ -89,7 +89,11 @@ void main() {
   tint = mix(tint, teal, smoothstep(0.35, 0.15, n2) * 0.35);
 
   float lift = 0.6 + 0.6 * uGlow;
-  vec3 col = tint * cloud * 0.5 * lift + mix(tint, vec3(1.0), 0.4) * net * 0.55 * lift;
+  // Dust: a scatter of fine specks of light caught in it.
+  vec2 cell = floor(p * 46.0);
+  float speck = step(0.985, hash(vec3(cell, 7.0))) * body * (0.5 + 0.5 * sin(t * 3.0 + hash(vec3(cell, 3.0)) * 6.283));
+  vec3 col = tint * cloud * 0.68 * lift + mix(tint, vec3(1.0), 0.4) * net * 0.75 * lift
+           + mix(tint, vec3(1.0), 0.6) * speck * 0.5;
   col *= 0.85 + 0.3 * uBreath;
   // Gone before the square's edge, so it never sits in a box.
   col *= smoothstep(uExtent, uExtent * 0.82, r);

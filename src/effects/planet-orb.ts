@@ -30,8 +30,8 @@ import {
 import { LabkitEffect, type EffectSettings } from './base';
 import type { Pace } from './pace';
 import { Bloom } from './bloom';
-import { bobAt, FLARE_LOOPS, makeWander, pulseAt, seeded, wanderAt, type Pulse, type Wander } from './drift';
-import { DIAL, FRAGMENT, Lines, RIBBON, sph, STREAK, thread, THREAD, tilt, type V3 } from './strands';
+import { bobAt, FLARE_LOOPS, makeWander, pulseAt, seeded, seedOf, wanderAt, type Pulse, type Wander } from './drift';
+import { DIAL, FRAGMENT, Lines, REACH, RIBBON, sph, STREAK, thread, THREAD, tilt, type V3 } from './strands';
 import haloVert from './shaders/halo.vert.glsl?raw';
 import haloFrag from './shaders/halo.frag.glsl?raw';
 import planetFrag from './shaders/planet.frag.glsl?raw';
@@ -75,8 +75,8 @@ const OVER = {
   transparent: true, depthTest: false, depthWrite: false,
 } as const;
 
-function build(): { lines: BufferGeometry; sparks: BufferGeometry } {
-  const r = seeded(53);
+function build(seed: number): { lines: BufferGeometry; sparks: BufferGeometry } {
+  const r = seeded(seed);
   // A few long threads running through the ball, inside the glass.
   const L = new Lines();
   for (let n = 0; n < 9; n++) L.add(thread(r, 0.5, 0.4, 10, 14), THREADS, THREAD, 1.4 + 0.6 * r(), r());
@@ -181,6 +181,21 @@ function build(): { lines: BufferGeometry; sparks: BufferGeometry } {
     L.add(pts, INNER, RIBBON, 0.3 + 0.25 * (1 - Math.abs(k - 3.5) / 4), r());
   }
 
+  // Reaching toward its vine (the owner, 2026-10-19: "have the outer threads on the planet
+  // link up with the tendrils"): a few threads from the glass out to the canvas's edge,
+  // round +x in the screen's plane, each with its own slow sideways wave. Their layer is
+  // turned to face the vine (`reach`) instead of wandering; with no reach they never show.
+  for (let n = 0; n < 9; n++) {
+    const start = (r() - 0.5) * 1.1, end = 1.28 + 0.14 * r(), wave = r() * 6.283, z = (r() - 0.5) * 0.3;
+    const pts: V3[] = [];
+    for (let k = 0; k <= 14; k++) {
+      const t = k / 14, rad = 0.98 + (end - 0.98) * t;
+      const a = start * (1 - 0.6 * t) + 0.08 * Math.sin(t * 5 + wave);
+      pts.push([rad * Math.cos(a), rad * Math.sin(a), z * (1 - t)]);
+    }
+    L.add(pts, STREAKS, REACH, 0.7 + 0.4 * r(), r());
+  }
+
   const sparks = new BufferGeometry();
   sparks.setAttribute('position', new BufferAttribute(new Float32Array(sp), 3));
   sparks.setAttribute('aLayer', new BufferAttribute(new Float32Array(sl), 1));
@@ -209,6 +224,21 @@ export class PlanetOrb extends LabkitEffect {
   #m4 = new Matrix4();
   #m4b = new Matrix4();
   #euler = new Euler();
+
+  #reach: number | null = null;
+
+  /** Which way its vine leaves it, in radians on the page (0 right, a quarter turn down;
+   *  CSS's y), or null for none. A planet with a reach turns a few of its outer threads to
+   *  meet the vine there. Setting it draws a frame only while the piece is still: a running
+   *  loop picks it up on its next frame. */
+  get reach(): number | null {
+    return this.#reach;
+  }
+
+  set reach(value: number | null) {
+    this.#reach = typeof value === 'number' && Number.isFinite(value) ? value : null;
+    if (!this.running) this.redraw();
+  }
 
   /** Asked-for flares (`flare()`), as (when, in loops; strength), and ones asked for but
    *  not yet drawn. */
@@ -259,9 +289,12 @@ export class PlanetOrb extends LabkitEffect {
       i === SHELL ? new Euler(0, 0, 0) : new Euler((r() - 0.5) * 1.2, r() * 6.283, (r() - 0.5) * 0.8));
     this.#wanders = Array.from({ length: LEANS }, (_, i) => makeWander(5310 + i, i === SHELL ? 0.35 : 0.3));
 
-    const { lines, sparks } = build();
+    // Every planet its own threads: the `seed` attribute (any text), read as it comes on
+    // screen; unset, the one look the planet orb always had.
+    const seed = this.getAttribute('seed');
+    const { lines, sparks } = build(seed ? seedOf(seed) : 53);
     const strands = () => ({
-      uColor: { value: [1, 1, 1] }, uGlow: { value: 0 }, uPulse: { value: 0 }, uRainbow: { value: 0 },
+      uColor: { value: [1, 1, 1] }, uGlow: { value: 0 }, uPulse: { value: 0 }, uRainbow: { value: 0 }, uReach: { value: 0 },
       uWave: { value: 1 }, uStrength: { value: 0 }, uTime: { value: 0 }, uRot: { value: this.#rot },
     });
     this.#halo = new Mesh(
@@ -327,6 +360,14 @@ export class PlanetOrb extends LabkitEffect {
       this.#m4.makeRotationFromEuler(this.#euler.set(rest.x + w[0], rest.y + w[1], rest.z + w[2]));
       this.#rot[i].setFromMatrix4(this.#m4.premultiply(this.#m4b));
     }
+    // The reach's layer faces the vine on the page, a hair of sway, no wander. The camera
+    // looks down -z with y up, so the page's angle (y down) turns the other way.
+    if (this.#reach !== null) {
+      const sway = 0.06 * Math.sin(loops * 2.1);
+      this.#m4.makeRotationZ(-this.#reach + sway);
+      this.#rot[STREAKS].setFromMatrix4(this.#m4);
+    }
+    for (const m of [this.#lines.material, this.#sparks.material]) m.uniforms.uReach.value = this.#reach === null ? 0 : 1;
     const [bx, by] = bobAt(loops);
     this.#group.position.set(bx, by, 0);
 

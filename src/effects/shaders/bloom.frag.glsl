@@ -19,6 +19,10 @@ const float FADE = 0.72;
 void main() {
   float r = length(vUv - 0.5) * 2.0;
   float fade = 1.0 - smoothstep(FADE, 1.0, r);
-  vec4 c = texture2D(uSharp, vUv) + texture2D(uGlow, vUv) * (uStrength * fade);
-  gl_FragColor = clamp(c, 0.0, 1.0);
+  vec4 sharp = texture2D(uSharp, vUv);
+  vec3 glow = texture2D(uGlow, vUv).rgb * (uStrength * fade);
+  // The glow adds light only. Its alpha would be the sharp picture's alpha blurred, and a
+  // glass ball's opacity spread round it is a dark disc that hides what is behind (the
+  // vines that reach a planet, the stars). Coverage stays exactly the sharp picture's.
+  gl_FragColor = clamp(vec4(sharp.rgb + glow, sharp.a), 0.0, 1.0);
 }
