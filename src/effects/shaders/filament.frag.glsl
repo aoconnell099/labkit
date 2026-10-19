@@ -13,9 +13,17 @@ uniform float uThin;
 
 varying float vLight;
 varying float vHeat;
+varying float vSeed;
+// 1: each piece takes a hue of its own instead of uColor (a rainbow planet).
+uniform float uRainbow;
+
+// Every hue at full strength, 0 to 1 round the wheel.
+vec3 hue(float h) {
+  return clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+}
 
 void main() {
   float a = clamp(vLight * (0.4 + 0.45 * uGlow) * uThin, 0.0, 1.0);
-  vec3 c = mix(uColor, vec3(1.0), clamp(vHeat * uGlow, 0.0, 0.85));
+  vec3 c = mix(uRainbow > 0.5 ? mix(hue(vSeed), vec3(1.0), 0.15) : uColor, vec3(1.0), clamp(vHeat * uGlow, 0.0, 0.85));
   gl_FragColor = vec4(c * a, a);
 }

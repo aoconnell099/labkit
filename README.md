@@ -240,7 +240,7 @@ three.js chunk is included, so another engine can compile them as they stand.
 | piece | what it is |
 |---|---|
 | `<labkit-filament-orb>` | a hologram of a mind (#52): thousands of short glowing fragments on nested shells you can see through, in bright clumps, with small panels, partial dials at many angles, a curled ribbon of light at the core, jagged threads over the outer shell, sparks, and streaks breaking the edge, in the accent, burning toward white and blooming as strongly as `--glow`. It never spins: it drifts, floats and pulses (`drift.ts`) |
-| `<labkit-planet-orb>` | a glass ball (#53) in `--effect-tint` (the accent when unset): a bright rim and no highlight dot, glowing marbled clouds inside lit from within, a few jagged threads of light running through it and a scatter of tiny sparks, its inner light, halo and bloom from `--glow`. It no longer spins: it drifts, floats and pulses (`drift.ts`), its threads cracking bright on each pulse, while its marbling slowly swirls |
+| `<labkit-planet-orb>` | a glass ball (#53) in `--effect-tint` (the accent when unset), or every hue at once with the `rainbow` attribute: a bright rim and no highlight dot, slow smoke inside at two depths lit from within, a few jagged threads of light running through it and a scatter of tiny sparks, and outside the glass a sparse coat of the strand orb's fragments, threads and streaks; its inner light, halo and bloom from `--glow`. It no longer spins: it drifts, floats and pulses (`drift.ts`), its threads cracking bright on each pulse, while its smoke billows |
 | `<labkit-orbit-rings>` | three hairline rings at different tilts, each carrying small nodes that go round it once per loop, in the accent, the rings' glow band and the nodes' halo from `--glow`; a transparent frame that holds either orb inside it |
 | `<labkit-dials>` | flat dials (#56): five concentric dials facing the viewer, like an interface drawn round an orb, in segments with gaps, with ruler ticks, heavy bars, a doubled stretch or two and small marks riding them, in the accent, glowing and blooming from `--glow`; each turns very slowly, some one way and some the other, and pulses. The same transparent frame for an orb as the orbit rings |
 | `<labkit-tendrils>` | hand-drawn vines between points the app gives it, each wandering, kinking and stepping on its way, its colour blending from one end to the other, its glow from `--glow`, swaying a little once per loop; one element, over a transparent background, draws every tendril |
@@ -298,25 +298,43 @@ anywhere above it, while it keeps the theme's glow and pace. Unset, it falls bac
 the theme's `--accent`. The app orbs are the planet orb in different colours (ideas
 `plans/71`): each app sets its own tint and wears its own theme. The planet orb's
 `settings` add `tint`, the colour it draws in (`--effect-tint` as written, or the
-accent).
+accent), and `rainbow`.
+
+**`rainbow`**, an attribute, draws the planet in every hue at once instead of its tint
+(the hub's Apps orb, which holds every app): the smoke's hue follows the same warp that
+curls it, so the colours mix the way it curls, its far layer a third of the wheel round
+from its near one; each coat fragment, thread and spark takes a hue of its own (its seed
+round the wheel); the rim burns toward white; and the glow behind is a soft cool white,
+every hue added up. Setting or removing it draws a frame, still or not.
 
 ```html
 <labkit-planet-orb style="--effect-tint: #3cc6a0"></labkit-planet-orb>
+<labkit-planet-orb rainbow></labkit-planet-orb>
 ```
 
 The planet orb (#53) blends the glassy planet it was with the strand orb, after the
 owner's private reference images. Its ball is worked out per pixel on one square
 facing the viewer (`shaders/planet.frag.glsl`, on the glow square's `halo.vert.glsl`),
 with the strand orb's glow square behind it, so it needs no sphere mesh. The glass is
-see-through, darkening what is behind it, more solid where the clouds are, with a thin
+see-through, darkening what is behind it, more solid where the smoke is, with a thin
 bright rim and a faint sheen inside it, and no highlight dot (it read as plastic). The
-clouds are the old marbling's bright parts, lit from within: strongest where the ball
-is thickest, and at two hot spots that ride with it. Under a theme with no glow they
-show in the tint alone. Its threads (`strands.ts`) and sparks are drawn with the strand
-orb's own shaders, over the glass, so they read as inside it. The shell, the threads
-and the sparks each wander on their own lean, the whole bobs, a pulse brightens the
-clouds and halo and cracks the threads bright, and the whole is drawn through
-`bloom.ts`. Nothing turns round.
+smoke (the owner's polish list, 2026-10-18: "more of a smoke effect inside") replaced
+the marbled clouds: noise bent by noise (a domain warp) curls it into wisps, sampled at
+two depths on each line of sight, a near layer over a dimmer deeper one that shifts
+against it as the shell leans, so it reads as a volume; the warp drifts on its own, so
+it billows rather than turning. It is lit from within: strongest toward the heart, and
+at two hot spots that ride with it. Under a theme with no glow it shows in the tint
+alone. The cost is about the marbling's: 14 noise lookups a pixel (two three-octave
+warps, two four-octave layers) where the marbling took 12. Its threads (`strands.ts`)
+and sparks are drawn with the strand orb's own shaders, over the glass, so they read as
+inside it. **Outside the glass** is a coat of light ("light and filament orb effect
+surrounding it"): the strand orb's own fragments on two sparse shells (1.1 and 1.2
+radii, 350 in all, gathered in eleven clumps with dark gaps), six threads wrapping round
+outside, and 90 streaks bristling out in tufts so the outline is ragged, about a sixth
+of the strand orb's, so Jarvis stays the richest thing on a page. The vines will leave
+from it. The shell, the threads, the sparks, the coat and its streaks each wander on
+their own lean, the whole bobs, a pulse brightens the smoke and halo and cracks the
+threads bright, and the whole is drawn through `bloom.ts`. Nothing turns round.
 
 **The orbit rings hold an orb.** Put either orb inside `<labkit-orbit-rings>` and it
 sits in the middle at `ORB_SHARE` (0.68) of the rings' width, slotted into the rings'
@@ -571,7 +589,7 @@ The gallery's **effects panel** shows each piece in one chosen theme at a time, 
 picker over all thirteen and the same motion picker as the theme frames: one theme at
 a time, so at most one canvas per piece is alive. The filament orb sits inside the
 orbit rings. The planet orb is there twice: in the theme's accent, and with
-`--effect-tint` set to `#3cc6a0`. One tendrils element lies behind them all, joining
+`--effect-tint` set to `#3cc6a0` (the **rainbow** box turns that one's `rainbow` on). One tendrils element lies behind them all, joining
 the filament orb to both planet orbs: to the plain one in the accent, and to the
 tinted one blending from the accent to its tint. The plain one shows `grow`: whenever
 the panel shows the tendrils (on load, once the panel is on screen, on a theme change,

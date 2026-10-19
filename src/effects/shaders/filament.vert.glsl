@@ -35,6 +35,8 @@ attribute float aKind;
 varying float vLight;
 // How far toward white it burns, 0 to 1.
 varying float vHeat;
+// The piece's own random number, for a hue of its own when the piece is a rainbow.
+varying float vSeed;
 
 void main() {
   int layer = int(aLayer + 0.5);
@@ -79,5 +81,6 @@ void main() {
 
   vLight = light * ends * near;
   vHeat = heat * near;
+  vSeed = aSeed;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }
