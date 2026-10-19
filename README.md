@@ -305,8 +305,13 @@ private references described in our own words): a nebula round the orb, a soft l
 with no clean outline and folded sheets of fine glowing net in it, the accent deepening to
 violet and lifting to teal in places, with fine specks of light caught in it, out to about
 1.75 radii (more of it since 2026-10-19). It drifts in place like a
-jellyfish: three lobes' worth of swell go round its outline at their own slow rates, so one
-side swells as another settles, and it never turns. The pulse swells it a little. While it
+jellyfish: three lobes' worth of swell go round its outline at their own rates, so one
+side swells as another settles, and it never turns. Every 0.8 loops (about 7 s at Cold core)
+its bell beats (the owner, 2026-10-19): it draws in at the sides and rises a little over the
+first 15% of the beat, a touch brighter, lets go over the next 45% and rests, and a ring of
+light runs out through it after each beat. Its folds drift on their own, re-forming over
+about 30 s. More movement than light: it must not read as the orb pulsing. The pulse swells
+it a little. All of it holds still under `calm` and `off`. While it
 shows, the camera stands back (6.6 for 4.6), so the orb sits smaller inside it. Drawn on its
 own square behind the orb (`shaders/cloud.frag.glsl`, 2.05 radii), in the orb's canvas, so it
 costs no context. Setting it draws a frame. The gallery's **cloud** box turns it on.
