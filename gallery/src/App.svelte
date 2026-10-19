@@ -14,7 +14,7 @@
   // The effects shelf: its own entry, so this import is what loads three.js.
   import 'labkit/effects';
   import { orbitLap, orbitPlace, webglContexts, webglShared, type LabkitEffect, type Orbit, type Orbits,
-           type Tendrils } from 'labkit/effects';
+           type StarDust, type Tendrils } from 'labkit/effects';
 
   let showBoth = $state(false);
   let narrow = $state(false);
@@ -51,6 +51,7 @@
   let arrangement = $state<Arrangement>('tendrils');
   let effectPanel = $state<HTMLDivElement>();
   let tendrilsEl = $state<Tendrils>();
+  let starsEl = $state<StarDust>();
   let orbitsEl = $state<Orbits>();
   $effect(() => {
     const t = CHOSEN.find((c) => c.theme.name === effectTheme)!;
@@ -417,10 +418,12 @@
             {/each}
           </select>
         </label>
+        <!-- One comes about once a minute; this sends one now, to look at. -->
+        <button type="button" id="shoot" onclick={() => starsEl?.shoot()}>a shooting star</button>
       </div>
       <div class="effect-panel" class:orbiting={arrangement === 'orbits'} bind:this={effectPanel}
            data-effect-theme={effectTheme} data-arrangement={arrangement}>
-        <labkit-star-dust data-piece="stars"></labkit-star-dust>
+        <labkit-star-dust data-piece="stars" bind:this={starsEl}></labkit-star-dust>
         <labkit-tendrils data-piece="tendrils" bind:this={tendrilsEl}></labkit-tendrils>
         <labkit-orbits data-piece="orbits" bind:this={orbitsEl}></labkit-orbits>
         {#if arrangement === 'dials'}

@@ -244,7 +244,7 @@ three.js chunk is included, so another engine can compile them as they stand.
 | `<labkit-orbit-rings>` | three hairline rings at different tilts, each carrying small nodes that go round it once per loop, in the accent, the rings' glow band and the nodes' halo from `--glow`; a transparent frame that holds either orb inside it |
 | `<labkit-dials>` | flat dials (#56): five concentric dials facing the viewer, like an interface drawn round an orb, in segments with gaps, with ruler ticks, heavy bars, a doubled stretch or two and small marks riding them, in the accent, glowing and blooming from `--glow`; each turns very slowly, some one way and some the other, and pulses. The same transparent frame for an orb as the orbit rings |
 | `<labkit-tendrils>` | hand-drawn vines between points the app gives it, each wandering, kinking and stepping on its way, its colour blending from one end to the other, its glow from `--glow`, swaying a little once per loop; one element, over a transparent background, draws every tendril |
-| `<labkit-star-dust>` | a field of fine points over a transparent background, mostly faint and a few brighter, in the theme's ink (`--text`) touched by the accent, the brighter ones' halo from `--glow`; it drifts slowly once per loop, and shifts by the app's `offset`, nearer points more |
+| `<labkit-star-dust>` | a field of fine points over a transparent background, mostly faint and a few brighter, in the theme's ink (`--text`) touched by the accent, the brighter ones' halo from `--glow`; each twinkles at its own pace, a shooting star crosses about once a minute (`shoot()` sends one), it drifts slowly once per loop, and shifts by the app's `offset`, nearer points more |
 | `<labkit-orbits>` | orbit paths (#55): one to four wide, nearly flat ellipses seen a little from above, as hairlines in the accent with a faint glow from `--glow`, over a transparent background; app orbs ride them very slowly, placed with `orbitPlace`, the one function the element draws with |
 
 **What an effect reads from a theme**, from computed style on its own element, with
@@ -427,9 +427,25 @@ one frame through the base's `redraw()`, so the field follows the camera under `
 and `off` too while its own loop stays stopped. The field wraps at the element's edges,
 so neither drift nor offset uncovers a bare strip. Its points are seeded, so the same
 page shows the same sky, and how many it draws follows the element's area (one per
-1000 square CSS pixels, at most 2400). Its `settings` add `ink` (`--text` as the theme
+380 square CSS pixels, at most 6000: about 870 on a phone). Only 2.5% are bright; the
+rest are faint, most of them very faint. Its `settings` add `ink` (`--text` as the theme
 wrote it) and `offset`. `shaders/star.vert.glsl` places each point and
 `star.frag.glsl` draws its dot and halo.
+
+Every point **twinkles** at its own pace: its light swells and fades on two waves of its
+own and catches brighter for a moment near the top of a swell, the faint ones deepest,
+the bright few only a little. Each wave is a whole number of cycles in four loops of the
+pace (a swell every 2.3 to 5.8 s at Cold core), so it never jumps however long a page
+stays open. Now and then a **shooting star** crosses: a fine line with a bright head and
+a tail that grows and fades, down and across a quarter to nearly half the element's
+shorter side, gone in under a second. The time is cut into slots of two loops (17.4 s at
+Cold core), each holding one with a 30% chance at a seeded moment, so about one a
+minute, never on a beat you can see, and the same page at the same moment shows the
+same sky. **`shoot()`** sends one from the next frame (false under `calm` and `off`), and
+**`shooting`** says whether the last frame drew one. Twinkle and crossings hold still
+with the drift: under `calm` and `off` the field is one still moment, with no shooting
+star in it. `shaders/meteor.vert.glsl` lays a crossing's quad and `meteor.frag.glsl`
+draws it.
 
 **The orbit paths are what the app orbs ride** (#55). `<labkit-orbits>` draws wide,
 nearly flat ellipses, seen a little from above, one to four of them in layers, centred

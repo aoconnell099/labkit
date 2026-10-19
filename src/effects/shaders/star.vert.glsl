@@ -14,6 +14,8 @@ uniform vec2 uOffset;
 // The theme's glow, 0 to 1. mediump, as the fragment shader declares it: a
 // uniform both stages use must have one precision.
 uniform mediump float uGlow;
+// Where the twinkle's loop stands, 0 to 2 pi (star-dust.ts TWINKLE_LOOPS).
+uniform float uTwinkle;
 
 // Where the star sits, 0 to 1 across and down; z unused.
 attribute vec3 position;
@@ -23,9 +25,13 @@ attribute float aNear;
 attribute float aBright;
 // How far its colour leans from the ink to the accent, 0 to 1.
 attribute float aTouch;
+// The twinkle: two waves' whole cycles per loop, a phase, and how deep it dims.
+attribute vec4 aTwinkle;
 
 varying float vBright;
 varying float vTouch;
+// The twinkle's share of its light now, about 0.2 to 1.4.
+varying float vLit;
 // The point's size, and its solid core's radius, in CSS pixels.
 varying float vSize;
 varying float vCore;
@@ -34,11 +40,16 @@ void main() {
   vec2 p = fract(position.xy + (uDrift + uOffset / uView) * aNear);
   // The solid dot grows a little with brightness; the bright few get a halo
   // as wide as the theme's glow.
-  vCore = 0.5 + 0.9 * aBright;
+  vCore = 0.4 + 1.0 * aBright;
   float halo = aBright > 0.6 ? 2.0 + 7.0 * uGlow : 1.0;
   vSize = 2.0 * (vCore + halo);
   vBright = aBright;
   vTouch = aTouch;
+  // Mostly a gentle swell and fade, catching brighter for a moment near the
+  // top of a swell; the two waves keep any two points from keeping time.
+  float t = 0.5 + 0.3 * sin(aTwinkle.x * uTwinkle + aTwinkle.z)
+                + 0.2 * sin(aTwinkle.y * uTwinkle + aTwinkle.z * 1.7);
+  vLit = 1.0 - aTwinkle.w + aTwinkle.w * (0.55 * t + 0.95 * pow(t, 6.0));
   gl_PointSize = vSize * uPixelRatio;
   gl_Position = vec4(p.x * 2.0 - 1.0, 1.0 - p.y * 2.0, 0.0, 1.0);
 }
