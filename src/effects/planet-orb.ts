@@ -30,7 +30,7 @@ import {
 import { LabkitEffect, type EffectSettings } from './base';
 import { Bloom } from './bloom';
 import { bobAt, makeWander, pulseAt, seeded, wanderAt, type Wander } from './drift';
-import { FRAGMENT, Lines, sph, STREAK, thread, THREAD, type V3 } from './strands';
+import { DIAL, FRAGMENT, Lines, RIBBON, sph, STREAK, thread, THREAD, tilt, type V3 } from './strands';
 import haloVert from './shaders/halo.vert.glsl?raw';
 import haloFrag from './shaders/halo.frag.glsl?raw';
 import planetFrag from './shaders/planet.frag.glsl?raw';
@@ -46,7 +46,8 @@ const PLANET_EXTENT = 1.02;
 /** Layers that wander apart: the shell, the threads, the sparks, and outside
  *  the glass the coat of light and its streaks. The strand orb's shaders take
  *  eight leans; the rest are unused. */
-const SHELL = 0, THREADS = 1, SPARKS = 2, COAT = 3, STREAKS = 4, LEANS = 8;
+const SHELL = 0, THREADS = 1, SPARKS = 2, COAT = 3, STREAKS = 4, ARCS = 5, STRANDS = 6, INNER = 7,
+  LEANS = 8;
 /** A rainbow planet's glow, as sRGB: every hue added up, a soft cool white. */
 const RAINBOW_GLOW: [number, number, number] = [0.85, 0.85, 0.95];
 
@@ -123,6 +124,60 @@ function build(): { lines: BufferGeometry; sparks: BufferGeometry } {
     const out = 1.08 + Math.pow(r(), 2.2) * 0.3;
     L.add([sph(1.02, lat, lon), sph((1.02 + out) / 2, lat + (r() - 0.5) * 0.02, lon), sph(out, lat, lon)],
           STREAKS, STREAK, 0.7 + 0.5 * r(), r());
+  }
+
+  // Strands of light round the outside (the owner, after seeing the coat: "moreso outer
+  // filament strands, but some inner strands wouldn't hurt either"), the strand orb's
+  // look in the planet's colour and far fewer of them. Arcs: partial circles at many
+  // angles, steady, some doubled. Strands: long smooth curves wrapping round, leaning
+  // slowly as they go, blinking gently like the fragments. Inside: one sparse shell of
+  // fragments and a small curled ribbon at the heart. All after the coat, so its seeds hold.
+  for (let n = 0; n < 10; n++) {
+    const radius = 1.05 + r() * 0.2, tx = (r() - 0.5) * 2.6, ty = r() * Math.PI;
+    const start = r() * Math.PI * 2, span = (0.18 + r() * 0.27) * Math.PI * 2;
+    const seg = Math.ceil(span / 0.04);
+    const ring = (rad: number): V3[] => Array.from({ length: seg + 1 }, (_, i) => {
+      const a = start + (span * i) / seg;
+      return tilt([rad * Math.cos(a), rad * Math.sin(a), 0], tx, ty);
+    });
+    const sd = r();
+    L.add(ring(radius), ARCS, DIAL, 0.7 + 0.3 * r(), sd);
+    if (r() < 0.35) L.add(ring(radius * 1.03), ARCS, DIAL, 0.5, sd);
+  }
+  for (let n = 0; n < 12; n++) {
+    let lat = Math.asin(r() * 2 - 1), lon = r() * Math.PI * 2, heading = r() * Math.PI * 2;
+    const base = 1.04 + r() * 0.2, wobble = r() * 6.283;
+    const steps = 25 + Math.floor(r() * 20);
+    const pts: V3[] = [];
+    for (let k = 0; k <= steps; k++) {
+      pts.push(sph(base + 0.05 * Math.sin(k * 0.3 + wobble), lat, lon));
+      heading += (r() - 0.5) * 0.5;
+      lat = Math.max(-1.4, Math.min(1.4, lat + Math.sin(heading) * 0.045));
+      lon += (Math.cos(heading) * 0.045) / Math.max(0.3, Math.cos(lat));
+    }
+    L.add(pts, STRANDS, FRAGMENT, 0.8 + 0.4 * r(), r());
+  }
+  for (let n = 0; n < 120; n++) {
+    let lon = r() * Math.PI * 2;
+    const lat = Math.asin(r() * 2 - 1) * 0.9;
+    const pts: V3[] = [sph(0.62, lat, lon)];
+    const len = (0.03 + r() * 0.1) * (r() < 0.5 ? 1 : -1);
+    const steps = Math.max(1, Math.round(Math.abs(len) / 0.02));
+    for (let k = 1; k <= steps; k++) {
+      lon += len / steps / Math.max(0.3, Math.cos(lat));
+      pts.push(sph(0.62, lat, lon));
+    }
+    L.add(pts, INNER, FRAGMENT, 0.35 + 0.35 * r(), r());
+  }
+  for (let k = 0; k < 8; k++) {
+    const off = (k - 3.5) * 0.008, ph = r() * 6.283;
+    const pts: V3[] = [];
+    for (let i = 0; i <= 60; i++) {
+      const u = i / 60, th = 0.6 + u * Math.PI * 2.2;
+      const rad = 0.05 + 0.3 * Math.pow(1 - u, 1.25) + off * (1 + 0.7 * Math.sin(u * 7 + ph));
+      pts.push(tilt([rad * Math.cos(th), rad * Math.sin(th), 0.08 * Math.sin(u * 4.5 + ph * 0.2)], 1.0, 0.55));
+    }
+    L.add(pts, INNER, RIBBON, 0.3 + 0.25 * (1 - Math.abs(k - 3.5) / 4), r());
   }
 
   const sparks = new BufferGeometry();

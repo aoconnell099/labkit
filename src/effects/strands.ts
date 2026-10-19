@@ -48,6 +48,13 @@ export class Lines {
 }
 
 /** A point on a sphere of radius `r` at latitude `lat` and longitude `lon`. */
+/** Rotate `p` so the plane z = 0 tilts by `tx` about x, then `ty` about y. */
+export function tilt(p: V3, tx: number, ty: number): V3 {
+  const [x, y, z] = p;
+  const y1 = y * Math.cos(tx) - z * Math.sin(tx), z1 = y * Math.sin(tx) + z * Math.cos(tx);
+  return [x * Math.cos(ty) + z1 * Math.sin(ty), y1, -x * Math.sin(ty) + z1 * Math.cos(ty)];
+}
+
 export function sph(r: number, lat: number, lon: number): V3 {
   return [r * Math.cos(lat) * Math.cos(lon), r * Math.sin(lat), r * Math.cos(lat) * Math.sin(lon)];
 }
