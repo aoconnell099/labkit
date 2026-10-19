@@ -25,8 +25,9 @@ import {
   SRGBColorSpace, Vector2, type WebGLRenderer,
 } from 'three';
 import { LabkitEffect, type EffectSettings } from './base';
+import type { Pace } from './pace';
 import { Bloom } from './bloom';
-import { bobAt, makeWander, pulseAt, seeded, wanderAt, type Wander } from './drift';
+import { bobAt, FLARE_LOOPS, makeWander, pulseAt, seeded, wanderAt, type Pulse, type Wander } from './drift';
 import { DIAL, FRAGMENT, Lines, RIBBON, sph, STREAK, thread, THREAD, tilt, type V3 } from './strands';
 import filamentVert from './shaders/filament.vert.glsl?raw';
 import filamentFrag from './shaders/filament.frag.glsl?raw';
@@ -211,6 +212,39 @@ export class FilamentOrb extends LabkitEffect {
   #euler = new Euler();
   #bloom: Bloom | null = null;
 
+  /** Asked-for flares (`flare()`), as (when, in loops; strength), and ones asked for but
+   *  not yet drawn. */
+  #flares: [number, number][] = [];
+  #pendingFlares: number[] = [];
+
+  /** Brighten now, as one of its own pulses does, from the next frame: the hub flares an
+   *  orb when a bead of light reaches it down its vine. `strength` 0 to 1. False, and
+   *  nothing, under calm and off: a still frame never holds a flare. */
+  flare(strength = 1): boolean {
+    if (this.settings.pace.level !== 'full') return false;
+    this.#pendingFlares.push(Math.min(1, Math.max(0, strength)));
+    return true;
+  }
+
+  /** The flares showing now, the pending ones given this frame's time, the faded ones
+   *  forgotten. `pulse="off"` leaves out the piece's own random pulses. */
+  #pulse(pace: Pace, loops: number, seed: number): Pulse {
+    if (pace.level !== 'full') this.#pendingFlares = [];
+    for (const a of this.#pendingFlares) this.#flares.push([loops, a]);
+    this.#pendingFlares = [];
+    this.#flares = this.#flares.filter(([t]) => loops - t <= FLARE_LOOPS && loops >= t);
+    return pulseAt(pace, loops, seed, this.#flares, this.getAttribute('pulse') !== 'off');
+  }
+
+  static get observedAttributes(): string[] {
+    return ['pulse'];
+  }
+
+  /** `pulse` changed: draw a frame now, still or not. */
+  attributeChangedCallback(): void {
+    this.redraw();
+  }
+
   protected create(): void {
     this.#scene = new Scene();
     this.#camera = new PerspectiveCamera(35, 1, 0.1, 20);
@@ -278,7 +312,7 @@ export class FilamentOrb extends LabkitEffect {
     const [bx, by] = bobAt(loops);
     this.#group.position.set(bx, by, 0);
 
-    const pulse = pulseAt(pace, loops, 71);
+    const pulse = this.#pulse(pace, loops, 71);
     for (const m of [this.#lines.material, this.#sparks.material]) {
       const u = m.uniforms;
       u.uTime.value = loops;

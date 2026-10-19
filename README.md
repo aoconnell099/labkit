@@ -300,6 +300,12 @@ the theme's `--accent`. The app orbs are the planet orb in different colours (id
 `settings` add `tint`, the colour it draws in (`--effect-tint` as written, or the
 accent), and `rainbow`.
 
+**`flare(strength)`** brightens the planet orb (and the filament orb) now, as one of its
+own pulses does, through the same envelope in `drift.ts` (`pulseAt` takes the asked-for
+flares): the hub flares a planet when a bead lands on it. False, and nothing, under `calm`
+and `off`. **`pulse="off"`** leaves out the piece's own random pulses, so only asked-for
+flares show (the hub's planets, and Jarvis until it is working). Setting it draws a frame.
+
 **`rainbow`**, an attribute, draws the planet in every hue at once instead of its tint
 (the hub's Apps orb, which holds every app): the smoke's hue follows the same warp that
 curls it, so the colours mix the way it curls, its far layer a third of the wheel round
@@ -437,7 +443,17 @@ the `fromColor` and `toColor` it draws in (the accent filled in). Three looks, b
   burned into one solid band), swelling and pinching along the way, fanning out at
   `from` (up to 36 px, where an app's orb is) and gathering in at `to`.
 A tendril's **`rainbow`** sends its `fromColor` threads through every hue instead (twist:
-along the thread; bundle: one hue per thread), turning slowly. All of them hold still
+along the thread; bundle: one hue per thread), turning slowly. A tendril's **`beads`** sends beads of
+light down it from `to` to `from` (the owner's polish list: "a pulse of light travels from
+the base of the Jarvis-side tendril through the tendrils to the planet orb"): `'idle'` now
+and then, one idle tendril at a time (slots of 0.95 loops, 70% holding one, about every 12 s
+at Cold core), each taking 0.13 loops (1.1 s) and burning toward white; or a number, a
+heartbeat every that many ms, a lub and a weaker dub 0.022 loops later (0.19 s), each
+taking 0.085 loops (0.7 s) and keeping the tendril's own colour (red, in an alarm). A bead
+brightens what it passes 2.5 times (5 on the bundle's faint threads). As one reaches
+`from` the element dispatches **`labkit-arrive`**, `{id, kind: 'idle' | 'beat'}`, once,
+so an app can flare the orb there; `beads` (the getter) gives each tendril's beads now.
+None under `calm` and `off`, and none is told after a pause of half a loop. All of them hold still
 under `calm` and `off`. Each path is walked on the CPU, in pixels, into ribbons (one per
 vine, one per thread), and `shaders/tendril.vert.glsl` and `tendril.frag.glsl` only
 place and colour them. The gallery's effects panel has a **vine** picker.
