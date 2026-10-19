@@ -57,6 +57,10 @@ export interface Tendril {
   grow?: number;
   /** Twist and bundle: the `fromColor` threads run through every hue instead. */
   rainbow?: boolean;
+  /** The radius, in CSS pixels, of the ball at `from` when the tendril starts at its middle:
+   *  it fades in across the ball instead of ending at a cut, and the bundle's fan is never
+   *  wider than the ball. Unset or 0, it starts at `from` as before. */
+  fromRadius?: number;
   /** Beads of light running down it from `to` to `from`: `idle`, now and then, one idle
    *  tendril at a time; or a number, a heartbeat every that many ms (lub, then dub). */
   beads?: 'idle' | number;
@@ -427,6 +431,12 @@ export class Tendrils extends LabkitEffect {
     return b;
   }
 
+  /** The share of the length over which a tendril fades in at `from`: across its ball
+   *  (`fromRadius`) when it starts inside one, so it grows out of the glass. */
+  #fadeIn(t: Tendril, length: number): number {
+    return Math.max(FADE, ball(t) / Math.max(1, length));
+  }
+
   /** The hand-drawn vine. */
   #vine(t: Tendril, grow: number, length: number, loops: number, half: number, accent: string,
         beads: [number, number][]): void {
@@ -465,7 +475,8 @@ export class Tendrils extends LabkitEffect {
     const pts = path.map(([s, c]) => [ax + ux * s * length - uy * c, ay + uy * s * length + ux * c]);
     const rgb = path.map(([s]) => lighten([a[0] + (b[0] - a[0]) * s, a[1] + (b[1] - a[1]) * s,
                                            a[2] + (b[2] - a[2]) * s], this.#lit(s, beads), t));
-    const fade = path.map(([s]) => smooth(s / FADE) * smooth((grow - s) / FADE) * (1 + BEAD_GAIN * this.#lit(s, beads)));
+    const fadeIn = this.#fadeIn(t, length);
+    const fade = path.map(([s]) => smooth(s / fadeIn) * smooth((grow - s) / FADE) * (1 + BEAD_GAIN * this.#lit(s, beads)));
     this.#ribbon(pts, rgb, fade, half, [-uy, ux], 2);
   }
 
@@ -478,6 +489,10 @@ export class Tendrils extends LabkitEffect {
     const nx0 = -uy, ny0 = ux;
     const count = variant === 'twist' ? 2 : BUNDLE_THREADS;
     const r = this.#rope(t.id, count);
+    const fadeIn = this.#fadeIn(t, length);
+    // Starting inside a ball, the fan is never wider than the ball: wider, it ended in a
+    // flat brush beside the planet (the owner, 2026-10-19: "the tendrils getting cut off").
+    const fanPx = Math.min(BUNDLE_FAN_PX, length * BUNDLE_FAN, ball(t) || Infinity);
     const a = this.#rgb(t.fromColor || accent);
     const b = this.#rgb(t.toColor || accent);
 
@@ -511,7 +526,7 @@ export class Tendrils extends LabkitEffect {
           width = TWIST_PX * (1 + TWIST_SPREAD * (1 - smooth(s / 0.15)) + TWIST_SPREAD * (1 - smooth((1 - s) / 0.15)));
         } else {
           const swell = 0.6 + 0.4 * Math.sin(tau * r.swell[0] * s + r.swell[1] + tau * 0.03 * loops);
-          const fan = Math.min(BUNDLE_FAN_PX, length * BUNDLE_FAN) * (1 - smooth(s / 0.3)) ** 2;
+          const fan = fanPx * (1 - smooth(s / 0.3)) ** 2;
           width = (BUNDLE_PX * swell + fan) * (0.25 + 0.75 * smooth((1 - s) / 0.12));
         }
         const across = width * Math.cos(theta);
@@ -520,7 +535,7 @@ export class Tendrils extends LabkitEffect {
         const depth = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(theta));
         const lit = this.#lit(s, beads);
         const light = variant === 'bundle' ? BUNDLE_LIGHT * (1 + 2 * BEAD_GAIN * lit) : 1 + BEAD_GAIN * lit;
-        fade.push(smooth(s / FADE) * smooth((grow - s) / FADE) * depth * light);
+        fade.push(smooth(s / fadeIn) * smooth((grow - s) / FADE) * depth * light);
         const colour = own && t.rainbow ? hue((variant === 'twist' ? s * 0.9 : j / count) + loops * 0.03)
           : own ? a : b;
         rgb.push(lighten(colour, lit, t));
@@ -602,6 +617,12 @@ function lighten(c: number[], lit: number, t: Tendril): number[] {
   if (lit <= 0.001 || typeof t.beads === 'number') return c;
   const w = Math.min(0.6, 0.6 * lit);
   return [c[0] + (1 - c[0]) * w, c[1] + (1 - c[1]) * w, c[2] + (1 - c[2]) * w];
+}
+
+/** A tendril's `fromRadius`, in CSS pixels; 0 when unset or not a size. */
+function ball(t: Tendril): number {
+  const r = t.fromRadius ?? 0;
+  return Number.isFinite(r) && r > 0 ? r : 0;
 }
 
 /** A tendril's grow, 0 to 1; all of it when unset. */
