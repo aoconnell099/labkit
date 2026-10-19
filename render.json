@@ -73,7 +73,9 @@
         {"expect": "(e => e.beads.every(b => b.at.every(a => a > 0 && a <= 1)) && document.querySelector('[data-piece=filament]').flare() === true)(document.querySelector('[data-piece=tendrils]'))", "says": "a bead of light runs down a vine now and then, and an orb can be asked to flare"},
         {"click": "#effect-inside"},
         {"wait_until": "(e => e && e.running && e.frames > 2)(document.querySelector('[data-piece=inside]'))", "ms": 5000},
-        {"expect": "(e => e.settings.tint.toLowerCase() === '#3cc6a0' && e.settings.rainbow === false && e.offsetWidth === e.parentElement.clientWidth && e.shadowRoot.querySelector('canvas').width > 1)(document.querySelector('[data-piece=inside]'))", "says": "inside a planet draws its smoke in the planet's colour over the panel"}
+        {"expect": "(e => e.settings.tint.toLowerCase() === '#3cc6a0' && e.settings.rainbow === false && e.offsetWidth === e.parentElement.clientWidth && e.shadowRoot.querySelector('canvas').width > 1)(document.querySelector('[data-piece=inside]'))", "says": "inside a planet draws its smoke in the planet's colour over the panel"},
+        {"note": "(window.cloudFrames = document.querySelector('[data-piece=filament]').frames, document.querySelector('#effect-cloud').click(), 1)", "as": "cloud_on"},
+        {"expect": "(e => e.hasAttribute('cloud') && e.frames > window.cloudFrames)(document.querySelector('[data-piece=filament]'))", "says": "the filament orb takes its cloud, drawn at once"}
       ]
     },
     {
