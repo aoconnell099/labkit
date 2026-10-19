@@ -54,6 +54,8 @@
   // The star dust's sky, and where the colourful sky's strands start (labkit sky.ts).
   let sky = $state('');
   let strandsFrom = $state('below');
+  // The tendrils' look: the hand-drawn vine, or the rope of two threads or of many.
+  let vine = $state('vine');
   let effectPanel = $state<HTMLDivElement>();
   let tendrilsEl = $state<Tendrils>();
   let starsEl = $state<StarDust>();
@@ -417,6 +419,14 @@
         </label>
         <label><input type="checkbox" id="effect-rainbow" bind:checked={rainbow} /> rainbow</label>
         <label>
+          vine
+          <select id="effect-vine" bind:value={vine}>
+            <option value="vine">vine</option>
+            <option value="twist">twist</option>
+            <option value="bundle">bundle</option>
+          </select>
+        </label>
+        <label>
           sky
           <select id="effect-sky" bind:value={sky}>
             <option value="">none</option>
@@ -446,7 +456,7 @@
       <div class="effect-panel" class:orbiting={arrangement === 'orbits'} bind:this={effectPanel}
            data-effect-theme={effectTheme} data-arrangement={arrangement}>
         <labkit-star-dust data-piece="stars" bind:this={starsEl} sky={sky || undefined} strands={strandsFrom}></labkit-star-dust>
-        <labkit-tendrils data-piece="tendrils" bind:this={tendrilsEl}></labkit-tendrils>
+        <labkit-tendrils data-piece="tendrils" bind:this={tendrilsEl} variant={vine}></labkit-tendrils>
         <labkit-orbits data-piece="orbits" bind:this={orbitsEl}></labkit-orbits>
         {#if arrangement === 'dials'}
           <labkit-dials data-piece="dials">

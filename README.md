@@ -420,13 +420,27 @@ Its JS property **`tendrils`** is the list it draws, each
 Setting `tendrils` draws one frame through the base's `redraw()`, so an app may move
 the ends every frame (its orbs float) while the element's own loop stays stopped under
 `calm` and `off`. Its `settings` add `variant` and, per tendril, its `id`, `grow` and
-the `fromColor` and `toColor` it draws in (the accent filled in). The one look so far
-is `variant="vine"`, the default: a line that wanders, kinks and steps on its way
-rather than running straight or curving smoothly, a thin solid line with a glow either
-side of it. It sways a little once per loop of the theme's pace and holds still under
-`calm` and `off`. Each path is walked on the CPU, in pixels, into one ribbon mesh for
-every tendril, and `shaders/tendril.vert.glsl` and `tendril.frag.glsl` only place and
-colour it.
+the `fromColor` and `toColor` it draws in (the accent filled in). Three looks, by the
+**`variant`** attribute (setting it draws a frame; `TENDRIL_VARIANTS` lists them):
+- `vine`, the default: a line that wanders, kinks and steps on its way rather than
+  running straight or curving smoothly, a thin solid line with a glow either side of
+  it, its colour blending from one end to the other. It sways a little once per loop.
+- `twist` and `bundle` (the owner's polish list, 2026-10-18: "less sharp turns, and act
+  more like a rope floating in water", "filament type threads", "a swirl of both
+  colored tendrils, alternating colors"; the owner asked to see both): a smooth rope
+  whose bend is three slow waves travelling along it (at most 7.5% of its length or 42
+  px, none at its ends), made of threads winding round it, about 1.6 to 2.8 turns from
+  end to end and turning on slowly. A thread in front is brighter than one behind, so
+  the winding reads. `twist` is two threads, one in each end's colour, 4 px out from the
+  middle and spreading further apart at the ends. `bundle` is twenty fine threads in
+  alternating colours, each at a little over a third of a line's light (at full they
+  burned into one solid band), swelling and pinching along the way, fanning out at
+  `from` (up to 36 px, where an app's orb is) and gathering in at `to`.
+A tendril's **`rainbow`** sends its `fromColor` threads through every hue instead (twist:
+along the thread; bundle: one hue per thread), turning slowly. All of them hold still
+under `calm` and `off`. Each path is walked on the CPU, in pixels, into ribbons (one per
+vine, one per thread), and `shaders/tendril.vert.glsl` and `tendril.frag.glsl` only
+place and colour them. The gallery's effects panel has a **vine** picker.
 
 **The star dust is the sky behind a page.** `<labkit-star-dust>` draws a field of fine
 points over a transparent background, for a dark, starlit page: most of them faint, a

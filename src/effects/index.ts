@@ -40,7 +40,7 @@ export { readPace, readLevel, parseEase, cubicBezier, PERIOD_PER_ENTER,
 export { seeded, seedOf, makeWander, wanderAt, bobAt, pulseAt, type Wander, type Pulse } from './drift';
 export { Bloom } from './bloom';
 export { type PlanetSettings } from './planet-orb';
-export { type Tendril, type TendrilSettings } from './tendrils';
+export { TENDRIL_VARIANTS, type Tendril, type TendrilSettings, type TendrilVariant } from './tendrils';
 export { type StarDustSettings } from './star-dust';
 export { SKY_KINDS, STRAND_COLOURS, type SkyKind, type StrandOrigin } from './sky';
 export { type Orbit, type OrbitPlaceAt, type OrbitsSettings } from './orbits';
