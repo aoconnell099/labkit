@@ -300,6 +300,16 @@ the theme's `--accent`. The app orbs are the planet orb in different colours (id
 `settings` add `tint`, the colour it draws in (`--effect-tint` as written, or the
 accent), and `rainbow`.
 
+**`cloud`**, an attribute on the filament orb (the owner's polish list, 2026-10-18, after
+private references described in our own words): a nebula round the orb, a soft lumpy haze
+with no clean outline and folded sheets of fine glowing net in it, the accent deepening to
+violet and lifting to teal in places, out to about 1.6 radii. It drifts in place like a
+jellyfish: three lobes' worth of swell go round its outline at their own slow rates, so one
+side swells as another settles, and it never turns. The pulse swells it a little. While it
+shows, the camera stands back (6.1 for 4.6), so the orb sits smaller inside it. Drawn on its
+own square behind the orb (`shaders/cloud.frag.glsl`, 1.85 radii), in the orb's canvas, so it
+costs no context. Setting it draws a frame. The gallery's **cloud** box turns it on.
+
 **`flare(strength)`** brightens the planet orb (and the filament orb) now, as one of its
 own pulses does, through the same envelope in `drift.ts` (`pulseAt` takes the asked-for
 flares): the hub flares a planet when a bead lands on it. False, and nothing, under `calm`

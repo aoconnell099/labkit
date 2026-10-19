@@ -35,9 +35,15 @@ import sparkVert from './shaders/spark.vert.glsl?raw';
 import sparkFrag from './shaders/spark.frag.glsl?raw';
 import haloVert from './shaders/halo.vert.glsl?raw';
 import haloFrag from './shaders/halo.frag.glsl?raw';
+import cloudFrag from './shaders/cloud.frag.glsl?raw';
 
 /** The glow square's half-width, in orb radii. */
 const HALO_EXTENT = 1.5;
+/** The cloud's square's half-width, in orb radii, and how far back the camera stands while
+ *  the cloud shows (4.6 without), so the orb sits a little smaller inside it. */
+const CLOUD_EXTENT = 1.85;
+const CAMERA_Z = 4.6;
+const CLOUD_CAMERA_Z = 6.1;
 /** Layers that wander apart: six shells of fragments, the core, the threads. */
 const LAYERS = 8;
 const CORE = 6, THREADS = 7;
@@ -200,6 +206,7 @@ export class FilamentOrb extends LabkitEffect {
   #lines: LineSegments<BufferGeometry, RawShaderMaterial> | null = null;
   #sparks: Points<BufferGeometry, RawShaderMaterial> | null = null;
   #halo: Mesh<PlaneGeometry, RawShaderMaterial> | null = null;
+  #cloud: Mesh<PlaneGeometry, RawShaderMaterial> | null = null;
   #colour = new Color();
   #scratch = new Vector2();
   /** Each layer's own resting lean, and its own wander. */
@@ -237,10 +244,10 @@ export class FilamentOrb extends LabkitEffect {
   }
 
   static get observedAttributes(): string[] {
-    return ['pulse'];
+    return ['pulse', 'cloud'];
   }
 
-  /** `pulse` changed: draw a frame now, still or not. */
+  /** `pulse` or `cloud` changed: draw a frame now, still or not. */
   attributeChangedCallback(): void {
     this.redraw();
   }
@@ -248,7 +255,7 @@ export class FilamentOrb extends LabkitEffect {
   protected create(): void {
     this.#scene = new Scene();
     this.#camera = new PerspectiveCamera(35, 1, 0.1, 20);
-    this.#camera.position.set(0, 0, 4.6);
+    this.#camera.position.set(0, 0, CAMERA_Z);
     const r = seeded(4902);
     this.#rest = Array.from({ length: LAYERS }, (_, i) =>
       i === CORE ? new Euler(0, 0, 0) : new Euler((r() - 0.5) * 1.2, r() * 6.283, (r() - 0.5) * 0.8));
@@ -275,8 +282,18 @@ export class FilamentOrb extends LabkitEffect {
       vertexShader: sparkVert, fragmentShader: sparkFrag, ...ADD,
       uniforms: { ...shared(), uPx: { value: 1 } },
     }));
+    // The cloud (`cloud`): a nebula round the orb, drifting like a jellyfish (cloud.frag.glsl).
+    this.#cloud = new Mesh(
+      new PlaneGeometry(CLOUD_EXTENT * 2, CLOUD_EXTENT * 2),
+      new RawShaderMaterial({
+        vertexShader: haloVert, fragmentShader: cloudFrag, ...ADD,
+        uniforms: { uColor: { value: [1, 1, 1] }, uGlow: { value: 0 }, uBreath: { value: 0 },
+                    uTime: { value: 0 }, uExtent: { value: CLOUD_EXTENT } },
+      }),
+    );
+    this.#cloud.visible = false;
     this.#group = new Group();
-    this.#group.add(this.#halo, this.#lines, this.#sparks);
+    this.#group.add(this.#cloud, this.#halo, this.#lines, this.#sparks);
     this.#scene.add(this.#group);
   }
 
@@ -285,7 +302,7 @@ export class FilamentOrb extends LabkitEffect {
     // they take the accent as the sRGB values the theme wrote.
     this.#colour.set(settings.accent || '#ffffff');
     const rgb = this.#colour.getRGB({ r: 1, g: 1, b: 1 }, SRGBColorSpace);
-    for (const m of [this.#lines?.material, this.#sparks?.material, this.#halo?.material]) {
+    for (const m of [this.#lines?.material, this.#sparks?.material, this.#halo?.material, this.#cloud?.material]) {
       if (!m) continue;
       m.uniforms.uColor.value = [rgb.r, rgb.g, rgb.b];
       m.uniforms.uGlow.value = settings.glow;
@@ -299,6 +316,8 @@ export class FilamentOrb extends LabkitEffect {
 
     const size = this.drawingSize(this.#scratch);
     this.#camera.aspect = size.x / Math.max(1, size.y);
+    const cloud = this.hasAttribute('cloud');
+    this.#camera.position.z = cloud ? CLOUD_CAMERA_Z : CAMERA_Z;
     this.#camera.updateProjectionMatrix();
 
     // Every layer: its resting lean, its own wander, then the whole's wander.
@@ -326,6 +345,11 @@ export class FilamentOrb extends LabkitEffect {
     // give them back the light a CSS pixel's worth of line would have.
     this.#lines.material.uniforms.uThin.value = Math.sqrt(this.pixelRatio);
     this.#halo.material.uniforms.uBreath.value = Math.min(1, pulse.level);
+    if (this.#cloud) {
+      this.#cloud.visible = cloud;
+      this.#cloud.material.uniforms.uTime.value = loops;
+      this.#cloud.material.uniforms.uBreath.value = Math.min(1, pulse.level);
+    }
     this.#bloom ??= new Bloom();
     const d = this.drawingSize(this.#scratch);
     this.#bloom.render(renderer, this.#scene, this.#camera, settings.glow * (1.1 + 0.5 * Math.min(1, pulse.level)),
@@ -333,12 +357,12 @@ export class FilamentOrb extends LabkitEffect {
   }
 
   protected destroy(): void {
-    for (const o of [this.#lines, this.#sparks, this.#halo]) {
+    for (const o of [this.#lines, this.#sparks, this.#halo, this.#cloud]) {
       o?.geometry.dispose();
       o?.material.dispose();
     }
     this.#bloom?.dispose();
     this.#bloom = null;
-    this.#scene = this.#camera = this.#group = this.#lines = this.#sparks = this.#halo = null;
+    this.#scene = this.#camera = this.#group = this.#lines = this.#sparks = this.#halo = this.#cloud = null;
   }
 }

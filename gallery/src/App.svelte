@@ -58,6 +58,8 @@
   let vine = $state('vine');
   // Inside a planet: the level an app dives into, drawn over the panel while on.
   let inside = $state(false);
+  // The filament orb in its cloud, as the hub's Jarvis wears it.
+  let cloud = $state(false);
   let effectPanel = $state<HTMLDivElement>();
   let tendrilsEl = $state<Tendrils>();
   let starsEl = $state<StarDust>();
@@ -423,6 +425,7 @@
         </label>
         <label><input type="checkbox" id="effect-rainbow" bind:checked={rainbow} /> rainbow</label>
         <label><input type="checkbox" id="effect-inside" bind:checked={inside} /> inside a planet</label>
+        <label><input type="checkbox" id="effect-cloud" bind:checked={cloud} /> cloud</label>
         <label>
           vine
           <select id="effect-vine" bind:value={vine}>
@@ -470,11 +473,11 @@
         <labkit-orbits data-piece="orbits" bind:this={orbitsEl}></labkit-orbits>
         {#if arrangement === 'dials'}
           <labkit-dials data-piece="dials">
-            <labkit-filament-orb data-piece="filament"></labkit-filament-orb>
+            <labkit-filament-orb data-piece="filament" cloud={cloud ? '' : undefined}></labkit-filament-orb>
           </labkit-dials>
         {:else}
           <labkit-orbit-rings data-piece="rings">
-            <labkit-filament-orb data-piece="filament"></labkit-filament-orb>
+            <labkit-filament-orb data-piece="filament" cloud={cloud ? '' : undefined}></labkit-filament-orb>
           </labkit-orbit-rings>
         {/if}
         <span class="lbl">filament orb in {arrangement === 'dials' ? 'dials' : 'orbit rings'} &middot; {effectTheme} &middot; motion {level} &middot; {ARRANGEMENTS[arrangement]}</span>
