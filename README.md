@@ -563,7 +563,9 @@ photographs.
   grains of light caught in it that twinkle, its colour turning toward the next strand's along
   it, and it sways slowly. `strands="below"` (the default) fans them up like a fountain from
   one point just under the bottom edge, each curling further out the further out it starts;
-  `strands="band"` grows them out of the band to either side, curling less. The hub offers
+  `strands="band"` grows them out of the band to either side, curling less and drawn 1.6
+  times as strong (`BAND_STRENGTH`), since from below their light adds up where they overlap
+  and out of the band each stands alone. The hub offers
   both in its Settings. They stay wide and dusty, so they never read as vines.
 
 The glow is drawn once into a 512-texel square (`shaders/sky.frag.glsl`) whenever the sky, the

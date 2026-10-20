@@ -9,6 +9,8 @@ precision highp float;
 uniform float uGlow;
 // Time, in loops of the pace.
 uniform float uTime;
+// How strongly the plumes are drawn: more out of the band, where none overlap (sky.ts).
+uniform float uStrength;
 
 varying float vSide;
 varying float vFade;
@@ -51,6 +53,6 @@ void main() {
     float tw = 0.45 + 0.55 * sin(uTime * 6.2831853 * (2.0 + 4.0 * hash(cell + 1.9)) + h * 60.0);
     col += mix(vColour, vec3(1.0), step(0.95, h)) * grain * max(tw, 0.0) * (0.6 + 0.6 * fib);
   }
-  col *= vFade * (0.6 + 0.4 * uGlow);
+  col *= vFade * (0.6 + 0.4 * uGlow) * uStrength;
   gl_FragColor = vec4(col, max(col.r, max(col.g, col.b)));
 }

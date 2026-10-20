@@ -59,6 +59,8 @@ const CELLS = 4;
 /** Strands, the segments along each, and the brighter wisps in each beside its plume. */
 const STRANDS = 7, SEGMENTS = 48, LINES = 2;
 const RIBBONS = STRANDS * (1 + LINES);
+/** How much stronger a plume out of the band is drawn than one from below. */
+const BAND_STRENGTH = 1.6;
 const POINTS = SEGMENTS + 1;
 
 const ADD = {
@@ -124,7 +126,7 @@ export class Sky {
     }));
     this.#strands = new Mesh(this.#ribbons(), new RawShaderMaterial({
       vertexShader: strandVert, fragmentShader: strandFrag, ...ADD, side: DoubleSide,
-      uniforms: { uView: { value: [1, 1] }, uGlow: { value: 0 }, uTime: { value: 0 } },
+      uniforms: { uView: { value: [1, 1] }, uGlow: { value: 0 }, uTime: { value: 0 }, uStrength: { value: 1 } },
     }));
     this.#strands.frustumCulled = false;
     this.#strands.renderOrder = -1;
@@ -248,6 +250,9 @@ export class Sky {
     u.uView.value = [w, h];
     u.uGlow.value = glow;
     u.uTime.value = loops;
+    // From below, the plumes overlap near where they start and their light adds up; out of the
+    // band each stands alone, so it is drawn stronger to show as much.
+    u.uStrength.value = origin === 'band' ? BAND_STRENGTH : 1;
     const diag = Math.hypot(w, h);
     const px: [number, number][] = Array.from({ length: POINTS }, () => [0, 0]);
     const along: number[] = new Array(POINTS).fill(0);
