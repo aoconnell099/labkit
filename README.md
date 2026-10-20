@@ -543,30 +543,39 @@ draws it.
 **A sky behind the stars** (the owner's polish list, 2026-10-18, after three folders of
 night-sky photographs): the `sky` attribute gives the band the stars gather along a glow of
 its own, in one of three looks, and is none when unset, as before.
-Since 2026-10-20 (the owner: "a little more vibrant, closer to the reference images,
-including the band") every sky has a colour of its own across the whole field rather than
-black, in broad slow patches, its band is wider and brighter, and a glow rises from the
-element's bottom edge that stays put as the stars slide, like the light over a horizon in the
-photographs.
-- `deep-blue`: a navy night, a soft pale-blue band with dark lanes of dust down its heart and a
-  little pale light where its clouds gather, and a pale-blue horizon.
-- `violet`: deep blue drifting to purple, the band blue at its edges, violet then pink at its
-  heart, nearly white-blue down its middle where its clouds gather, with clouds of cyan and
-  magenta along it, and a pink horizon.
-- `colourful`: a dark blue night with teal in it, the band warm peach at its heart and teal at
-  its edges, touched with violet, with brown lanes, and a violet horizon; and seven
-  **strands**, plumes of glittering dust in the page's colours (the `strandColours` property,
-  CSS colours taken in turn; `STRAND_COLOURS`, the hub's orb colours, until set), after the
-  owner's photograph of colourful dust fanning up from a horizon (2026-10-20: the thin
-  straight strands before "look like concert lights"). Each widens as it goes and curls
-  outward, fibrous along its length and gathering in clumps, with two brighter wisps in it and
-  grains of light caught in it that twinkle, its colour turning toward the next strand's along
-  it, and it sways slowly. `strands="below"` (the default) fans them up like a fountain from
-  one point just under the bottom edge, each curling further out the further out it starts;
-  `strands="band"` grows them out of the band to either side, curling less and drawn 1.6
-  times as strong (`BAND_STRENGTH`), since from below their light adds up where they overlap
-  and out of the band each stands alone. The hub offers
-  both in its Settings. They stay wide and dusty, so they never read as vines.
+Since 2026-10-20 each sky follows two or more of the owner's photographs (their words: "a
+combination of those two images ... tuned slightly to not overpower the foreground"). Each
+has a colour of its own across the whole field rather than black, in broad slow patches, a
+wider, brighter band, and a glow rising from the element's bottom edge that stays put as the
+stars slide, like the light over a horizon. **Each sky lays the field** so its band crosses
+the middle: the stars and the glow move together by `(1 - 0.37) / 2` of the element each way
+(x + y from 0.37 to 1, through the centre), and deep blue and violet also mirror it across,
+so their band runs from top left to bottom right as in their photographs; the colourful one
+runs bottom left to top right, as in its. With no `sky` the field is laid as it always was.
+- `deep-blue`: a royal blue night, deeper in patches, and a soft band of pale-blue cloud with
+  dark lanes in it, paler where its clouds gather; a pale-blue horizon; and half as many
+  stars again, as the photographs are thick with them.
+- `violet`: clouds of colour across the whole sky, cyan to one side and magenta to the other,
+  violet between, broad and soft with brighter wisps in them; and through the middle a band
+  that is a blue haze, violet toward its edges, with a bright, nearly white-blue heart where
+  its clouds gather, cut by fine dark lanes. Toward the bottom the sky's own light turns violet
+  then pink, over a magenta-pink horizon.
+- `colourful`: a dark night with a haze of teal round the band, never on its heart; the band
+  warm peach, pinker in places, brightest where its clouds gather and cut deep by dark brown
+  lanes; a violet horizon; and eleven **strands**, plumes of glittering dust in the colours
+  of the owner's photograph of colourful dust (`STRAND_COLOURS`: teal, orange, magenta, blue,
+  gold, violet, cyan, pink, green; the `strandColours` property, CSS colours taken in turn,
+  replaces them). The strands before were thin straight lines that "look like concert
+  lights". Each widens as it goes and curls, fibrous along its length and gathering in
+  clumps, with two brighter wisps in it and grains of light caught in it that twinkle, its
+  colour turning toward the next strand's along it, and it sways slowly.
+  `strands="band"` fans them out of the band's middle to both sides, as the photograph's fan
+  out of its horizon: each starts on the band near its middle, heads out across it at its own
+  angle, and curls further from straight out (drawn 1.05 times as strong, `BAND_STRENGTH`).
+  `strands="below"` (the attribute's default) fans them up like a fountain from one point just
+  under the bottom edge instead, each curling further out the further out it starts. The hub
+  offers both in its Settings, out of the band by default. They stay wide and dusty, so they
+  never read as vines.
 
 The glow is drawn once into a 512-texel square (`shaders/sky.frag.glsl`) whenever the sky, the
 theme's accent or the element's shape changes, twice as bright as shown so its faint
@@ -575,7 +584,7 @@ gradient keeps more of an 8-bit texture's steps, then slid with the farthest sta
 sky doesn't, and costs a frame one texture read a pixel. Its noise lattice repeats exactly over
 the field (whole cells across and down, four on the shorter side at its broadest, and the broad
 patches on half as many, still whole), so the slide never shows a seam. The strands are laid
-out in CSS pixels every frame (about 2,100 vertices) and drawn by `skystrand.*.glsl`: a
+out in CSS pixels every frame (about 3,200 vertices) and drawn by `skystrand.*.glsl`: a
 plume's fibres and grains are noise in the strand's own pixels, along and across it, so they
 hold to it as it sways. Setting `sky` or `strands` draws a frame;
 `skyReady` says whether the last frame drew the sky asked for, and `settings` add `sky` and

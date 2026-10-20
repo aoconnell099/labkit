@@ -3,15 +3,22 @@
 // (star-dust.ts), then slid with the farthest stars every frame (skyquad).
 //
 // Everything is in the field's own units, 0 to 1 across and down, and wraps
-// at its edges like the stars: the band is where x + y is near BAND_AT, and
+// at its edges like the stars: the band is where x + y is near uBandAt, x
+// mirrored when uFlip is set (star-dust.ts lays each sky's band so), and
 // the noise repeats exactly over the field (its lattice is uPeriod cells
 // across and down, a whole number each, doubled every octave), so a slide
 // never shows a seam. Written twice as bright as it is drawn, so the faint
 // glow keeps more of an 8-bit texture's steps.
 //
-// Since 2026-10-20 (the owner: "a little more vibrant, closer to the reference
-// images, including the band") each sky has a colour of its own across the
-// whole field, not black, and its band is brighter and wider.
+// Since 2026-10-20 each sky follows two or more of the owner's photographs,
+// kept a little dimmer so it never overpowers what is in front of it:
+// - deep blue: a royal blue night and a soft pale-blue band with dark lanes;
+// - violet: clouds of cyan, violet and magenta across the whole sky, cyan to
+//   one side and magenta to the other, and through the middle a bright,
+//   nearly white-blue band with dark lanes, violet at its edges (it turns pink
+//   toward the bottom in skyquad.frag.glsl);
+// - colourful: a dark night, and through the middle a warm peach band, its
+//   heart mottled and cut by dark brown lanes, in a haze of teal.
 precision highp float;
 
 // Which sky: 1 deep blue, 2 blue, violet and pink, 3 colourful.
@@ -20,8 +27,10 @@ uniform float uSky;
 uniform vec3 uAccent;
 // The noise lattice's cells across and down the field, whole numbers.
 uniform vec2 uPeriod;
-// Where the band crosses (x + y), as star-dust.ts gathers the stars.
+// Where the band crosses (x + y), as star-dust.ts lays the stars for this sky.
 uniform float uBandAt;
+// 1 when the band runs from top left to bottom right (x mirrored), else 0.
+uniform float uFlip;
 
 varying vec2 vUv;
 
@@ -59,51 +68,60 @@ void main() {
   // The field's units, down from the top, as the stars are placed.
   vec2 s = vec2(vUv.x, 1.0 - vUv.y);
   // Across the band, wrapping: 0 on its line, -0.5 to 0.5.
-  float d = fract(s.x + s.y - uBandAt + 0.5) - 0.5;
+  float fx = uFlip > 0.5 ? 1.0 - s.x : s.x;
+  float d = fract(fx + s.y - uBandAt + 0.5) - 0.5;
   float ad = abs(d);
   float haze = exp(-d * d / (2.0 * 0.16 * 0.16));
+  float body = exp(-d * d / (2.0 * 0.085 * 0.085));
   float core = exp(-d * d / (2.0 * 0.05 * 0.05));
 
   // Clouds that mottle the band, and dark lanes of dust down its heart.
   float mottle = smoothstep(0.3, 0.8, fbm(s, uPeriod, 1.0));
   float ridge = 1.0 - abs(fbm(s, uPeriod * 2.0, 2.0) * 2.0 - 1.0);
   float lanes = smoothstep(0.72, 0.95, ridge) * smoothstep(0.1, 0.0, ad);
-  // Broad, slow patches across the whole field: the sky is never one flat colour.
   // Half the lattice, kept to whole cells so it still repeats exactly over the field.
   vec2 coarse = max(vec2(1.0), floor(uPeriod * 0.5));
+  // Broad, slow patches across the whole field: the sky is never one flat colour.
   float broad = fbm(s, coarse, 6.0);
-  float light = 0.1 * haze + 0.2 * core * (0.4 + 0.6 * mottle);
 
   vec3 col;
   if (uSky < 1.5) {
-    // Deep blue: a navy night all over, and a soft pale-blue band with dark lanes in it.
-    vec3 night = vec3(0.02, 0.04, 0.12) * (0.75 + 0.5 * broad);
-    vec3 band = mix(uAccent, vec3(0.3, 0.45, 0.9), 0.6);
-    // Its heart catches a little pale light where the clouds gather.
-    col = night + band * light * (1.0 - 0.75 * lanes) + vec3(0.6, 0.7, 1.0) * core * mottle * 0.05;
+    // Deep blue: a royal blue night, deeper in patches, and a soft band of pale-blue
+    // cloud with dark lanes in it, a little paler where its clouds gather.
+    vec3 night = vec3(0.03, 0.07, 0.19) * (0.75 + 0.45 * broad);
+    vec3 band = mix(uAccent, vec3(0.42, 0.58, 1.0), 0.7);
+    float light = 0.08 * haze + 0.16 * body * (0.35 + 0.65 * mottle);
+    col = night + band * light * (1.0 - 0.75 * lanes) + vec3(0.7, 0.8, 1.0) * core * mottle * 0.06;
   } else if (uSky < 2.5) {
-    // Blue, violet and pink: deep blue drifting to purple, the band blue at its edges,
-    // violet then pink at its heart, and clouds of cyan and magenta along it.
-    vec3 night = mix(vec3(0.025, 0.04, 0.14), vec3(0.08, 0.03, 0.15), smoothstep(0.35, 0.7, broad));
-    vec3 blue = vec3(0.32, 0.5, 1.0);
-    vec3 violet = vec3(0.62, 0.42, 1.0);
-    vec3 pink = vec3(1.0, 0.45, 0.78);
-    vec3 tint = mix(blue, violet, smoothstep(0.16, 0.04, ad));
-    tint = mix(tint, pink, smoothstep(0.09, 0.0, ad) * (0.4 + 0.6 * smoothstep(0.35, 0.8, fbm(s, coarse, 3.0))));
-    float neb = smoothstep(0.45, 0.85, fbm(s, coarse, 4.0)) * (0.35 + haze);
-    vec3 nebTint = mix(vec3(0.25, 0.7, 1.0), vec3(0.9, 0.3, 0.85), fbm(s, uPeriod, 5.0));
-    // A bright, almost white blue down its heart where the clouds gather, as in the photographs.
-    col = night + tint * light * 1.1 * (1.0 - 0.7 * lanes) + nebTint * neb * 0.09
-        + vec3(0.72, 0.78, 1.0) * core * mottle * 0.13 * (1.0 - 0.6 * lanes);
+    // Blue, violet and pink. Clouds of colour across the whole sky, cyan to one side and
+    // magenta to the other, violet between (the side wraps, so the slide never seams),
+    // with dark gaps between them.
+    float side = 0.5 + 0.5 * cos(6.2831853 * (s.x - 0.2 + 0.1 * (broad - 0.5)));
+    vec3 tint = mix(vec3(0.85, 0.26, 0.74), vec3(0.16, 0.55, 1.0), side);
+    tint = mix(tint, vec3(0.5, 0.3, 1.0), 0.6 * (1.0 - abs(2.0 * side - 1.0)));
+    // Two layers: broad soft clouds, and wisps of brighter cloud inside them.
+    float clouds = smoothstep(0.3, 0.72, fbm(s, coarse, 4.0));
+    float wisps = smoothstep(0.45, 0.8, fbm(s, uPeriod * 2.0, 8.0)) * clouds;
+    vec3 night = vec3(0.02, 0.03, 0.11) + tint * (clouds * 0.2 + wisps * 0.22);
+    // Its lanes are finer than the other skies', so the bright heart shows through.
+    float fine = smoothstep(0.8, 0.97, ridge) * smoothstep(0.07, 0.0, ad);
+    // The band: a blue haze, violet toward its edges, and a bright, nearly white-blue
+    // heart where its clouds gather, cut by dark lanes.
+    vec3 band = vec3(0.3, 0.46, 1.0) * haze * 0.12
+              + vec3(0.56, 0.4, 1.0) * max(haze - body, 0.0) * 0.08
+              + vec3(0.62, 0.72, 1.0) * body * (0.35 + 0.65 * mottle) * 0.28
+              + vec3(0.8, 0.84, 1.0) * core * mottle * 0.3;
+    col = night * (1.0 - 0.5 * body) + band * (1.0 - 0.7 * fine);
   } else {
-    // Colourful: a dark blue night with teal in it, the band warm peach at its heart and
-    // teal at its edges, touched with violet, and brown lanes of dust down it.
-    vec3 night = mix(vec3(0.02, 0.035, 0.085), vec3(0.02, 0.07, 0.08), smoothstep(0.4, 0.75, broad));
-    vec3 warm = vec3(1.0, 0.66, 0.42);
-    vec3 teal = vec3(0.25, 0.8, 0.82);
-    vec3 tint = mix(teal, warm, smoothstep(0.14, 0.03, ad));
-    tint = mix(tint, vec3(0.72, 0.4, 0.95), smoothstep(0.6, 0.85, fbm(s, coarse, 7.0)) * 0.5);
-    col = night + tint * light * 1.1 * (1.0 - 0.8 * lanes);
+    // Colourful: a dark night, a haze of teal round the band, and its heart warm peach,
+    // brightest where the clouds gather, pinker in places, cut deep by dark brown lanes.
+    vec3 night = vec3(0.014, 0.03, 0.06) * (0.8 + 0.4 * broad);
+    vec3 teal = vec3(0.16, 0.6, 0.72);
+    vec3 warm = mix(vec3(1.0, 0.56, 0.34), vec3(0.95, 0.42, 0.56), smoothstep(0.45, 0.8, fbm(s, coarse, 7.0)));
+    float heart = body * (0.25 + 0.75 * mottle);
+    // The teal sits round the band, never on its heart, where it would grey the peach.
+    col = night + teal * max(haze - 1.2 * body, 0.0) * 0.14 + warm * heart * 0.32 * (1.0 - 0.9 * lanes)
+        + vec3(1.0, 0.8, 0.62) * core * mottle * 0.14 * (1.0 - lanes);
   }
   col = min(col * 2.0, vec3(1.0));
   gl_FragColor = vec4(col, max(col.r, max(col.g, col.b)));

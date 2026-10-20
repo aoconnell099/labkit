@@ -75,6 +75,18 @@ const MIDDLING = 0.07;
 const IN_BAND = 0.4;
 const BAND_AT = 0.37;
 const BAND_SPREAD = 0.07;
+/** How each sky lays the field (the owner, 2026-10-20, after their photographs): every sky
+ *  moves it so the band crosses the middle (x + y from BAND_AT to 1, wrapping, so through
+ *  the centre); deep blue and violet mirror it, so their band runs from top left to bottom
+ *  right as in theirs, and the colourful one keeps it bottom left to top right. With no sky
+ *  the field is as it always was. `stars` is how many more points it draws: the deep blue
+ *  photographs are thick with them. */
+const LAY = (1 - BAND_AT) / 2;
+const SKY_LAYS: Record<SkyKind, { flip: boolean; stars: number }> = {
+  'deep-blue': { flip: true, stars: 1.5 },
+  violet: { flip: true, stars: 1 },
+  colourful: { flip: false, stars: 1 },
+};
 /** A few points lean warm, rose or violet instead of toward the accent: the
  *  colour, as sRGB, and the share of the points. */
 const SHADES: readonly [[number, number, number], number][] = [
@@ -323,7 +335,7 @@ export class StarDust extends LabkitEffect {
       uniforms: {
         uView: { value: [1, 1] }, uPixelRatio: { value: 1 }, uDrift: { value: [0, 0] },
         uOffset: { value: [0, 0] }, uGlow: { value: 0 }, uTwinkle: { value: 0 },
-        uInk: { value: [1, 1, 1] }, uAccent: { value: [1, 1, 1] },
+        uInk: { value: [1, 1, 1] }, uAccent: { value: [1, 1, 1] }, uLay: { value: [0, 0] }, uFlip: { value: 0 },
       },
     }));
     this.#points.frustumCulled = false;
@@ -419,7 +431,11 @@ export class StarDust extends LabkitEffect {
     u.uOffset.value = [this.#offset[0], this.#offset[1]];
     const loop = elapsed / (period * TWINKLE_LOOPS);
     u.uTwinkle.value = (loop - Math.floor(loop)) * Math.PI * 2;
-    this.#points.geometry.setDrawRange(0, Math.min(MAX_STARS, Math.ceil((w * h) / AREA_PER_STAR)));
+    const kind = skyKind(this.getAttribute('sky'));
+    const lay = kind ? SKY_LAYS[kind] : null;
+    u.uLay.value = lay ? [LAY, LAY] : [0, 0];
+    u.uFlip.value = lay?.flip ? 1 : 0;
+    this.#points.geometry.setDrawRange(0, Math.min(MAX_STARS, Math.ceil((w * h * (lay?.stars ?? 1)) / AREA_PER_STAR)));
 
     // Shooting stars only while the loop runs: a still frame never holds one.
     const full = settings.pace.level === 'full';
@@ -436,10 +452,11 @@ export class StarDust extends LabkitEffect {
     // The sky slides with the farthest stars (nearness 0.2), as they wrap.
     const shift: [number, number] = [(u.uDrift.value[0] + this.#offset[0] / w) * 0.2,
                                       (u.uDrift.value[1] + this.#offset[1] / h) * 0.2];
-    this.#sky?.draw(renderer, skyKind(this.getAttribute('sky')),
+    // The band where this sky lays it: x + y = BAND_AT + 2 LAY, with x mirrored when it flips.
+    this.#sky?.draw(renderer, kind,
                     this.getAttribute('strands') === 'band' ? 'band' : 'below',
                     u.uAccent.value as [number, number, number], settings.glow, this.#strandColours,
-                    w, h, shift, elapsed / period, BAND_AT);
+                    w, h, shift, elapsed / period, lay ? (BAND_AT + 2 * LAY) % 1 : BAND_AT, !!lay?.flip);
     renderer.render(this.#scene, this.#camera);
   }
 

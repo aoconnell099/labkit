@@ -16,6 +16,10 @@ uniform vec2 uOffset;
 uniform mediump float uGlow;
 // Where the twinkle's loop stands, 0 to 2 pi (star-dust.ts TWINKLE_LOOPS).
 uniform float uTwinkle;
+// How a sky lays the field (star-dust.ts): moved by uLay, in shares of the element, so
+// its band crosses the middle, then mirrored across when uFlip is 1. Both 0 with no sky.
+uniform vec2 uLay;
+uniform float uFlip;
 
 // Where the star sits, 0 to 1 across and down; z unused.
 attribute vec3 position;
@@ -40,7 +44,9 @@ varying float vSize;
 varying float vCore;
 
 void main() {
-  vec2 p = fract(position.xy + (uDrift + uOffset / uView) * aNear);
+  vec2 laid = fract(position.xy + uLay);
+  if (uFlip > 0.5) laid.x = 1.0 - laid.x;
+  vec2 p = fract(laid + (uDrift + uOffset / uView) * aNear);
   // The solid dot grows a little with brightness; the bright few get a halo
   // as wide as the theme's glow.
   vCore = 0.4 + 1.0 * aBright;

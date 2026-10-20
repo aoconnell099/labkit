@@ -5,23 +5,22 @@
  * own colours. `<labkit-star-dust>` owns one and draws it under its stars; with no
  * `sky` attribute there is none, and the star dust is as it was.
  *
- * - **deep-blue:** a quiet navy haze along the band, in the theme's accent.
- * - **violet:** blue at the band's edges, violet then pink at its heart, and soft
- *   nebulae along it.
- * - **colourful:** warm gold dust at the heart, teal at the edges, and seven
- *   plumes of glittering dust in the page's colours (`strandColours`), after the
- *   owner's photograph of colourful dust fanning up from a horizon (2026-10-20:
- *   the thin straight strands before "look like concert lights"). Each widens as
- *   it goes and curls outward, fibrous along its length, with two brighter wisps
- *   in it and fine grains of light caught in it that twinkle, its colour turning
- *   toward the next strand's along it. They sway slowly. They rise from below the
- *   screen (`strands="below"`, the default) or grow out of the band
- *   (`strands="band"`): both are a choice in the hub's Settings.
+ * - **deep-blue:** a royal blue night and a soft band of pale-blue cloud with dark lanes.
+ * - **violet:** clouds of cyan, violet and magenta across the sky, and a bright, nearly
+ *   white-blue band with fine dark lanes, turning pink toward a pink horizon.
+ * - **colourful:** warm peach dust at the heart, teal round it, and eleven plumes of
+ *   glittering dust in the colours of the owner's photograph of colourful dust fanning up
+ *   from a horizon (2026-10-20: the thin straight strands before "look like concert
+ *   lights"). Each widens as it goes and curls, fibrous along its length, with two brighter
+ *   wisps in it and fine grains of light caught in it that twinkle, its colour turning toward
+ *   the next strand's along it. They sway slowly. They fan out of the band's middle to both
+ *   sides (`strands="band"`) or rise from below the screen (`strands="below"`, the
+ *   attribute's default): both are a choice in the hub's Settings.
  *
- * Every sky has a colour of its own across the whole field and a glow along the
- * element's bottom that stays put, like the light over a horizon in the
- * photographs (2026-10-20: "a little more vibrant, closer to the reference
- * images, including the band").
+ * Every sky follows two or more of the owner's photographs, a little dimmer so it never
+ * overpowers the page in front of it (2026-10-20): a colour of its own across the whole
+ * field, a band through the middle (star-dust.ts lays the field so), and a glow along
+ * the element's bottom that stays put, like the light over a horizon.
  *
  * The glow is drawn once into a texture (TEX square) whenever the sky, the theme's
  * accent or the element's shape changes (`shaders/sky.frag.glsl`), then slid with
@@ -47,9 +46,11 @@ export type SkyKind = 'deep-blue' | 'violet' | 'colourful';
 export type StrandOrigin = 'below' | 'band';
 export const SKY_KINDS: readonly SkyKind[] = ['deep-blue', 'violet', 'colourful'];
 const SKY_CODE: Record<SkyKind, number> = { 'deep-blue': 1, violet: 2, colourful: 3 };
-/** The colourful sky's strands when the app gives none: the hub's orb colours. */
+/** The colourful sky's strands when the app gives none: the colours of the owner's
+ *  photograph of colourful dust (2026-10-20: "the colors should pretty much be these"),
+ *  teal, orange, magenta, blue, gold, violet, cyan, pink and green, warm and cool in turn. */
 export const STRAND_COLOURS: readonly string[] = [
-  '#3d9bff', '#b04ad8', '#33c46a', '#f2c230', '#e5484d', '#7b5cff', '#2ec4b6',
+  '#33d1b8', '#ff9442', '#e2479c', '#4d74ff', '#ffc14f', '#9a5cff', '#40b8ff', '#ff6aa6', '#45cf8c',
 ];
 
 /** The glow texture's side, in texels. */
@@ -57,10 +58,10 @@ const TEX = 512;
 /** Noise lattice cells across the field's shorter side, at its broadest octave. */
 const CELLS = 4;
 /** Strands, the segments along each, and the brighter wisps in each beside its plume. */
-const STRANDS = 7, SEGMENTS = 48, LINES = 2;
+const STRANDS = 11, SEGMENTS = 48, LINES = 2;
 const RIBBONS = STRANDS * (1 + LINES);
 /** How much stronger a plume out of the band is drawn than one from below. */
-const BAND_STRENGTH = 1.6;
+const BAND_STRENGTH = 1.05;
 const POINTS = SEGMENTS + 1;
 
 const ADD = {
@@ -93,7 +94,7 @@ export class Sky {
     depthTest: false, depthWrite: false,
     uniforms: {
       uSky: { value: 1 }, uAccent: { value: [1, 1, 1] }, uPeriod: { value: [CELLS, CELLS] },
-      uBandAt: { value: 0.37 },
+      uBandAt: { value: 0.37 }, uFlip: { value: 0 },
     },
   });
   #target: WebGLRenderTarget | null = null;
@@ -143,14 +144,14 @@ export class Sky {
    *  has changed, slides it, and lays out the strands. */
   draw(renderer: WebGLRenderer, kind: SkyKind | null, origin: StrandOrigin, accent: [number, number, number],
        glow: number, colours: readonly string[], w: number, h: number, shift: [number, number],
-       loops: number, bandAt: number): void {
+       loops: number, bandAt: number, flip = false): void {
     this.#quad.visible = !!kind;
     this.#strands.visible = kind === 'colourful';
     if (!kind) return;
     const short = Math.min(w, h);
     const period: [number, number] = [Math.max(1, Math.round((CELLS * w) / short)),
                                       Math.max(1, Math.round((CELLS * h) / short))];
-    const key = `${kind}|${accent.map((v) => v.toFixed(3)).join()}|${period.join()}`;
+    const key = `${kind}|${accent.map((v) => v.toFixed(3)).join()}|${period.join()}|${bandAt.toFixed(4)}|${flip}`;
     if (key !== this.#key) {
       this.#target ??= new WebGLRenderTarget(TEX, TEX, {
         wrapS: RepeatWrapping, wrapT: RepeatWrapping, minFilter: LinearFilter, magFilter: LinearFilter,
@@ -160,6 +161,8 @@ export class Sky {
       u.uSky.value = SKY_CODE[kind];
       u.uAccent.value = accent;
       u.uPeriod.value = period;
+      u.uBandAt.value = bandAt;
+      u.uFlip.value = flip ? 1 : 0;
       renderer.setRenderTarget(this.#target);
       renderer.render(this.#gen, this.#camera);
       renderer.setRenderTarget(null);
@@ -168,7 +171,7 @@ export class Sky {
     this.#quad.material.uniforms.uSky.value = this.#target!.texture;
     this.#quad.material.uniforms.uShift.value = shift;
     this.#quad.material.uniforms.uKind.value = SKY_CODE[kind];
-    if (kind === 'colourful') this.#layout(origin, colours, glow, w, h, shift, loops, bandAt);
+    if (kind === 'colourful') this.#layout(origin, colours, glow, w, h, shift, loops, bandAt, flip);
   }
 
   dispose(): void {
@@ -216,7 +219,7 @@ export class Sky {
 
   /** Each strand's path this frame, as ribbons: its plume, then its wisps. */
   #layout(origin: StrandOrigin, colours: readonly string[], glow: number, w: number, h: number,
-          shift: [number, number], loops: number, bandAt: number): void {
+          shift: [number, number], loops: number, bandAt: number, flip: boolean): void {
     const g = this.#strands.geometry;
     const pos = g.getAttribute('position') as BufferAttribute;
     const fade = g.getAttribute('aFade') as BufferAttribute;
@@ -263,16 +266,26 @@ export class Sky {
       const sway = Math.sin(2 * Math.PI * (loops * sd.rate + sd.phase));
       let x: number, y: number, heading: number, length: number, curl: number, wide: number;
       if (origin === 'band') {
-        // A point on the band (x + y = bandAt, wrapping), slid with the far stars,
-        // growing out across it, to either side in turn, curling the way it leans.
-        const v = (s + 0.5) / STRANDS + (sd.jitter - 0.5) * 0.08;
-        const fx = (((bandAt - v + shift[0]) % 1) + 1) % 1, fy = (((v + shift[1]) % 1) + 1) % 1;
+        // A fan out of the band's middle to both sides, as the photograph's plumes fan out
+        // of the horizon: each starts on the band near its middle (slid with the far stars),
+        // heads out across it at its own angle, and curls further from straight out.
+        const side = s % 2 ? 1 : -1;
+        const per = side > 0 ? Math.floor(STRANDS / 2) : Math.ceil(STRANDS / 2);
+        const out = ((Math.floor(s / 2) + 0.5) / per) * 2 - 1;
+        const v = 0.5 + out * 0.14 + (sd.jitter - 0.5) * 0.04;
+        const bx = (((bandAt - v) % 1) + 1) % 1;
+        const fx = ((((flip ? 1 - bx : bx) + shift[0]) % 1) + 1) % 1, fy = (((v + shift[1]) % 1) + 1) % 1;
         x = fx * w; y = fy * h;
-        const sign = s % 2 ? 1 : -1;
-        heading = Math.atan2(sign * w, sign * h) + (sd.angle - 0.5) * 0.7;
-        length = (0.5 + 0.3 * sd.length) * diag * 0.5;
-        curl = (sd.angle < 0.5 ? -1 : 1) * (0.25 + 0.35 * sd.length);
-        wide = (0.045 + 0.035 * sd.length) * diag;
+        // Along the band as v grows, in pixels, and across it to this strand's side.
+        const an = Math.hypot(w, h), ax = (flip ? w : -w) / an, ay = h / an;
+        const nx = -ay * side, ny = ax * side;
+        // Turning toward +along is turning by +90 degrees from across on one side and -90 on
+        // the other: `toward` is the sign that leans the heading toward v's end of the band.
+        const toward = Math.sign(nx * ay - ny * ax) * out;
+        heading = Math.atan2(ny, nx) + toward * Math.abs(out) * 1.0 + (sd.angle - 0.5) * 0.25;
+        length = (0.7 + 0.35 * sd.length) * diag * 0.5;
+        curl = (Math.sign(toward) || (sd.angle < 0.5 ? -1 : 1)) * (0.35 + 0.9 * Math.abs(out));
+        wide = (0.07 + 0.05 * sd.length) * diag;
       } else {
         // From one point just below the screen's bottom, fanning upward like a fountain:
         // each curls further out the further out it starts.
