@@ -306,12 +306,13 @@ with no clean outline and folded sheets of fine glowing net in it, the accent de
 violet and lifting to teal in places, with fine specks of light caught in it, out to about
 1.75 radii (more of it since 2026-10-19). It drifts in place like a
 jellyfish: three lobes' worth of swell go round its outline at their own rates, so one
-side swells as another settles, and it never turns. Every 0.8 loops (about 7 s at Cold core)
-its bell beats (the owner, 2026-10-19): it draws in at the sides and rises a little over the
-first 15% of the beat, a touch brighter, lets go over the next 45% and rests, and a ring of
-light runs out through it after each beat. Its folds drift on their own, re-forming over
-about 30 s. More movement than light: it must not read as the orb pulsing. The pulse swells
-it a little. All of it holds still under `calm` and `off`. While it
+side swells as another settles, and it never turns. It floats as a jellyfish does (the
+owner, 2026-10-20: "more of a gradual floating effect and less of a pulse", replacing the
+quick bell beat of 2026-10-19): over 1.25 loops (about 11 s at Cold core) it rises a little,
+drawing in gently at its sides, and sinks back as it relaxes, on one smooth wave. Its folds
+drift on their own, re-forming over about 30 s. It never lights itself: brighter, it would
+read as the orb pulsing, and Jarvis's pulses are for working and speaking. The pulse
+brightens and swells it a little. All of it holds still under `calm` and `off`. While it
 shows, the camera stands back (6.6 for 4.6), so the orb sits smaller inside it. Drawn on its
 own square behind the orb (`shaders/cloud.frag.glsl`, 2.05 radii), in the orb's canvas, so it
 costs no context. Setting it draws a frame. The gallery's **cloud** box turns it on.
@@ -542,24 +543,39 @@ draws it.
 **A sky behind the stars** (the owner's polish list, 2026-10-18, after three folders of
 night-sky photographs): the `sky` attribute gives the band the stars gather along a glow of
 its own, in one of three looks, and is none when unset, as before.
-- `deep-blue`: a quiet navy haze in the theme's accent, with dark lanes of dust down its heart.
-- `violet`: blue at the band's edges, violet then pink at its heart, and soft nebulae along it.
-- `colourful`: warm gold dust at the heart, teal at the edges, brown lanes; and seven faint
-  **strands** of light in the page's colours (the `strandColours` property, CSS colours taken
-  in turn; `STRAND_COLOURS`, the hub's orb colours, until set), each a soft wide glow with
-  three fine lines in it, swaying slowly. `strands="below"` (the default) fans them up from
-  one point just under the bottom edge, so they cross an app's vines rather than run beside
-  them; `strands="band"` grows them out of the band to either side. The owner asked to see
-  both. Either way they stay wide and faint, so they never read as vines.
+Since 2026-10-20 (the owner: "a little more vibrant, closer to the reference images,
+including the band") every sky has a colour of its own across the whole field rather than
+black, in broad slow patches, its band is wider and brighter, and a glow rises from the
+element's bottom edge that stays put as the stars slide, like the light over a horizon in the
+photographs.
+- `deep-blue`: a navy night, a soft pale-blue band with dark lanes of dust down its heart and a
+  little pale light where its clouds gather, and a pale-blue horizon.
+- `violet`: deep blue drifting to purple, the band blue at its edges, violet then pink at its
+  heart, nearly white-blue down its middle where its clouds gather, with clouds of cyan and
+  magenta along it, and a pink horizon.
+- `colourful`: a dark blue night with teal in it, the band warm peach at its heart and teal at
+  its edges, touched with violet, with brown lanes, and a violet horizon; and seven
+  **strands**, plumes of glittering dust in the page's colours (the `strandColours` property,
+  CSS colours taken in turn; `STRAND_COLOURS`, the hub's orb colours, until set), after the
+  owner's photograph of colourful dust fanning up from a horizon (2026-10-20: the thin
+  straight strands before "look like concert lights"). Each widens as it goes and curls
+  outward, fibrous along its length and gathering in clumps, with two brighter wisps in it and
+  grains of light caught in it that twinkle, its colour turning toward the next strand's along
+  it, and it sways slowly. `strands="below"` (the default) fans them up like a fountain from
+  one point just under the bottom edge, each curling further out the further out it starts;
+  `strands="band"` grows them out of the band to either side, curling less. The hub offers
+  both in its Settings. They stay wide and dusty, so they never read as vines.
 
 The glow is drawn once into a 512-texel square (`shaders/sky.frag.glsl`) whenever the sky, the
-theme's accent or the element's shape changes, four times brighter than shown so its faint
+theme's accent or the element's shape changes, twice as bright as shown so its faint
 gradient keeps more of an 8-bit texture's steps, then slid with the farthest stars every frame
-(`skyquad.frag.glsl`, a quarter of it plus a hair of dither): it doesn't billow, as a real
+(`skyquad.frag.glsl`, half of it, the horizon's glow and a hair of dither): it doesn't billow, as a real
 sky doesn't, and costs a frame one texture read a pixel. Its noise lattice repeats exactly over
-the field (whole cells across and down, four on the shorter side at its broadest), so the
-slide never shows a seam. The strands are laid out in CSS pixels every frame (about 2,700
-vertices) and drawn by `skystrand.*.glsl`. Setting `sky` or `strands` draws a frame;
+the field (whole cells across and down, four on the shorter side at its broadest, and the broad
+patches on half as many, still whole), so the slide never shows a seam. The strands are laid
+out in CSS pixels every frame (about 2,100 vertices) and drawn by `skystrand.*.glsl`: a
+plume's fibres and grains are noise in the strand's own pixels, along and across it, so they
+hold to it as it sways. Setting `sky` or `strands` draws a frame;
 `skyReady` says whether the last frame drew the sky asked for, and `settings` add `sky` and
 `strands`. All of it lives in `sky.ts`; `SKY_KINDS`, `STRAND_COLOURS` and the types are
 exported. The gallery's effects panel has a **sky** and a **strands from** picker.
