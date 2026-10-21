@@ -1,68 +1,76 @@
 /**
  * The star dust's sky (the owner's polish list, 2026-10-18): the glow of the band
  * its stars gather along, in one of three looks after the owner's three folders of
- * night-sky photographs, and for the colourful one, strands of light in the page's
- * own colours. `<labkit-star-dust>` owns one and draws it under its stars; with no
- * `sky` attribute there is none, and the star dust is as it was.
+ * night-sky photographs. `<labkit-star-dust>` owns one and draws it under its stars;
+ * with no `sky` attribute there is none, and the star dust is as it was.
  *
  * - **deep-blue:** a royal blue night and a soft band of pale-blue cloud with dark lanes.
- * - **violet:** clouds of cyan, violet and magenta across the sky, and a bright, nearly
- *   white-blue band with fine dark lanes, turning pink toward a pink horizon.
- * - **colourful:** warm peach dust at the heart, teal round it, and eleven plumes of
- *   glittering dust in the colours of the owner's photograph of colourful dust fanning up
- *   from a horizon (2026-10-20: the thin straight strands before "look like concert
- *   lights"). Each widens as it goes and curls, fibrous along its length, with two brighter
- *   wisps in it and fine grains of light caught in it that twinkle, its colour turning toward
- *   the next strand's along it. They sway slowly. They fan out of the band's middle to both
- *   sides (`strands="band"`) or rise from below the screen (`strands="below"`, the
- *   attribute's default): both are a choice in the hub's Settings.
+ * - **violet:** a nebula down the band, swirled and folded into filaments and gritty with
+ *   unresolved stars, coloured by where it is on the screen as in the owner's photograph:
+ *   cyan at the top, through blue and purple, to magenta and pink at the bottom over a pink
+ *   horizon (2026-10-20: the band before read as "grey/white clouds instead of the
+ *   reference image").
+ * - **colourful:** a dark teal night and a striking band, bright peach to cream, gritty,
+ *   cut deep by dark lanes, with swirled, glittering dust in the colours of the owner's
+ *   photograph of colourful dust (`STRAND_COLOURS`, or the `strandColours` given) mixed
+ *   together over it (2026-10-20: the plumes before looked "like the tendrils, when in the
+ *   reference image its much more random and swirled together"). It fans out of the band's
+ *   middle to both sides (`strands="band"`) or up from below the screen (`strands="below"`,
+ *   the attribute's default): both are a choice in the hub's Settings.
  *
- * Every sky follows two or more of the owner's photographs, a little dimmer so it never
- * overpowers the page in front of it (2026-10-20): a colour of its own across the whole
- * field, a band through the middle (star-dust.ts lays the field so), and a glow along
- * the element's bottom that stays put, like the light over a horizon.
+ * Every sky is a little dimmer than its photographs so it never overpowers the page in
+ * front of it: a colour of its own across the whole field, a band through the middle
+ * (star-dust.ts lays the field so), and a glow along the element's bottom that stays put,
+ * like the light over a horizon.
  *
- * The glow is drawn once into a texture (TEX square) whenever the sky, the theme's
- * accent or the element's shape changes (`shaders/sky.frag.glsl`), then slid with
- * the farthest stars every frame (`skyquad.frag.glsl`, which adds the horizon's
- * glow): it doesn't billow, as a real sky doesn't, and costs a frame one texture
- * read a pixel. Its noise repeats exactly over the field, so the slide never shows
- * a seam. The strands are laid out in CSS pixels every frame, a few thousand
- * vertices, and drawn by `skystrand.*.glsl`.
+ * The glow is drawn once into a texture whenever the sky, the theme's accent or the
+ * element's shape changes (`shaders/sky.frag.glsl`), and for the colourful sky its dust into
+ * a second (`skydust.frag.glsl`), each TEX texels along the element's longer side and in
+ * its proportions. Both are then slid with the farthest stars every frame
+ * (`skyquad.frag.glsl`, which colours them and adds the horizon's glow): they don't billow,
+ * as a real sky doesn't, and cost a frame one or two texture reads a pixel. Their noise
+ * repeats exactly over the field (`noise.glsl`), so the slide never shows a seam.
+ *
+ * **A picture** (2026-10-21): an app can give a picture of the sky instead, which is drawn
+ * as it is in place of all of that. Noise drawn by hand reads as smoke, however it is
+ * tuned, beside the photographs and paintings the skies follow (the owner: "every attempt
+ * has fallen short of capturing what the references are showing"). It covers the element
+ * with a margin round it (PICTURE_MARGIN) and moves only with the app's offset, within that
+ * margin: the field's drift is a few pixels a minute, too slow to see, and a picture has no
+ * edge to wrap at. Each is loaded once and kept. Until it has loaded, or if it fails to,
+ * the drawn sky shows.
  */
 import {
-  BufferAttribute, BufferGeometry, Color, CustomBlending, DoubleSide, DynamicDrawUsage, LinearFilter,
-  Mesh, NoBlending, OneFactor, OrthographicCamera, PlaneGeometry, RawShaderMaterial, RepeatWrapping,
-  Scene, SRGBColorSpace, WebGLRenderTarget, type Texture, type WebGLRenderer,
+  Color, CustomBlending, LinearFilter, LinearMipmapLinearFilter, Mesh, NoBlending, NoColorSpace, OneFactor,
+  OrthographicCamera, PlaneGeometry, RawShaderMaterial, RepeatWrapping, Scene, SRGBColorSpace, TextureLoader,
+  WebGLRenderTarget, type Texture, type WebGLRenderer,
 } from 'three';
-import { seeded } from './drift';
 import quadVert from './shaders/quad.vert.glsl?raw';
+import noise from './shaders/noise.glsl?raw';
 import skyFrag from './shaders/sky.frag.glsl?raw';
+import dustFrag from './shaders/skydust.frag.glsl?raw';
 import skyQuadFrag from './shaders/skyquad.frag.glsl?raw';
-import strandVert from './shaders/skystrand.vert.glsl?raw';
-import strandFrag from './shaders/skystrand.frag.glsl?raw';
 
 export type SkyKind = 'deep-blue' | 'violet' | 'colourful';
 export type StrandOrigin = 'below' | 'band';
 export const SKY_KINDS: readonly SkyKind[] = ['deep-blue', 'violet', 'colourful'];
 const SKY_CODE: Record<SkyKind, number> = { 'deep-blue': 1, violet: 2, colourful: 3 };
-/** The colourful sky's strands when the app gives none: the colours of the owner's
+/** The colourful sky's dust when the app gives no colours: the colours of the owner's
  *  photograph of colourful dust (2026-10-20: "the colors should pretty much be these"),
  *  teal, orange, magenta, blue, gold, violet, cyan, pink and green, warm and cool in turn. */
 export const STRAND_COLOURS: readonly string[] = [
   '#33d1b8', '#ff9442', '#e2479c', '#4d74ff', '#ffc14f', '#9a5cff', '#40b8ff', '#ff6aa6', '#45cf8c',
 ];
+/** How many colours the dust takes at most (skydust.frag.glsl's palette), the list cycled to fill it. */
+export const PALETTE_SIZE = 9;
 
-/** The glow texture's side, in texels. */
-const TEX = 512;
+/** The textures' longer side, in texels. */
+const TEX = 1024;
 /** Noise lattice cells across the field's shorter side, at its broadest octave. */
 const CELLS = 4;
-/** Strands, the segments along each, and the brighter wisps in each beside its plume. */
-const STRANDS = 11, SEGMENTS = 48, LINES = 2;
-const RIBBONS = STRANDS * (1 + LINES);
-/** How much stronger a plume out of the band is drawn than one from below. */
-const BAND_STRENGTH = 1.05;
-const POINTS = SEGMENTS + 1;
+/** How much bigger than the element a picture is drawn, so the app's offset can shift it:
+ *  a dive's slide (a fifth of the stars' offset) stays well inside a tenth either way. */
+const PICTURE_MARGIN = 1.2;
 
 const ADD = {
   blending: CustomBlending,
@@ -71,73 +79,104 @@ const ADD = {
   transparent: true, depthTest: false, depthWrite: false,
 } as const;
 
-interface StrandSeed {
-  jitter: number;
-  angle: number;
-  length: number;
-  phase: number;
-  rate: number;
-  /** Each fine line: where it sits across the glow (-1 to 1), and its own phase. */
-  lines: [number, number][];
-}
-
 /** A `sky` attribute as a kind, or null for none. */
 export function skyKind(value: string | null): SkyKind | null {
   return value && (SKY_KINDS as readonly string[]).includes(value) ? value as SkyKind : null;
 }
 
+/** A texture-drawing shader with noise.glsl put in where it asks. */
+function withNoise(source: string): string {
+  return source.replace('// #include noise', noise);
+}
+
+function target(w: number, h: number): WebGLRenderTarget {
+  return new WebGLRenderTarget(w, h, {
+    wrapS: RepeatWrapping, wrapT: RepeatWrapping, minFilter: LinearFilter, magFilter: LinearFilter,
+    generateMipmaps: false, depthBuffer: false,
+  });
+}
+
 export class Sky {
   #gen = new Scene();
   #camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  #genMat = new RawShaderMaterial({
-    vertexShader: quadVert, fragmentShader: skyFrag, blending: NoBlending,
+  #genQuad: Mesh<PlaneGeometry, RawShaderMaterial>;
+  #skyMat = new RawShaderMaterial({
+    vertexShader: quadVert, fragmentShader: withNoise(skyFrag), blending: NoBlending,
     depthTest: false, depthWrite: false,
     uniforms: {
       uSky: { value: 1 }, uAccent: { value: [1, 1, 1] }, uPeriod: { value: [CELLS, CELLS] },
-      uBandAt: { value: 0.37 }, uFlip: { value: 0 },
+      uBandAt: { value: 0.37 }, uFlip: { value: 0 }, uTexels: { value: [TEX, TEX] },
+    },
+  });
+  #dustMat = new RawShaderMaterial({
+    vertexShader: quadVert, fragmentShader: withNoise(dustFrag), blending: NoBlending,
+    depthTest: false, depthWrite: false,
+    uniforms: {
+      uPeriod: { value: [CELLS, CELLS] }, uFlip: { value: 0 }, uOrigin: { value: 0 }, uTexels: { value: [TEX, TEX] },
+      uPalette: { value: new Array(PALETTE_SIZE * 3).fill(1) },
     },
   });
   #target: WebGLRenderTarget | null = null;
+  #dust: WebGLRenderTarget | null = null;
   #key = '';
+  #dustKey = '';
   #quad: Mesh<PlaneGeometry, RawShaderMaterial>;
-  #strands: Mesh<BufferGeometry, RawShaderMaterial>;
-  #seeds: StrandSeed[];
   #colour = new Color();
   #colours = '';
+  /** Pictures by address: null while one loads, or if it failed. */
+  #pictures = new Map<string, Texture | null>();
+  #loader = new TextureLoader();
+  #onPicture: () => void;
+  #drawingPicture = false;
 
-  constructor(scene: Scene, bandAt: number) {
-    this.#genMat.uniforms.uBandAt.value = bandAt;
-    const genQuad = new Mesh(new PlaneGeometry(2, 2), this.#genMat);
-    genQuad.frustumCulled = false;
-    this.#gen.add(genQuad);
+  /** `onPicture` is called when a picture has loaded, to draw a frame with it. */
+  constructor(scene: Scene, bandAt: number, onPicture: () => void = () => {}) {
+    this.#onPicture = onPicture;
+    this.#skyMat.uniforms.uBandAt.value = bandAt;
+    this.#genQuad = new Mesh(new PlaneGeometry(2, 2), this.#skyMat);
+    this.#genQuad.frustumCulled = false;
+    this.#gen.add(this.#genQuad);
 
     this.#quad = new Mesh(new PlaneGeometry(2, 2), new RawShaderMaterial({
       vertexShader: quadVert, fragmentShader: skyQuadFrag, ...ADD,
-      uniforms: { uSky: { value: null }, uShift: { value: [0, 0] }, uKind: { value: 1 } },
+      uniforms: {
+        uSky: { value: null }, uDust: { value: null }, uShift: { value: [0, 0] }, uKind: { value: 1 },
+        uOrigin: { value: 0 }, uPicture: { value: null }, uHasPicture: { value: 0 },
+        uPicScale: { value: [1, 1] }, uPicShift: { value: [0, 0] },
+      },
     }));
     this.#quad.frustumCulled = false;
     this.#quad.renderOrder = -2;
     this.#quad.visible = false;
     scene.add(this.#quad);
-
-    const r = seeded(0x5ca9);
-    this.#seeds = Array.from({ length: STRANDS }, () => ({
-      jitter: r(), angle: r(), length: r(), phase: r(), rate: 0.08 + 0.08 * r(),
-      lines: Array.from({ length: LINES }, () => [r() * 2 - 1, r() * 6.283] as [number, number]),
-    }));
-    this.#strands = new Mesh(this.#ribbons(), new RawShaderMaterial({
-      vertexShader: strandVert, fragmentShader: strandFrag, ...ADD, side: DoubleSide,
-      uniforms: { uView: { value: [1, 1] }, uGlow: { value: 0 }, uTime: { value: 0 }, uStrength: { value: 1 } },
-    }));
-    this.#strands.frustumCulled = false;
-    this.#strands.renderOrder = -1;
-    this.#strands.visible = false;
-    scene.add(this.#strands);
   }
 
-  /** Whether the glow texture holds the sky last asked for, at the element's shape. */
+  /** Whether the last frame drew the sky last asked for: its picture, or its glow texture at
+   *  the element's shape. */
   get ready(): boolean {
-    return this.#key !== '' && this.#quad.visible;
+    return this.#quad.visible && (this.#drawingPicture || this.#key !== '');
+  }
+
+  /** Whether the last frame drew a picture rather than the drawn sky. */
+  get drawingPicture(): boolean {
+    return this.#quad.visible && this.#drawingPicture;
+  }
+
+  /** The picture at `url`, once it has loaded: null until then, or if it fails. */
+  picture(url: string | null): Texture | null {
+    if (!url) return null;
+    if (!this.#pictures.has(url)) {
+      this.#pictures.set(url, null);
+      this.#loader.load(url, (t) => {
+        // Its colours are drawn as they are, as the drawn sky's are.
+        t.colorSpace = NoColorSpace;
+        t.minFilter = LinearMipmapLinearFilter;
+        t.generateMipmaps = true;
+        this.#pictures.set(url, t);
+        this.#onPicture();
+      }, undefined, () => { /* The drawn sky stays. */ });
+    }
+    return this.#pictures.get(url) ?? null;
   }
 
   /** The glow texture, its alpha the band's star thickness; null until first drawn. */
@@ -145,206 +184,121 @@ export class Sky {
     return this.#target?.texture ?? null;
   }
 
-  /** Set before the frame's render: draws the glow texture when anything it shows
-   *  has changed, slides it, and lays out the strands. */
+  /** Set before the frame's render: draws the textures when anything they show has
+   *  changed, and slides them; or, with a `picture` loaded, places it instead, shifted by
+   *  `pictureShift` (the app's offset, as shares of the element). */
   draw(renderer: WebGLRenderer, kind: SkyKind | null, origin: StrandOrigin, accent: [number, number, number],
-       glow: number, colours: readonly string[], w: number, h: number, shift: [number, number],
-       loops: number, bandAt: number, flip = false): void {
+       colours: readonly string[], w: number, h: number, shift: [number, number],
+       bandAt: number, flip = false, picture: Texture | null = null,
+       pictureShift: [number, number] = [0, 0]): void {
     this.#quad.visible = !!kind;
-    this.#strands.visible = kind === 'colourful';
+    this.#drawingPicture = false;
     if (!kind) return;
+    const u = this.#quad.material.uniforms;
+    u.uKind.value = SKY_CODE[kind];
+    const img = picture?.image as { width?: number; height?: number } | undefined;
+    if (picture && img?.width && img.height) {
+      // Covering the element, PICTURE_MARGIN bigger: the share of it that shows across and
+      // down, and the shift kept inside what is left over.
+      const a = w / h, p = img.width / img.height;
+      const scale: [number, number] = [Math.min(1, a / p) / PICTURE_MARGIN, Math.min(1, p / a) / PICTURE_MARGIN];
+      const room = (s: number) => (1 - s) / 2;
+      const clamp = (v: number, r: number) => Math.max(-r, Math.min(r, v));
+      u.uPicture.value = picture;
+      u.uHasPicture.value = 1;
+      u.uPicScale.value = scale;
+      u.uPicShift.value = [clamp(-pictureShift[0] * scale[0], room(scale[0])),
+                           clamp(pictureShift[1] * scale[1], room(scale[1]))];
+      this.#drawingPicture = true;
+      return;
+    }
+    u.uHasPicture.value = 0;
     const short = Math.min(w, h);
     const period: [number, number] = [Math.max(1, Math.round((CELLS * w) / short)),
                                       Math.max(1, Math.round((CELLS * h) / short))];
+    // The textures in the element's proportions (as the lattice has them, so a small change
+    // of size doesn't draw them again), TEX texels along the longer side.
+    const big = Math.max(period[0], period[1]);
+    const texels: [number, number] = [Math.round((TEX * period[0]) / big), Math.round((TEX * period[1]) / big)];
     const key = `${kind}|${accent.map((v) => v.toFixed(3)).join()}|${period.join()}|${bandAt.toFixed(4)}|${flip}`;
     if (key !== this.#key) {
-      this.#target ??= new WebGLRenderTarget(TEX, TEX, {
-        wrapS: RepeatWrapping, wrapT: RepeatWrapping, minFilter: LinearFilter, magFilter: LinearFilter,
-        generateMipmaps: false, depthBuffer: false,
-      });
-      const u = this.#genMat.uniforms;
+      this.#target = this.#sized(this.#target, texels);
+      const u = this.#skyMat.uniforms;
       u.uSky.value = SKY_CODE[kind];
       u.uAccent.value = accent;
       u.uPeriod.value = period;
       u.uBandAt.value = bandAt;
       u.uFlip.value = flip ? 1 : 0;
-      renderer.setRenderTarget(this.#target);
-      renderer.render(this.#gen, this.#camera);
-      renderer.setRenderTarget(null);
+      u.uTexels.value = texels;
+      this.#render(renderer, this.#skyMat, this.#target);
       this.#key = key;
     }
-    this.#quad.material.uniforms.uSky.value = this.#target!.texture;
-    this.#quad.material.uniforms.uShift.value = shift;
-    this.#quad.material.uniforms.uKind.value = SKY_CODE[kind];
-    if (kind === 'colourful') this.#layout(origin, colours, glow, w, h, shift, loops, bandAt, flip);
+    this.#palette(colours);
+    const dustKey = `${period.join()}|${flip}|${origin}|${this.#colours}`;
+    if (kind === 'colourful' && dustKey !== this.#dustKey) {
+      this.#dust = this.#sized(this.#dust, texels);
+      const u = this.#dustMat.uniforms;
+      u.uPeriod.value = period;
+      u.uFlip.value = flip ? 1 : 0;
+      u.uOrigin.value = origin === 'below' ? 1 : 0;
+      u.uTexels.value = texels;
+      this.#render(renderer, this.#dustMat, this.#dust);
+      this.#dustKey = dustKey;
+    }
+    u.uSky.value = this.#target!.texture;
+    u.uDust.value = kind === 'colourful' ? this.#dust!.texture : this.#target!.texture;
+    u.uShift.value = shift;
+    u.uOrigin.value = origin === 'below' ? 1 : 0;
   }
 
   dispose(): void {
     this.#target?.dispose();
-    this.#target = null;
-    this.#key = '';
-    for (const m of [this.#quad, this.#strands]) {
-      m.geometry.dispose();
-      m.material.dispose();
-    }
-    (this.#gen.children[0] as Mesh).geometry.dispose();
-    this.#genMat.dispose();
+    this.#dust?.dispose();
+    for (const t of this.#pictures.values()) t?.dispose();
+    this.#pictures.clear();
+    this.#target = this.#dust = null;
+    this.#key = this.#dustKey = '';
+    this.#quad.geometry.dispose();
+    this.#quad.material.dispose();
+    this.#genQuad.geometry.dispose();
+    this.#skyMat.dispose();
+    this.#dustMat.dispose();
   }
 
-  /** The strands' fixed parts: which ribbon each vertex is on, which side, what kind. */
-  #ribbons(): BufferGeometry {
-    const verts = RIBBONS * POINTS * 2;
-    const g = new BufferGeometry();
-    const pos = new BufferAttribute(new Float32Array(verts * 3), 3);
-    const fade = new BufferAttribute(new Float32Array(verts), 1);
-    const local = new BufferAttribute(new Float32Array(verts * 2), 2);
-    pos.setUsage(DynamicDrawUsage);
-    fade.setUsage(DynamicDrawUsage);
-    local.setUsage(DynamicDrawUsage);
-    const side = new Float32Array(verts), kindA = new Float32Array(verts);
-    const index: number[] = [];
-    for (let ribbon = 0; ribbon < RIBBONS; ribbon++) {
-      const fine = ribbon % (1 + LINES) === 0 ? 0 : 1;
-      for (let k = 0; k < POINTS; k++) {
-        const v = (ribbon * POINTS + k) * 2;
-        side[v] = -1; side[v + 1] = 1;
-        kindA[v] = kindA[v + 1] = fine;
-        if (k < SEGMENTS) index.push(v, v + 1, v + 2, v + 1, v + 3, v + 2);
-      }
-    }
-    g.setAttribute('position', pos);
-    g.setAttribute('aFade', fade);
-    g.setAttribute('aLocal', local);
-    g.setAttribute('aSide', new BufferAttribute(side, 1));
-    g.setAttribute('aKind', new BufferAttribute(kindA, 1));
-    g.setAttribute('aColour', new BufferAttribute(new Float32Array(verts * 3), 3));
-    g.setIndex(index);
-    return g;
+  /** A target of the given size: the one there is, resized when it must be. */
+  #sized(t: WebGLRenderTarget | null, [w, h]: [number, number]): WebGLRenderTarget {
+    if (!t) return target(w, h);
+    if (t.width !== w || t.height !== h) t.setSize(w, h);
+    return t;
   }
 
-  /** Each strand's path this frame, as ribbons: its plume, then its wisps. */
-  #layout(origin: StrandOrigin, colours: readonly string[], glow: number, w: number, h: number,
-          shift: [number, number], loops: number, bandAt: number, flip: boolean): void {
-    const g = this.#strands.geometry;
-    const pos = g.getAttribute('position') as BufferAttribute;
-    const fade = g.getAttribute('aFade') as BufferAttribute;
-    const local = g.getAttribute('aLocal') as BufferAttribute;
+  #render(renderer: WebGLRenderer, mat: RawShaderMaterial, to: WebGLRenderTarget): void {
+    this.#genQuad.material = mat;
+    renderer.setRenderTarget(to);
+    renderer.render(this.#gen, this.#camera);
+    renderer.setRenderTarget(null);
+  }
+
+  /** Copies the dust's palette, flat sRGB, into `out` (PALETTE_SIZE * 3 numbers): the stars
+   *  take the same colours. */
+  paletteInto(out: number[]): void {
+    const flat = this.#dustMat.uniforms.uPalette.value as number[];
+    for (let i = 0; i < flat.length; i++) out[i] = flat[i];
+  }
+
+  /** The dust's colours, the list cycled to fill the palette. */
+  #palette(colours: readonly string[]): void {
     const list = colours.length ? colours : STRAND_COLOURS;
-    const ck = list.join();
-    if (ck !== this.#colours) {
-      // Each strand's colour, turning toward the next strand's along its length.
-      const col = g.getAttribute('aColour') as BufferAttribute;
-      const rgb = (css: string) => {
-        this.#colour.set(css);
-        const c = this.#colour.getRGB({ r: 1, g: 1, b: 1 }, SRGBColorSpace);
-        return [c.r, c.g, c.b];
-      };
-      for (let s = 0; s < STRANDS; s++) {
-        const a = rgb(list[s % list.length]), b = rgb(list[(s + 1) % list.length]);
-        for (let ribbon = 0; ribbon <= LINES; ribbon++) {
-          for (let k = 0; k < POINTS; k++) {
-            const m = 0.55 * (k / SEGMENTS) ** 1.5;
-            const v = ((s * (1 + LINES) + ribbon) * POINTS + k) * 2;
-            for (const i of [v, v + 1]) {
-              col.setXYZ(i, a[0] + (b[0] - a[0]) * m, a[1] + (b[1] - a[1]) * m, a[2] + (b[2] - a[2]) * m);
-            }
-          }
-        }
-      }
-      col.needsUpdate = true;
-      this.#colours = ck;
+    const key = list.join();
+    if (key === this.#colours) return;
+    const flat = this.#dustMat.uniforms.uPalette.value as number[];
+    for (let i = 0; i < PALETTE_SIZE; i++) {
+      this.#colour.set(list[i % list.length]);
+      const c = this.#colour.getRGB({ r: 1, g: 1, b: 1 }, SRGBColorSpace);
+      flat[i * 3] = c.r;
+      flat[i * 3 + 1] = c.g;
+      flat[i * 3 + 2] = c.b;
     }
-    const u = this.#strands.material.uniforms;
-    u.uView.value = [w, h];
-    u.uGlow.value = glow;
-    u.uTime.value = loops;
-    // From below, the plumes overlap near where they start and their light adds up; out of the
-    // band each stands alone, so it is drawn stronger to show as much.
-    u.uStrength.value = origin === 'band' ? BAND_STRENGTH : 1;
-    const diag = Math.hypot(w, h);
-    const px: [number, number][] = Array.from({ length: POINTS }, () => [0, 0]);
-    const along: number[] = new Array(POINTS).fill(0);
-    const spread: number[] = new Array(POINTS).fill(0);
-    const half: number[] = new Array(POINTS).fill(0);
-    for (let s = 0; s < STRANDS; s++) {
-      const sd = this.#seeds[s];
-      const sway = Math.sin(2 * Math.PI * (loops * sd.rate + sd.phase));
-      let x: number, y: number, heading: number, length: number, curl: number, wide: number;
-      if (origin === 'band') {
-        // A fan out of the band's middle to both sides, as the photograph's plumes fan out
-        // of the horizon: each starts on the band near its middle (slid with the far stars),
-        // heads out across it at its own angle, and curls further from straight out.
-        const side = s % 2 ? 1 : -1;
-        const per = side > 0 ? Math.floor(STRANDS / 2) : Math.ceil(STRANDS / 2);
-        const out = ((Math.floor(s / 2) + 0.5) / per) * 2 - 1;
-        const v = 0.5 + out * 0.14 + (sd.jitter - 0.5) * 0.04;
-        const bx = (((bandAt - v) % 1) + 1) % 1;
-        const fx = ((((flip ? 1 - bx : bx) + shift[0]) % 1) + 1) % 1, fy = (((v + shift[1]) % 1) + 1) % 1;
-        x = fx * w; y = fy * h;
-        // Along the band as v grows, in pixels, and across it to this strand's side.
-        const an = Math.hypot(w, h), ax = (flip ? w : -w) / an, ay = h / an;
-        const nx = -ay * side, ny = ax * side;
-        // Turning toward +along is turning by +90 degrees from across on one side and -90 on
-        // the other: `toward` is the sign that leans the heading toward v's end of the band.
-        const toward = Math.sign(nx * ay - ny * ax) * out;
-        heading = Math.atan2(ny, nx) + toward * Math.abs(out) * 1.0 + (sd.angle - 0.5) * 0.25;
-        length = (0.7 + 0.35 * sd.length) * diag * 0.5;
-        curl = (Math.sign(toward) || (sd.angle < 0.5 ? -1 : 1)) * (0.35 + 0.9 * Math.abs(out));
-        wide = (0.07 + 0.05 * sd.length) * diag;
-      } else {
-        // From one point just below the screen's bottom, fanning upward like a fountain:
-        // each curls further out the further out it starts.
-        x = w * (0.5 + 0.06 * (sd.jitter - 0.5));
-        y = h * 1.04;
-        const out = ((s + 0.5) / STRANDS) * 2 - 1;
-        heading = -Math.PI / 2 + out * 0.95 + (sd.angle - 0.5) * 0.2;
-        length = (0.65 + 0.35 * sd.length) * diag * 0.6;
-        curl = (Math.abs(out) < 0.01 ? (sd.angle < 0.5 ? -1 : 1) : Math.sign(out)) * (0.5 + 1.2 * Math.abs(out));
-        wide = (0.05 + 0.05 * sd.length) * diag;
-      }
-      // Walk the path: the heading turns as it goes, faster toward the tip (the curl, in
-      // radians over the whole length at its fastest), and the sway bends it either way.
-      const step = length / SEGMENTS;
-      for (let k = 0; k < POINTS; k++) {
-        const t = k / SEGMENTS;
-        px[k][0] = x;
-        px[k][1] = y;
-        along[k] = step * k;
-        half[k] = 6 + wide * t ** 0.85;
-        heading += (curl * 2 * t + sway * 0.15) / SEGMENTS;
-        x += Math.cos(heading) * step;
-        y += Math.sin(heading) * step;
-      }
-      for (let ribbon = 0; ribbon <= LINES; ribbon++) {
-        const [across, ph] = ribbon === 0 ? [0, 0] : sd.lines[ribbon - 1];
-        for (let k = 0; k < POINTS; k++) {
-          const t = k / SEGMENTS;
-          spread[k] = ribbon === 0 ? 0 : across * half[k] * 0.45 + Math.sin(t * 5 + ph + sway) * half[k] * 0.08;
-        }
-        const base = (s * (1 + LINES) + ribbon) * POINTS * 2;
-        for (let k = 0; k < POINTS; k++) {
-          const a = px[Math.max(0, k - 1)], b = px[Math.min(SEGMENTS, k + 1)];
-          let tx = b[0] - a[0], ty = b[1] - a[1];
-          const tl = Math.hypot(tx, ty) || 1;
-          tx /= tl;
-          ty /= tl;
-          const t = k / SEGMENTS;
-          const cx = px[k][0] - ty * spread[k], cy = px[k][1] + tx * spread[k];
-          const hw = ribbon === 0 ? half[k] : 2 + half[k] * 0.22;
-          // Out of the band they show from the start; from below, the start is off the screen anyway.
-          const f = Math.min(1, t / (origin === 'band' ? 0.06 : 0.12)) * (1 - Math.max(0, Math.min(1, (t - 0.5) / 0.5)));
-          const v = base + k * 2;
-          pos.setXYZ(v, cx - ty * hw, cy + tx * hw, 0);
-          pos.setXYZ(v + 1, cx + ty * hw, cy - tx * hw, 0);
-          fade.setX(v, f);
-          fade.setX(v + 1, f);
-          local.setXY(v, along[k], hw);
-          local.setXY(v + 1, along[k], hw);
-        }
-      }
-    }
-    pos.needsUpdate = true;
-    fade.needsUpdate = true;
-    local.needsUpdate = true;
+    this.#colours = key;
   }
 }

@@ -568,41 +568,61 @@ runs bottom left to top right, as in its. With no `sky` the field is laid as it 
 - `deep-blue`: a royal blue night, deeper in patches, and a soft band of pale-blue cloud with
   dark lanes in it, paler where its clouds gather; a pale-blue horizon; and half as many
   stars again, as the photographs are thick with them.
-- `violet`: clouds of colour across the whole sky, cyan to one side and magenta to the other,
-  violet between, broad and soft with brighter wisps in them; and through the middle a band
-  that is a blue haze, violet toward its edges, with a bright, nearly white-blue heart where
-  its clouds gather, cut by fine dark lanes. Toward the bottom the sky's own light turns violet
-  then pink, over a magenta-pink horizon.
-- `colourful`: a dark night with a haze of teal round the band, never on its heart; the band
-  warm peach, pinker in places, brightest where its clouds gather and cut deep by dark brown
-  lanes; a violet horizon; and eleven **strands**, plumes of glittering dust in the colours
-  of the owner's photograph of colourful dust (`STRAND_COLOURS`: teal, orange, magenta, blue,
-  gold, violet, cyan, pink, green; the `strandColours` property, CSS colours taken in turn,
-  replaces them). The strands before were thin straight lines that "look like concert
-  lights". Each widens as it goes and curls, fibrous along its length and gathering in
-  clumps, with two brighter wisps in it and grains of light caught in it that twinkle, its
-  colour turning toward the next strand's along it, and it sways slowly.
-  `strands="band"` fans them out of the band's middle to both sides, as the photograph's fan
-  out of its horizon: each starts on the band near its middle, heads out across it at its own
-  angle, and curls further from straight out (drawn 1.05 times as strong, `BAND_STRENGTH`).
-  `strands="below"` (the attribute's default) fans them up like a fountain from one point just
-  under the bottom edge instead, each curling further out the further out it starts. The hub
-  offers both in its Settings, out of the band by default. They stay wide and dusty, so they
-  never read as vines.
+- `violet`: a nebula down the band, after the owner's photograph of one (2026-10-20: the band
+  before read as "grey/white clouds instead of the reference image", and they asked for it
+  "much closer to the reference"): a broad column of cloud swirled and folded into filaments,
+  gritty with stars too many to tell apart, fainter cloud across the rest of the sky, a bright
+  heart where the band's knots gather, and the band's dark lanes. Its colour is where it is on
+  the screen, as in the photograph: cyan at the top, through blue and purple, to magenta and
+  pink at the bottom, over a magenta-pink horizon. The colours stay put as the sky slides.
+- `colourful`: a dark teal night with a haze of rose and teal round the band; the band
+  striking, glowing peach to cream from its heart outward, gritty, threaded with dark lanes;
+  a violet horizon; and **dust**, streams of glittering dust in the colours of the owner's
+  photograph of colourful dust (`STRAND_COLOURS`: teal, orange, magenta, blue, gold, violet,
+  cyan, pink, green; the `strandColours` property, CSS colours taken in turn, replaces them).
+  The ribbons before "are kind of looking like the tendrils, when in the reference image its
+  much more random and swirled together" (the owner, 2026-10-20), and drawing them every
+  frame made this sky the slow one. Now the streams radiate from one place and curve hard
+  outward as they go, twisting round near it, each mostly one colour, broad feathers with
+  dark sky between, clumps along them, a soft glow under them and glitter all through them.
+  `strands="band"` sends them out of the band's middle to both sides, sliding with the sky as
+  the band does; `strands="below"` (the attribute's default) up from one point just under the
+  bottom edge, staying put on the screen. The hub offers both in its Settings, out of the band
+  by default. Under this sky nearly half of all the stars take one of the dust's colours,
+  anywhere in the sky, not only in the dust.
 
-The glow is drawn once into a 512-texel square (`shaders/sky.frag.glsl`) whenever the sky, the
-theme's accent or the element's shape changes, twice as bright as shown so its faint
-gradient keeps more of an 8-bit texture's steps, then slid with the farthest stars every frame
-(`skyquad.frag.glsl`, half of it, the horizon's glow and a hair of dither): it doesn't billow, as a real
-sky doesn't, and costs a frame one texture read a pixel. Its noise lattice repeats exactly over
-the field (whole cells across and down, four on the shorter side at its broadest, and the broad
-patches on half as many, still whole), so the slide never shows a seam. The strands are laid
-out in CSS pixels every frame (about 3,200 vertices) and drawn by `skystrand.*.glsl`: a
-plume's fibres and grains are noise in the strand's own pixels, along and across it, so they
-hold to it as it sways. Setting `sky` or `strands` draws a frame;
-`skyReady` says whether the last frame drew the sky asked for, and `settings` add `sky` and
-`strands`. All of it lives in `sky.ts`; `SKY_KINDS`, `STRAND_COLOURS` and the types are
-exported. The gallery's effects panel has a **sky** and a **strands from** picker.
+The glow is drawn once into a texture (`shaders/sky.frag.glsl`) whenever the sky, the theme's
+accent or the element's shape changes, and the colourful sky's dust into a second
+(`skydust.frag.glsl`, its colour baked in, so the colours given are part of what redraws it).
+Each is 1024 texels along the element's longer side, in its proportions. For deep blue and
+colourful the glow is colour, twice as bright as shown so its faint gradient keeps more of an
+8-bit texture's steps; for violet it is the nebula's shape (how much cloud, its bright heart, a
+nudge to its colour), which `skyquad.frag.glsl` colours by its place on the screen. Every frame
+they are slid with the farthest stars (`skyquad.frag.glsl`, with the horizon's glow and a hair
+of dither; the dust from below is not slid): they don't billow, as a real sky doesn't, and
+cost a frame one or two texture reads a pixel, the colourful sky no more than the others. The
+noise (`shaders/noise.glsl`: value noise and five-octave fbm, ridged noise for filaments, a
+swirl that moves the field by noise of its own twice, and a texel-fine grit) repeats exactly
+over the field (whole cells across and down, four on the shorter side at its broadest, and
+the broad patches on half as many, still whole), so the slide never shows a seam; the dust
+out of the band fades before the field's edges for the same reason. Setting `sky` or
+`strands` draws a frame; `skyReady` says whether the last frame drew the sky asked for, and
+`settings` add `sky` and `strands`. All of it lives in `sky.ts`; `SKY_KINDS`,
+`STRAND_COLOURS` and the types are exported. The gallery's effects panel has a **sky** and a
+**strands from** picker.
+
+**A picture instead.** Noise drawn by hand reads as smoke beside a photograph, however it is
+tuned (the owner, 2026-10-21: "every attempt has fallen short of capturing what the
+references are showing"), so an app can give the sky as a picture: `sky-picture`, its
+address, and `sky-picture-wide`, another for an element wider than it is tall (the first
+serves both without it). It is drawn as it is, in place of the drawn sky and its horizon,
+covering the element a fifth bigger than it so the app's `offset` can shift it (by a fifth
+of the offset, as the farthest stars, kept inside that margin); the field's drift, a few
+pixels a minute, leaves it be. The band's own stars go, as a picture has its own, and the
+`sky` still says which sky it is: the colourful sky's stars still take the dust's colours.
+A picture is loaded once and kept; until it has loaded, or if it fails to, the drawn sky
+shows, and `skyReady` stays false, so a picture that never arrives is caught. The picture
+costs a frame one texture read a pixel. labkit ships none: the app brings its own.
 
 **Inside a planet** (the owner's polish list, 2026-10-18: "backgrounds inside of the
 planets shouldn't be blank walls of the planet color"): `<labkit-planet-inside>` is the level
