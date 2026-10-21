@@ -121,10 +121,13 @@ void main() {
     vec3 warm = mix(vec3(1.0, 0.55, 0.3), vec3(1.0, 0.42, 0.45), smoothstep(0.45, 0.8, fbm(s, coarse, 7.0)));
     float thread = smoothstep(0.72, 0.95, ridged(w, uPeriod * 3.0, 44.0)) * smoothstep(0.18, 0.0, ad);
     float cut = 1.0 - 0.8 * max(thread, 0.7 * rift);
-    float heart = body * (0.35 + 0.65 * mottle) * (0.55 + 0.45 * cloud) * (0.8 + 0.4 * g);
-    col = night + teal * max(haze - 1.3 * body, 0.0) * 0.12 + rose * max(haze - body * 0.5, 0.0) * 0.1
-        + warm * heart * 0.4 * cut
-        + vec3(1.0, 0.86, 0.72) * body * body * (0.3 + 0.7 * mottle) * (0.4 + 0.6 * cloud) * 0.5 * cut;
+    // Tighter than the other skies' bands, so it fades into the stars round it rather than
+    // into smoke.
+    float tight = body * body;
+    float heart = tight * (0.35 + 0.65 * mottle) * (0.55 + 0.45 * cloud) * (0.75 + 0.5 * g);
+    col = night + teal * max(haze - 1.3 * body, 0.0) * 0.1 + rose * max(body - tight, 0.0) * 0.12
+        + warm * heart * 0.55 * cut
+        + vec3(1.0, 0.86, 0.72) * tight * body * (0.3 + 0.7 * mottle) * (0.4 + 0.6 * cloud) * 0.6 * cut;
   }
   // Twice as bright, capped at 1 as a whole rather than channel by channel: a channel
   // clipped alone turns the band's brightest heart grey or yellow once it is drawn at half.
