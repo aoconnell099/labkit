@@ -16,8 +16,18 @@ uniform vec2 uOffset;
 uniform mediump float uGlow;
 // Where the twinkle's loop stands, 0 to 2 pi (star-dust.ts TWINKLE_LOOPS).
 uniform float uTwinkle;
+// How a sky lays the field (star-dust.ts): moved by uLay, in shares of the element, so
+// its band crosses the middle, then mirrored across when uFlip is 1. Both 0 with no sky.
+uniform vec2 uLay;
+uniform float uFlip;
+// 1 for the band's own stars (star-dust.ts, drawn only with a sky): each is drawn only
+// where uSkyTex's alpha, the band's star thickness at its place, passes its position.z,
+// and takes on a little of the band's colour there. They sit at the farthest nearness,
+// so they slide exactly as the sky does. 0, and uSkyTex unread, for the field's stars.
+uniform float uFromSky;
+uniform sampler2D uSkyTex;
 
-// Where the star sits, 0 to 1 across and down; z unused.
+// Where the star sits, 0 to 1 across and down; z, for a band star, the thickness it needs.
 attribute vec3 position;
 // How near it is, 0.2 (far) to 1 (near): how far it drifts and shifts.
 attribute float aNear;
@@ -29,6 +39,9 @@ attribute float aTouch;
 attribute vec4 aTwinkle;
 // A colour some points lean toward instead (warm, rose, violet), and how far: 0 for most.
 attribute vec4 aShade;
+// For a band star in a cluster, its place from the cluster's centre, in shares of the
+// element's shorter side, so a cluster is round on any shape; 0 for every other point.
+attribute vec2 aCluster;
 
 varying float vBright;
 varying float vTouch;
@@ -40,15 +53,29 @@ varying float vSize;
 varying float vCore;
 
 void main() {
-  vec2 p = fract(position.xy + (uDrift + uOffset / uView) * aNear);
+  vec2 laid = fract(position.xy + aCluster * min(uView.x, uView.y) / uView + uLay);
+  if (uFlip > 0.5) laid.x = 1.0 - laid.x;
+  vec2 p = fract(laid + (uDrift + uOffset / uView) * aNear);
+  float keep = 1.0;
+  vShade = aShade;
+  if (uFromSky > 0.5) {
+    vec4 sky = texture2D(uSkyTex, vec2(laid.x, 1.0 - laid.y));
+    keep = smoothstep(position.z - 0.04, position.z + 0.04, sky.a);
+    if (keep < 0.01) {
+      // Not here: no point at all, so it costs no fill.
+      gl_PointSize = 0.0;
+      gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+      return;
+    }
+    if (aShade.a == 0.0) vShade = vec4(sky.rgb / max(max(sky.r, max(sky.g, sky.b)), 0.001), 0.35);
+  }
   // The solid dot grows a little with brightness; the bright few get a halo
   // as wide as the theme's glow.
   vCore = 0.4 + 1.0 * aBright;
   float halo = aBright > 0.6 ? 2.0 + 7.0 * uGlow : 1.0;
   vSize = 2.0 * (vCore + halo);
-  vBright = aBright;
+  vBright = aBright * keep;
   vTouch = aTouch;
-  vShade = aShade;
   // Mostly a gentle swell and fade, catching brighter for a moment near the
   // top of a swell; the two waves keep any two points from keeping time.
   float t = 0.5 + 0.3 * sin(aTwinkle.x * uTwinkle + aTwinkle.z)

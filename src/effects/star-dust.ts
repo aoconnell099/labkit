@@ -7,7 +7,9 @@
  * leaning a little toward `--accent` (a few lean warm, rose or violet instead),
  * and the bright ones carry a halo as strong as the theme's `--glow`. Two in
  * five gather along a band, a diagonal across the field like the galaxy's plane
- * in a night photograph, wrapping with it. The field drifts slowly,
+ * in a night photograph, wrapping with it. With a `sky`, the band has stars of
+ * its own besides, thick in its heart, thinner round it, and in clusters (the
+ * owner, 2026-10-20). The field drifts slowly,
  * a little of the element's width once per loop of the theme's pace, and holds
  * still under calm and off.
  *
@@ -75,6 +77,34 @@ const MIDDLING = 0.07;
 const IN_BAND = 0.4;
 const BAND_AT = 0.37;
 const BAND_SPREAD = 0.07;
+/** With a sky, the band's own stars (the owner, 2026-10-20: "add star clusters inside the
+ *  bands? Or just increase the number and density of stars inside and around the band"),
+ *  as many places for one as the band could want: the most, and the CSS pixels of area per
+ *  place. Each is drawn only where the sky's texture says the band's stars are that thick
+ *  (sky.frag.glsl's alpha), so they follow its wandering, torn shape, thicken in its knots
+ *  and thin in its rifts: in a sky's heart most places hold one, round it a few.
+ *  BAND_SPREAD_SKY is their spread across the band, wider than the field's own band stars,
+ *  so they reach as far as the band wanders. A share of them sit in CLUSTERS tight
+ *  clusters along the band, each CLUSTER_SIZE across (one standard deviation, in shares
+ *  of the element's shorter side, so a cluster is round on a phone too). */
+const BAND_MAX = 14000;
+const AREA_PER_BAND_STAR = 75;
+const BAND_SPREAD_SKY = 0.16;
+const CLUSTERS = 36;
+const IN_CLUSTER = 0.25;
+const CLUSTER_SIZE = [0.007, 0.018] as const;
+/** How each sky lays the field (the owner, 2026-10-20, after their photographs): every sky
+ *  moves it so the band crosses the middle (x + y from BAND_AT to 1, wrapping, so through
+ *  the centre); deep blue and violet mirror it, so their band runs from top left to bottom
+ *  right as in theirs, and the colourful one keeps it bottom left to top right. With no sky
+ *  the field is as it always was. `stars` is how many more points it draws: the deep blue
+ *  photographs are thick with them. */
+const LAY = (1 - BAND_AT) / 2;
+const SKY_LAYS: Record<SkyKind, { flip: boolean; stars: number }> = {
+  'deep-blue': { flip: true, stars: 1.5 },
+  violet: { flip: true, stars: 1 },
+  colourful: { flip: false, stars: 1 },
+};
 /** A few points lean warm, rose or violet instead of toward the accent: the
  *  colour, as sRGB, and the share of the points. */
 const SHADES: readonly [[number, number, number], number][] = [
@@ -191,6 +221,81 @@ function field(): BufferGeometry {
   g.setAttribute('aTouch', new BufferAttribute(touch, 1));
   g.setAttribute('aTwinkle', new BufferAttribute(twinkle, 4));
   g.setAttribute('aShade', new BufferAttribute(shade, 4));
+  // In no cluster (the band's own stars' attribute, which the shader they share reads).
+  g.setAttribute('aCluster', new BufferAttribute(new Float32Array(MAX_STARS * 2), 2));
+  return g;
+}
+
+/** The band's own stars, drawn with a sky: BAND_MAX of them in a random order, so any first n
+ *  are spread as evenly as all. Each sits at the farthest nearness, so it slides exactly
+ *  with the sky's texture, and its position.z is how thick the band's stars must be where it
+ *  sits for it to show (star.vert.glsl). Nearly all are faint dust; a few are middling. */
+function bandField(): BufferGeometry {
+  const r = random(0xba2d);
+  const tw = random(0x7a1f);
+  const bell = (spread: number) => spread * Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
+  const centres = Array.from({ length: CLUSTERS }, () => ({
+    along: r(), across: bell(0.06),
+    size: CLUSTER_SIZE[0] + (CLUSTER_SIZE[1] - CLUSTER_SIZE[0]) * r(),
+  }));
+  const pos = new Float32Array(BAND_MAX * 3);
+  const near = new Float32Array(BAND_MAX).fill(2 / NEAR_STEPS);
+  const bright = new Float32Array(BAND_MAX);
+  const touch = new Float32Array(BAND_MAX);
+  const twinkle = new Float32Array(BAND_MAX * 4);
+  const shade = new Float32Array(BAND_MAX * 4);
+  const cluster = new Float32Array(BAND_MAX * 2);
+  const wrap = (v: number) => ((v % 1) + 1) % 1;
+  for (let i = 0; i < BAND_MAX; i++) {
+    let x: number, y: number, need: number;
+    const clustered = r() < IN_CLUSTER;
+    if (clustered) {
+      // In a cluster: at its centre, a tight ball round it in the shorter side's shares
+      // (star.vert.glsl), shown wherever the band has any thickness to speak of.
+      const c = centres[Math.floor(r() * CLUSTERS)];
+      x = c.along + c.across / 2; y = BAND_AT - c.along + c.across / 2;
+      cluster[i * 2] = bell(c.size);
+      cluster[i * 2 + 1] = bell(c.size);
+      need = 0.12 + 0.3 * r();
+    } else {
+      const along = r(), across = bell(BAND_SPREAD_SKY);
+      x = along + across / 2; y = BAND_AT - along + across / 2;
+      need = r();
+    }
+    pos[i * 3] = wrap(x);
+    pos[i * 3 + 1] = wrap(y);
+    pos[i * 3 + 2] = need;
+    const kind = r();
+    if (kind < 0.04) {
+      bright[i] = 0.32 + 0.26 * r();
+      touch[i] = 0.2 + 0.35 * r();
+    } else {
+      // A cluster's stars a little brighter than the dust, so it reads as one.
+      const b = r();
+      bright[i] = clustered ? 0.2 + 0.35 * b * b : 0.12 + 0.3 * b * b;
+      touch[i] = 0.1 + 0.35 * r();
+    }
+    let pick = r();
+    for (const [rgb, share] of SHADES) {
+      if (pick < share) {
+        shade.set([...rgb, 0.35 + 0.35 * r()], i * 4);
+        break;
+      }
+      pick -= share;
+    }
+    twinkle[i * 4] = 6 + Math.floor(tw() * 10);
+    twinkle[i * 4 + 1] = 9 + Math.floor(tw() * 14);
+    twinkle[i * 4 + 2] = tw() * Math.PI * 2;
+    twinkle[i * 4 + 3] = 0.4 + 0.4 * tw();
+  }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new BufferAttribute(pos, 3));
+  g.setAttribute('aNear', new BufferAttribute(near, 1));
+  g.setAttribute('aBright', new BufferAttribute(bright, 1));
+  g.setAttribute('aTouch', new BufferAttribute(touch, 1));
+  g.setAttribute('aTwinkle', new BufferAttribute(twinkle, 4));
+  g.setAttribute('aShade', new BufferAttribute(shade, 4));
+  g.setAttribute('aCluster', new BufferAttribute(cluster, 2));
   return g;
 }
 
@@ -229,6 +334,8 @@ export class StarDust extends LabkitEffect {
   #scene: Scene | null = null;
   #camera = new OrthographicCamera();
   #points: Points<BufferGeometry, RawShaderMaterial> | null = null;
+  /** The band's own stars, drawn only with a sky. */
+  #bandPoints: Points<BufferGeometry, RawShaderMaterial> | null = null;
   /** The slot's crossing and one sent by `shoot()`, at most one of each at once. */
   #meteors: Mesh<BufferGeometry, RawShaderMaterial>[] = [];
   #offset: [number, number] = [0, 0];
@@ -318,16 +425,26 @@ export class StarDust extends LabkitEffect {
 
   protected create(): void {
     this.#scene = new Scene();
+    const uniforms = {
+      uView: { value: [1, 1] }, uPixelRatio: { value: 1 }, uDrift: { value: [0, 0] },
+      uOffset: { value: [0, 0] }, uGlow: { value: 0 }, uTwinkle: { value: 0 },
+      uInk: { value: [1, 1, 1] }, uAccent: { value: [1, 1, 1] }, uLay: { value: [0, 0] }, uFlip: { value: 0 },
+    };
     this.#points = new Points(field(), new RawShaderMaterial({
       vertexShader: starVert, fragmentShader: starFrag, ...ADD,
-      uniforms: {
-        uView: { value: [1, 1] }, uPixelRatio: { value: 1 }, uDrift: { value: [0, 0] },
-        uOffset: { value: [0, 0] }, uGlow: { value: 0 }, uTwinkle: { value: 0 },
-        uInk: { value: [1, 1, 1] }, uAccent: { value: [1, 1, 1] },
-      },
+      uniforms: { ...uniforms, uFromSky: { value: 0 }, uSkyTex: { value: null } },
     }));
     this.#points.frustumCulled = false;
     this.#scene.add(this.#points);
+    // The band's own stars share the field's uniforms (the same objects, so one set of
+    // values drives both) and read the sky's texture.
+    this.#bandPoints = new Points(bandField(), new RawShaderMaterial({
+      vertexShader: starVert, fragmentShader: starFrag, ...ADD,
+      uniforms: { ...uniforms, uFromSky: { value: 1 }, uSkyTex: { value: null } },
+    }));
+    this.#bandPoints.frustumCulled = false;
+    this.#bandPoints.visible = false;
+    this.#scene.add(this.#bandPoints);
     // The sky goes under the stars (its pieces' renderOrder is below theirs).
     this.#sky = new Sky(this.#scene, BAND_AT);
     const g = strip();
@@ -419,7 +536,11 @@ export class StarDust extends LabkitEffect {
     u.uOffset.value = [this.#offset[0], this.#offset[1]];
     const loop = elapsed / (period * TWINKLE_LOOPS);
     u.uTwinkle.value = (loop - Math.floor(loop)) * Math.PI * 2;
-    this.#points.geometry.setDrawRange(0, Math.min(MAX_STARS, Math.ceil((w * h) / AREA_PER_STAR)));
+    const kind = skyKind(this.getAttribute('sky'));
+    const lay = kind ? SKY_LAYS[kind] : null;
+    u.uLay.value = lay ? [LAY, LAY] : [0, 0];
+    u.uFlip.value = lay?.flip ? 1 : 0;
+    this.#points.geometry.setDrawRange(0, Math.min(MAX_STARS, Math.ceil((w * h * (lay?.stars ?? 1)) / AREA_PER_STAR)));
 
     // Shooting stars only while the loop runs: a still frame never holds one.
     const full = settings.pace.level === 'full';
@@ -436,16 +557,27 @@ export class StarDust extends LabkitEffect {
     // The sky slides with the farthest stars (nearness 0.2), as they wrap.
     const shift: [number, number] = [(u.uDrift.value[0] + this.#offset[0] / w) * 0.2,
                                       (u.uDrift.value[1] + this.#offset[1] / h) * 0.2];
-    this.#sky?.draw(renderer, skyKind(this.getAttribute('sky')),
+    // The band where this sky lays it: x + y = BAND_AT + 2 LAY, with x mirrored when it flips.
+    this.#sky?.draw(renderer, kind,
                     this.getAttribute('strands') === 'band' ? 'band' : 'below',
                     u.uAccent.value as [number, number, number], settings.glow, this.#strandColours,
-                    w, h, shift, elapsed / period, BAND_AT);
+                    w, h, shift, elapsed / period, lay ? (BAND_AT + 2 * LAY) % 1 : BAND_AT, !!lay?.flip);
+    const tex = kind ? this.#sky?.texture ?? null : null;
+    if (this.#bandPoints) {
+      this.#bandPoints.visible = !!tex;
+      this.#bandPoints.material.uniforms.uSkyTex.value = tex;
+      this.#bandPoints.geometry.setDrawRange(
+        0, Math.min(BAND_MAX, Math.ceil((w * h * (lay?.stars ?? 1)) / AREA_PER_BAND_STAR)));
+    }
     renderer.render(this.#scene, this.#camera);
   }
 
   protected destroy(): void {
     this.#points?.geometry.dispose();
     this.#points?.material.dispose();
+    this.#bandPoints?.geometry.dispose();
+    this.#bandPoints?.material.dispose();
+    this.#bandPoints = null;
     this.#meteors[0]?.geometry.dispose();
     for (const m of this.#meteors) m.material.dispose();
     this.#meteors = [];
