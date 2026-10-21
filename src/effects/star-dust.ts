@@ -36,6 +36,12 @@
  * bare strip. Its points are seeded, so a page shows the same sky each visit;
  * how many are drawn follows the element's area.
  *
+ * With a `sky`, an app can give a picture of it instead (sky.ts): `sky-picture`, its
+ * address, and `sky-picture-wide`, another for an element wider than it is tall (the
+ * first serves both without it). The picture is drawn in place of the drawn sky, and the
+ * band's own stars go, as the picture has its own; the `sky` still says which sky it is
+ * (the colourful sky's coloured stars). Until it has loaded the drawn sky shows.
+ *
  * Size and position come from the page, as with the tendrils: lay it over its
  * parent with `position: absolute; inset: 0`.
  *
@@ -348,6 +354,8 @@ export class StarDust extends LabkitEffect {
   #pending = false;
   #shooting = false;
   #sky: Sky | null = null;
+  /** Whether the last frame's sky asked for a picture. */
+  #wantsPicture = false;
   #strandColours: string[] = [...STRAND_COLOURS];
 
   constructor() {
@@ -369,10 +377,10 @@ export class StarDust extends LabkitEffect {
   }
 
   static get observedAttributes(): string[] {
-    return ['sky', 'strands'];
+    return ['sky', 'strands', 'sky-picture', 'sky-picture-wide'];
   }
 
-  /** A new sky or strand origin draws a frame now, still or not. */
+  /** A new sky, strand origin or picture draws a frame now, still or not. */
   attributeChangedCallback(): void {
     this.redraw();
   }
@@ -388,9 +396,10 @@ export class StarDust extends LabkitEffect {
     this.redraw();
   }
 
-  /** Whether the last frame drew the sky its `sky` attribute asks for (false with none). */
+  /** Whether the last frame drew the sky its `sky` attribute asks for (false with none): its
+   *  picture, when it is given one, so a picture that never loads is never ready. */
   get skyReady(): boolean {
-    return !!this.#sky?.ready;
+    return !!this.#sky?.ready && (!this.#wantsPicture || this.#sky.drawingPicture);
   }
 
   /** Whether the last frame drew a shooting star. */
@@ -449,7 +458,7 @@ export class StarDust extends LabkitEffect {
     this.#bandPoints.visible = false;
     this.#scene.add(this.#bandPoints);
     // The sky goes under the stars (its pieces' renderOrder is below theirs).
-    this.#sky = new Sky(this.#scene, BAND_AT);
+    this.#sky = new Sky(this.#scene, BAND_AT, () => this.redraw());
     const g = strip();
     for (let i = 0; i < 2; i++) {
       const m = new Mesh(g, new RawShaderMaterial({
@@ -560,11 +569,17 @@ export class StarDust extends LabkitEffect {
     // The sky slides with the farthest stars (nearness 0.2), as they wrap.
     const shift: [number, number] = [(u.uDrift.value[0] + this.#offset[0] / w) * 0.2,
                                       (u.uDrift.value[1] + this.#offset[1] / h) * 0.2];
+    // The app's picture of the sky, if it gives one, the wide one on a wide element: it
+    // moves only with the offset, as the farthest stars do.
+    const url = (w > h && this.getAttribute('sky-picture-wide')) || this.getAttribute('sky-picture');
+    this.#wantsPicture = !!kind && !!url;
+    const picture = kind ? this.#sky?.picture(url) ?? null : null;
     // The band where this sky lays it: x + y = BAND_AT + 2 LAY, with x mirrored when it flips.
     this.#sky?.draw(renderer, kind,
                     this.getAttribute('strands') === 'band' ? 'band' : 'below',
                     u.uAccent.value as [number, number, number], this.#strandColours,
-                    w, h, shift, lay ? (BAND_AT + 2 * LAY) % 1 : BAND_AT, !!lay?.flip);
+                    w, h, shift, lay ? (BAND_AT + 2 * LAY) % 1 : BAND_AT, !!lay?.flip,
+                    picture, [(this.#offset[0] / w) * 0.2, (this.#offset[1] / h) * 0.2]);
     // Under the colourful sky, a share of all the points take its dust's colours; under
     // violet, the band's stars keep their own, its texture being shape rather than colour.
     u.uSkyHue.value = kind === 'violet' ? 0 : 1;
@@ -572,7 +587,7 @@ export class StarDust extends LabkitEffect {
     if (kind === 'colourful') this.#sky?.paletteInto(u.uPalette.value as number[]);
     const tex = kind ? this.#sky?.texture ?? null : null;
     if (this.#bandPoints) {
-      this.#bandPoints.visible = !!tex;
+      this.#bandPoints.visible = !!tex && !this.#sky?.drawingPicture;
       this.#bandPoints.material.uniforms.uSkyTex.value = tex;
       this.#bandPoints.geometry.setDrawRange(
         0, Math.min(BAND_MAX, Math.ceil((w * h * (lay?.stars ?? 1)) / AREA_PER_BAND_STAR)));

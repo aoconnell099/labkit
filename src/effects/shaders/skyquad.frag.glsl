@@ -13,11 +13,21 @@
 // - colourful: the dust over it, its colour as skydust.frag.glsl baked it: out of
 //   the band, slid with the sky as the band is; from below, where it is on the
 //   screen, unslid.
+// - a picture, when the app gives one: drawn as it is in place of all of it, the
+//   horizon included, covering the element with a margin round it, and shifted
+//   only by the app's offset, within that margin.
 // Premultiplied output, for additive blending.
 precision highp float;
 
 uniform sampler2D uSky;
 uniform sampler2D uDust;
+// The app's picture, and 1 when it is drawn instead of the textures.
+uniform sampler2D uPicture;
+uniform float uHasPicture;
+// How much of the picture shows across and down (0 to 1), and how far it has shifted,
+// in the picture's own units: sky.ts keeps the shift within the margin.
+uniform vec2 uPicScale;
+uniform vec2 uPicShift;
 // How far the farthest stars have moved, in the field's units (0 to 1).
 uniform vec2 uShift;
 // Which sky: 1 deep blue, 2 blue, violet and pink, 3 colourful.
@@ -35,6 +45,13 @@ vec3 down(float t, vec3 top, vec3 upper, vec3 lower, vec3 bottom) {
 }
 
 void main() {
+  float n = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+  if (uHasPicture > 0.5) {
+    vec3 p = texture2D(uPicture, 0.5 + (vUv - 0.5) * uPicScale + uPicShift).rgb;
+    p = max(p + (n - 0.5) / 255.0, 0.0);
+    gl_FragColor = vec4(p, max(p.r, max(p.g, p.b)));
+    return;
+  }
   vec2 s = vec2(vUv.x, 1.0 - vUv.y) - uShift;
   vec2 at = vec2(s.x, 1.0 - s.y);
   vec4 tex = texture2D(uSky, at);
@@ -60,7 +77,6 @@ void main() {
                : uKind < 2.5 ? vec3(0.5, 0.15, 0.42)
                : vec3(0.26, 0.16, 0.6);
   c += horizon * rise;
-  float n = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
   c = max(c + (n - 0.5) / 255.0, 0.0);
   gl_FragColor = vec4(c, max(c.r, max(c.g, c.b)));
 }

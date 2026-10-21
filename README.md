@@ -611,6 +611,19 @@ out of the band fades before the field's edges for the same reason. Setting `sky
 `STRAND_COLOURS` and the types are exported. The gallery's effects panel has a **sky** and a
 **strands from** picker.
 
+**A picture instead.** Noise drawn by hand reads as smoke beside a photograph, however it is
+tuned (the owner, 2026-10-21: "every attempt has fallen short of capturing what the
+references are showing"), so an app can give the sky as a picture: `sky-picture`, its
+address, and `sky-picture-wide`, another for an element wider than it is tall (the first
+serves both without it). It is drawn as it is, in place of the drawn sky and its horizon,
+covering the element a fifth bigger than it so the app's `offset` can shift it (by a fifth
+of the offset, as the farthest stars, kept inside that margin); the field's drift, a few
+pixels a minute, leaves it be. The band's own stars go, as a picture has its own, and the
+`sky` still says which sky it is: the colourful sky's stars still take the dust's colours.
+A picture is loaded once and kept; until it has loaded, or if it fails to, the drawn sky
+shows, and `skyReady` stays false, so a picture that never arrives is caught. The picture
+costs a frame one texture read a pixel. labkit ships none: the app brings its own.
+
 **Inside a planet** (the owner's polish list, 2026-10-18: "backgrounds inside of the
 planets shouldn't be blank walls of the planet color"): `<labkit-planet-inside>` is the level
 an app dives into, full-bleed, the planet orb's smoke seen from within. Two layers of noise

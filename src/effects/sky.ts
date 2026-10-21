@@ -30,11 +30,20 @@
  * (`skyquad.frag.glsl`, which colours them and adds the horizon's glow): they don't billow,
  * as a real sky doesn't, and cost a frame one or two texture reads a pixel. Their noise
  * repeats exactly over the field (`noise.glsl`), so the slide never shows a seam.
+ *
+ * **A picture** (2026-10-21): an app can give a picture of the sky instead, which is drawn
+ * as it is in place of all of that. Noise drawn by hand reads as smoke, however it is
+ * tuned, beside the photographs and paintings the skies follow (the owner: "every attempt
+ * has fallen short of capturing what the references are showing"). It covers the element
+ * with a margin round it (PICTURE_MARGIN) and moves only with the app's offset, within that
+ * margin: the field's drift is a few pixels a minute, too slow to see, and a picture has no
+ * edge to wrap at. Each is loaded once and kept. Until it has loaded, or if it fails to,
+ * the drawn sky shows.
  */
 import {
-  Color, CustomBlending, LinearFilter, Mesh, NoBlending, OneFactor, OrthographicCamera, PlaneGeometry,
-  RawShaderMaterial, RepeatWrapping, Scene, SRGBColorSpace, WebGLRenderTarget, type Texture,
-  type WebGLRenderer,
+  Color, CustomBlending, LinearFilter, LinearMipmapLinearFilter, Mesh, NoBlending, NoColorSpace, OneFactor,
+  OrthographicCamera, PlaneGeometry, RawShaderMaterial, RepeatWrapping, Scene, SRGBColorSpace, TextureLoader,
+  WebGLRenderTarget, type Texture, type WebGLRenderer,
 } from 'three';
 import quadVert from './shaders/quad.vert.glsl?raw';
 import noise from './shaders/noise.glsl?raw';
@@ -59,6 +68,9 @@ export const PALETTE_SIZE = 9;
 const TEX = 1024;
 /** Noise lattice cells across the field's shorter side, at its broadest octave. */
 const CELLS = 4;
+/** How much bigger than the element a picture is drawn, so the app's offset can shift it:
+ *  a dive's slide (a fifth of the stars' offset) stays well inside a tenth either way. */
+const PICTURE_MARGIN = 1.2;
 
 const ADD = {
   blending: CustomBlending,
@@ -111,8 +123,15 @@ export class Sky {
   #quad: Mesh<PlaneGeometry, RawShaderMaterial>;
   #colour = new Color();
   #colours = '';
+  /** Pictures by address: null while one loads, or if it failed. */
+  #pictures = new Map<string, Texture | null>();
+  #loader = new TextureLoader();
+  #onPicture: () => void;
+  #drawingPicture = false;
 
-  constructor(scene: Scene, bandAt: number) {
+  /** `onPicture` is called when a picture has loaded, to draw a frame with it. */
+  constructor(scene: Scene, bandAt: number, onPicture: () => void = () => {}) {
+    this.#onPicture = onPicture;
     this.#skyMat.uniforms.uBandAt.value = bandAt;
     this.#genQuad = new Mesh(new PlaneGeometry(2, 2), this.#skyMat);
     this.#genQuad.frustumCulled = false;
@@ -122,7 +141,8 @@ export class Sky {
       vertexShader: quadVert, fragmentShader: skyQuadFrag, ...ADD,
       uniforms: {
         uSky: { value: null }, uDust: { value: null }, uShift: { value: [0, 0] }, uKind: { value: 1 },
-        uOrigin: { value: 0 },
+        uOrigin: { value: 0 }, uPicture: { value: null }, uHasPicture: { value: 0 },
+        uPicScale: { value: [1, 1] }, uPicShift: { value: [0, 0] },
       },
     }));
     this.#quad.frustumCulled = false;
@@ -131,9 +151,32 @@ export class Sky {
     scene.add(this.#quad);
   }
 
-  /** Whether the glow texture holds the sky last asked for, at the element's shape. */
+  /** Whether the last frame drew the sky last asked for: its picture, or its glow texture at
+   *  the element's shape. */
   get ready(): boolean {
-    return this.#key !== '' && this.#quad.visible;
+    return this.#quad.visible && (this.#drawingPicture || this.#key !== '');
+  }
+
+  /** Whether the last frame drew a picture rather than the drawn sky. */
+  get drawingPicture(): boolean {
+    return this.#quad.visible && this.#drawingPicture;
+  }
+
+  /** The picture at `url`, once it has loaded: null until then, or if it fails. */
+  picture(url: string | null): Texture | null {
+    if (!url) return null;
+    if (!this.#pictures.has(url)) {
+      this.#pictures.set(url, null);
+      this.#loader.load(url, (t) => {
+        // Its colours are drawn as they are, as the drawn sky's are.
+        t.colorSpace = NoColorSpace;
+        t.minFilter = LinearMipmapLinearFilter;
+        t.generateMipmaps = true;
+        this.#pictures.set(url, t);
+        this.#onPicture();
+      }, undefined, () => { /* The drawn sky stays. */ });
+    }
+    return this.#pictures.get(url) ?? null;
   }
 
   /** The glow texture, its alpha the band's star thickness; null until first drawn. */
@@ -142,12 +185,34 @@ export class Sky {
   }
 
   /** Set before the frame's render: draws the textures when anything they show has
-   *  changed, and slides them. */
+   *  changed, and slides them; or, with a `picture` loaded, places it instead, shifted by
+   *  `pictureShift` (the app's offset, as shares of the element). */
   draw(renderer: WebGLRenderer, kind: SkyKind | null, origin: StrandOrigin, accent: [number, number, number],
        colours: readonly string[], w: number, h: number, shift: [number, number],
-       bandAt: number, flip = false): void {
+       bandAt: number, flip = false, picture: Texture | null = null,
+       pictureShift: [number, number] = [0, 0]): void {
     this.#quad.visible = !!kind;
+    this.#drawingPicture = false;
     if (!kind) return;
+    const u = this.#quad.material.uniforms;
+    u.uKind.value = SKY_CODE[kind];
+    const img = picture?.image as { width?: number; height?: number } | undefined;
+    if (picture && img?.width && img.height) {
+      // Covering the element, PICTURE_MARGIN bigger: the share of it that shows across and
+      // down, and the shift kept inside what is left over.
+      const a = w / h, p = img.width / img.height;
+      const scale: [number, number] = [Math.min(1, a / p) / PICTURE_MARGIN, Math.min(1, p / a) / PICTURE_MARGIN];
+      const room = (s: number) => (1 - s) / 2;
+      const clamp = (v: number, r: number) => Math.max(-r, Math.min(r, v));
+      u.uPicture.value = picture;
+      u.uHasPicture.value = 1;
+      u.uPicScale.value = scale;
+      u.uPicShift.value = [clamp(-pictureShift[0] * scale[0], room(scale[0])),
+                           clamp(pictureShift[1] * scale[1], room(scale[1]))];
+      this.#drawingPicture = true;
+      return;
+    }
+    u.uHasPicture.value = 0;
     const short = Math.min(w, h);
     const period: [number, number] = [Math.max(1, Math.round((CELLS * w) / short)),
                                       Math.max(1, Math.round((CELLS * h) / short))];
@@ -180,17 +245,17 @@ export class Sky {
       this.#render(renderer, this.#dustMat, this.#dust);
       this.#dustKey = dustKey;
     }
-    const u = this.#quad.material.uniforms;
     u.uSky.value = this.#target!.texture;
     u.uDust.value = kind === 'colourful' ? this.#dust!.texture : this.#target!.texture;
     u.uShift.value = shift;
-    u.uKind.value = SKY_CODE[kind];
     u.uOrigin.value = origin === 'below' ? 1 : 0;
   }
 
   dispose(): void {
     this.#target?.dispose();
     this.#dust?.dispose();
+    for (const t of this.#pictures.values()) t?.dispose();
+    this.#pictures.clear();
     this.#target = this.#dust = null;
     this.#key = this.#dustKey = '';
     this.#quad.geometry.dispose();
