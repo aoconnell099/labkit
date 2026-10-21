@@ -11,7 +11,8 @@
 // glow keeps more of an 8-bit texture's steps.
 //
 // Since 2026-10-20 each sky follows two or more of the owner's photographs,
-// kept a little dimmer so it never overpowers what is in front of it:
+// kept a little dimmer so it never overpowers what is in front of it, its band
+// wide and ragged, wandering, swelling and torn, with knots and dark rifts:
 // - deep blue: a royal blue night and a soft pale-blue band with dark lanes;
 // - violet: clouds of cyan, violet and magenta across the whole sky, cyan to
 //   one side and magenta to the other, and through the middle a bright,
@@ -67,22 +68,36 @@ float fbm(vec2 s, vec2 cells, float seed) {
 void main() {
   // The field's units, down from the top, as the stars are placed.
   vec2 s = vec2(vUv.x, 1.0 - vUv.y);
-  // Across the band, wrapping: 0 on its line, -0.5 to 0.5.
-  float fx = uFlip > 0.5 ? 1.0 - s.x : s.x;
-  float d = fract(fx + s.y - uBandAt + 0.5) - 0.5;
-  float ad = abs(d);
-  float haze = exp(-d * d / (2.0 * 0.16 * 0.16));
-  float body = exp(-d * d / (2.0 * 0.085 * 0.085));
-  float core = exp(-d * d / (2.0 * 0.05 * 0.05));
-
-  // Clouds that mottle the band, and dark lanes of dust down its heart.
-  float mottle = smoothstep(0.3, 0.8, fbm(s, uPeriod, 1.0));
-  float ridge = 1.0 - abs(fbm(s, uPeriod * 2.0, 2.0) * 2.0 - 1.0);
-  float lanes = smoothstep(0.72, 0.95, ridge) * smoothstep(0.1, 0.0, ad);
   // Half the lattice, kept to whole cells so it still repeats exactly over the field.
   vec2 coarse = max(vec2(1.0), floor(uPeriod * 0.5));
   // Broad, slow patches across the whole field: the sky is never one flat colour.
   float broad = fbm(s, coarse, 6.0);
+
+  // Across the band, wrapping: 0 on its line, -0.5 to 0.5. It is never a clean stripe
+  // (the owner, 2026-10-20: "a little bit wider and more chaotic like the reference
+  // images"): its line wanders, it swells and narrows along its length, and its edges are
+  // torn, more than its heart. Each is added before the wrap, so the wrap never seams.
+  float fx = uFlip > 0.5 ? 1.0 - s.x : s.x;
+  float d0 = fract(fx + s.y - uBandAt + 0.5) - 0.5;
+  float wander = (fbm(s, coarse, 11.0) - 0.5) * 0.5;
+  float tear = (fbm(s, uPeriod, 13.0) - 0.5) * 0.36 * (0.35 + 0.65 * smoothstep(0.03, 0.2, abs(d0)));
+  float swell = 0.65 + 0.9 * smoothstep(0.3, 0.7, fbm(s, coarse, 12.0));
+  float d = (fract(d0 + wander + tear + 0.5) - 0.5) / swell;
+  float ad = abs(d);
+  float haze = exp(-d * d / (2.0 * 0.21 * 0.21));
+  float body = exp(-d * d / (2.0 * 0.14 * 0.14));
+  float core = exp(-d * d / (2.0 * 0.085 * 0.085));
+
+  // Clouds that mottle the band, knots of brighter cloud in it, fine dark lanes of dust down
+  // its heart, and broad dark rifts that blot out whole stretches of it, more to one side of
+  // its line than on it, as the galaxy's great rift runs beside its bright heart.
+  float mottle = smoothstep(0.35, 0.75, fbm(s, uPeriod, 1.0));
+  float knots = smoothstep(0.55, 0.8, fbm(s, uPeriod * 2.0, 15.0));
+  float ridge = 1.0 - abs(fbm(s, uPeriod * 2.0, 2.0) * 2.0 - 1.0);
+  float rd = d - 0.05;
+  float rift = smoothstep(0.5, 0.68, fbm(s, uPeriod, 14.0)) * exp(-rd * rd / (2.0 * 0.07 * 0.07));
+  float lanes = max(smoothstep(0.72, 0.95, ridge) * smoothstep(0.14, 0.0, ad), 0.8 * rift);
+  mottle = min(mottle + 0.6 * knots, 1.3);
 
   vec3 col;
   if (uSky < 1.5) {
@@ -104,13 +119,13 @@ void main() {
     float wisps = smoothstep(0.45, 0.8, fbm(s, uPeriod * 2.0, 8.0)) * clouds;
     vec3 night = vec3(0.02, 0.03, 0.11) + tint * (clouds * 0.2 + wisps * 0.22);
     // Its lanes are finer than the other skies', so the bright heart shows through.
-    float fine = smoothstep(0.8, 0.97, ridge) * smoothstep(0.07, 0.0, ad);
+    float fine = max(smoothstep(0.8, 0.97, ridge) * smoothstep(0.12, 0.0, ad), 0.55 * rift);
     // The band: a blue haze, violet toward its edges, and a bright, nearly white-blue
     // heart where its clouds gather, cut by dark lanes.
     vec3 band = vec3(0.3, 0.46, 1.0) * haze * 0.12
               + vec3(0.56, 0.4, 1.0) * max(haze - body, 0.0) * 0.08
-              + vec3(0.62, 0.72, 1.0) * body * (0.35 + 0.65 * mottle) * 0.28
-              + vec3(0.8, 0.84, 1.0) * core * mottle * 0.3;
+              + vec3(0.7, 0.76, 1.0) * body * (0.35 + 0.65 * mottle) * 0.28
+              + vec3(0.9, 0.9, 1.0) * core * mottle * 0.3;
     col = night * (1.0 - 0.5 * body) + band * (1.0 - 0.7 * fine);
   } else {
     // Colourful: a dark night, a haze of teal round the band, and its heart warm peach,
@@ -123,6 +138,10 @@ void main() {
     col = night + teal * max(haze - 1.2 * body, 0.0) * 0.14 + warm * heart * 0.32 * (1.0 - 0.9 * lanes)
         + vec3(1.0, 0.8, 0.62) * core * mottle * 0.14 * (1.0 - lanes);
   }
-  col = min(col * 2.0, vec3(1.0));
+  // Twice as bright, capped at 1 as a whole rather than channel by channel: a channel
+  // clipped alone turns the band's brightest heart grey (violet's white-blue) or yellow
+  // (colourful's peach) once it is drawn at half.
+  col *= 2.0;
+  col /= max(1.0, max(col.r, max(col.g, col.b)));
   gl_FragColor = vec4(col, max(col.r, max(col.g, col.b)));
 }

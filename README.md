@@ -547,7 +547,12 @@ Since 2026-10-20 each sky follows two or more of the owner's photographs (their 
 combination of those two images ... tuned slightly to not overpower the foreground"). Each
 has a colour of its own across the whole field rather than black, in broad slow patches, a
 wider, brighter band, and a glow rising from the element's bottom edge that stays put as the
-stars slide, like the light over a horizon. **Each sky lays the field** so its band crosses
+stars slide, like the light over a horizon. The band is never a clean stripe (the owner,
+the same day: "a little bit wider and more chaotic like the reference images"): its line
+wanders, it swells and narrows along its length, its edges are torn, and it has knots of
+brighter cloud, fine dark lanes and broad dark rifts, the rifts more to one side of its line
+than on it. The glow is stored at twice its brightness and capped as a whole, so the
+brightest heart keeps its colour rather than going grey or yellow. **Each sky lays the field** so its band crosses
 the middle: the stars and the glow move together by `(1 - 0.37) / 2` of the element each way
 (x + y from 0.37 to 1, through the centre), and deep blue and violet also mirror it across,
 so their band runs from top left to bottom right as in their photographs; the colourful one
