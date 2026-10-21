@@ -26,6 +26,15 @@ uniform float uFlip;
 // so they slide exactly as the sky does. 0, and uSkyTex unread, for the field's stars.
 uniform float uFromSky;
 uniform sampler2D uSkyTex;
+// 1 when the sky's texture is colour a band star can take its tint from; 0 for the violet
+// sky, whose texture is the nebula's shape (skyquad colours it).
+uniform float uSkyHue;
+// The colourful sky's colours, and the share of all the points that lean hard toward one
+// of them, anywhere in the sky (the owner, 2026-10-20: the coloured stars "seem theyre only
+// contained to the respective color strands which doesnt need to be the case"). The share
+// is 0 under the other skies.
+uniform vec3 uPalette[9];
+uniform float uPaletteShare;
 
 // Where the star sits, 0 to 1 across and down; z, for a band star, the thickness it needs.
 attribute vec3 position;
@@ -58,6 +67,12 @@ void main() {
   vec2 p = fract(laid + (uDrift + uOffset / uView) * aNear);
   float keep = 1.0;
   vShade = aShade;
+  // Which points take a palette colour, and which: from the point's own twinkle phase, so it
+  // is the same point every frame.
+  float pick = fract(aTwinkle.z * 1.1140846 + aTwinkle.x * 0.37);
+  if (pick < uPaletteShare) {
+    vShade = vec4(uPalette[int(floor(fract(pick * 13.7) * 9.0))], 0.8);
+  }
   if (uFromSky > 0.5) {
     vec4 sky = texture2D(uSkyTex, vec2(laid.x, 1.0 - laid.y));
     keep = smoothstep(position.z - 0.04, position.z + 0.04, sky.a);
@@ -67,7 +82,7 @@ void main() {
       gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
       return;
     }
-    if (aShade.a == 0.0) vShade = vec4(sky.rgb / max(max(sky.r, max(sky.g, sky.b)), 0.001), 0.35);
+    if (vShade.a == 0.0 && uSkyHue > 0.5) vShade = vec4(sky.rgb / max(max(sky.r, max(sky.g, sky.b)), 0.001), 0.35);
   }
   // The solid dot grows a little with brightness; the bright few get a halo
   // as wide as the theme's glow.
