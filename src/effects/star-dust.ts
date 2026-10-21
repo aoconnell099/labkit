@@ -51,7 +51,7 @@ import starVert from './shaders/star.vert.glsl?raw';
 import starFrag from './shaders/star.frag.glsl?raw';
 import meteorVert from './shaders/meteor.vert.glsl?raw';
 import meteorFrag from './shaders/meteor.frag.glsl?raw';
-import { Sky, skyKind, STRAND_COLOURS, type SkyKind, type StrandOrigin } from './sky';
+import { PALETTE_SIZE, Sky, skyKind, STRAND_COLOURS, type SkyKind, type StrandOrigin } from './sky';
 
 export interface StarDustSettings extends EffectSettings {
   /** The theme's `--text`, as the theme wrote it: the points' colour. */
@@ -88,6 +88,8 @@ const BAND_SPREAD = 0.07;
  *  clusters along the band, each CLUSTER_SIZE across (one standard deviation, in shares
  *  of the element's shorter side, so a cluster is round on a phone too). */
 const BAND_MAX = 14000;
+/** Under the colourful sky, the share of all the points that take one of its dust's colours. */
+const PALETTE_SHARE = 0.45;
 const AREA_PER_BAND_STAR = 75;
 const BAND_SPREAD_SKY = 0.16;
 const CLUSTERS = 36;
@@ -429,6 +431,7 @@ export class StarDust extends LabkitEffect {
       uView: { value: [1, 1] }, uPixelRatio: { value: 1 }, uDrift: { value: [0, 0] },
       uOffset: { value: [0, 0] }, uGlow: { value: 0 }, uTwinkle: { value: 0 },
       uInk: { value: [1, 1, 1] }, uAccent: { value: [1, 1, 1] }, uLay: { value: [0, 0] }, uFlip: { value: 0 },
+      uSkyHue: { value: 1 }, uPalette: { value: new Array(PALETTE_SIZE * 3).fill(1) }, uPaletteShare: { value: 0 },
     };
     this.#points = new Points(field(), new RawShaderMaterial({
       vertexShader: starVert, fragmentShader: starFrag, ...ADD,
@@ -560,8 +563,13 @@ export class StarDust extends LabkitEffect {
     // The band where this sky lays it: x + y = BAND_AT + 2 LAY, with x mirrored when it flips.
     this.#sky?.draw(renderer, kind,
                     this.getAttribute('strands') === 'band' ? 'band' : 'below',
-                    u.uAccent.value as [number, number, number], settings.glow, this.#strandColours,
-                    w, h, shift, elapsed / period, lay ? (BAND_AT + 2 * LAY) % 1 : BAND_AT, !!lay?.flip);
+                    u.uAccent.value as [number, number, number], this.#strandColours,
+                    w, h, shift, lay ? (BAND_AT + 2 * LAY) % 1 : BAND_AT, !!lay?.flip);
+    // Under the colourful sky, a share of all the points take its dust's colours; under
+    // violet, the band's stars keep their own, its texture being shape rather than colour.
+    u.uSkyHue.value = kind === 'violet' ? 0 : 1;
+    u.uPaletteShare.value = kind === 'colourful' ? PALETTE_SHARE : 0;
+    if (kind === 'colourful') this.#sky?.paletteInto(u.uPalette.value as number[]);
     const tex = kind ? this.#sky?.texture ?? null : null;
     if (this.#bandPoints) {
       this.#bandPoints.visible = !!tex;
