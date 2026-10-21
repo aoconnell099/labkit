@@ -10,6 +10,9 @@
 // never shows a seam. Written twice as bright as it is drawn, so the faint
 // glow keeps more of an 8-bit texture's steps.
 //
+// Its alpha is how thick the band's stars are at each place (star.vert.glsl's
+// band stars read it), not the glow's cover: skyquad reads only the colour.
+//
 // Since 2026-10-20 each sky follows two or more of the owner's photographs,
 // kept a little dimmer so it never overpowers what is in front of it, its band
 // wide and ragged, wandering, swelling and torn, with knots and dark rifts:
@@ -143,5 +146,8 @@ void main() {
   // (colourful's peach) once it is drawn at half.
   col *= 2.0;
   col /= max(1.0, max(col.r, max(col.g, col.b)));
-  gl_FragColor = vec4(col, max(col.r, max(col.g, col.b)));
+  // How thick the band's stars are here: thickest in its heart and its knots, thinner
+  // round it, and few in its lanes and rifts, as the dust there hides them.
+  float stars = body * (0.5 + 0.5 * mottle) * (1.0 - 0.85 * lanes) + 0.3 * haze * (1.0 - 0.6 * lanes);
+  gl_FragColor = vec4(col, clamp(stars, 0.0, 1.0));
 }

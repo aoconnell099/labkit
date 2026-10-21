@@ -33,7 +33,7 @@
 import {
   BufferAttribute, BufferGeometry, Color, CustomBlending, DoubleSide, DynamicDrawUsage, LinearFilter,
   Mesh, NoBlending, OneFactor, OrthographicCamera, PlaneGeometry, RawShaderMaterial, RepeatWrapping,
-  Scene, SRGBColorSpace, WebGLRenderTarget, type WebGLRenderer,
+  Scene, SRGBColorSpace, WebGLRenderTarget, type Texture, type WebGLRenderer,
 } from 'three';
 import { seeded } from './drift';
 import quadVert from './shaders/quad.vert.glsl?raw';
@@ -138,6 +138,11 @@ export class Sky {
   /** Whether the glow texture holds the sky last asked for, at the element's shape. */
   get ready(): boolean {
     return this.#key !== '' && this.#quad.visible;
+  }
+
+  /** The glow texture, its alpha the band's star thickness; null until first drawn. */
+  get texture(): Texture | null {
+    return this.#target?.texture ?? null;
   }
 
   /** Set before the frame's render: draws the glow texture when anything it shows

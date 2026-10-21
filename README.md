@@ -552,7 +552,15 @@ the same day: "a little bit wider and more chaotic like the reference images"): 
 wanders, it swells and narrows along its length, its edges are torn, and it has knots of
 brighter cloud, fine dark lanes and broad dark rifts, the rifts more to one side of its line
 than on it. The glow is stored at twice its brightness and capped as a whole, so the
-brightest heart keeps its colour rather than going grey or yellow. **Each sky lays the field** so its band crosses
+brightest heart keeps its colour rather than going grey or yellow. **The band has stars of
+its own** (the owner: "maybe add star clusters inside the bands? Or just increase the number
+and density of stars inside and around the band"): up to 14000 more places, one per 75
+square CSS pixels, spread wider across the band than the field's own band stars, a quarter
+of them in 36 tight clusters, each round on any shape of element. Each is drawn only where
+the sky's texture says the band's stars are thick enough (its alpha: thickest in the heart
+and the knots, thinner round the band, few in the lanes and rifts), so they follow the
+band's wandering, torn shape; they sit at the farthest nearness, so they slide exactly with
+it, and take on a little of its colour. Nearly all are faint dust. **Each sky lays the field** so its band crosses
 the middle: the stars and the glow move together by `(1 - 0.37) / 2` of the element each way
 (x + y from 0.37 to 1, through the centre), and deep blue and violet also mirror it across,
 so their band runs from top left to bottom right as in their photographs; the colourful one
