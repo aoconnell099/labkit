@@ -61,6 +61,23 @@ step each: 59 steps. The tendril growing in (#62) turned the 0.7 s wait before t
 Cold core shot into a wait of up to 25 s for the plain tendril to reach its orb (two
 loops of Cold core's pace is 17.4 s), and added no step: its checks ride existing ones.
 
+The library comps (#83) ride two existing scenes, since the file has its ten. Each comp
+is its own page in `gallery/comps/` (`specimen.html`, `workbench.html`,
+`shop-window.html`), built beside the bench by `vite.config.ts`'s `input`; the preview's
+entry stays the bench. At the end of "calm motion", at phone width, the steps go to each
+comp in turn by setting `location.href`, wait for its home (`<html data-comp>` names the
+comp; tiles carry `data-tile`), expect all 22 tiles, no error and nothing wider than the
+screen, and take a shot; then set the hash to a piece's page (`#/piece/<id>`, the stage
+carries `data-stage`), expect it and the theme's values (`data-theme-values`), and take
+a second. Shop window's piece is the filament orb, so its wait also holds until the orb
+has drawn and finished fading in. "No error" reads `window.compErrors`, which each comp
+page fills from its own `error` and `unhandledrejection` events and `console.error`. The
+second "motion tokens" scene, at the tool's default width, ends by loading Specimen
+book's piece page and Workbench's home there, for a look at the wide layouts.
+The comps added 35 s of waits. With them the file uses 233.4 s of the 240 s (the
+growing-in wait of #62 and later effects had already brought it to 198.4 s), so
+6.6 s are left.
+
 The effects scenes run at phone width. "effects" picks Cold core in the effects panel,
 waits for the filament orb's first frames, finds its loop running, and takes a
 screenshot; picks Film page, finds the panel and the orb wearing it, and takes a second;

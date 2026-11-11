@@ -20,7 +20,15 @@
         {"note": "getComputedStyle(document.querySelector('.btn')).getPropertyValue('--dur-state').trim()", "as": "token"},
         {"note": "getComputedStyle(document.querySelector('.btn')).transitionDuration", "as": "btn"},
         {"expect": "notes.token === '180ms'", "says": "the state duration token is 180ms"},
-        {"expect": "notes.btn.split(', ').every(d => d === '0.18s')", "says": "a button's transitions take 180ms"}
+        {"expect": "notes.btn.split(', ').every(d => d === '0.18s')", "says": "a button's transitions take 180ms"},
+        {"note": "(location.href = 'comps/specimen.html#/piece/meter', 1)", "as": "to_specimen_wide"},
+        {"wait_until": "!!document.querySelector('[data-screen=piece] [data-stage=meter] [role=progressbar]')", "ms": 5000},
+        {"expect": "window.compErrors.length === 0 && document.documentElement.scrollWidth <= innerWidth", "says": "comp A's piece page loads at this width with no error, nothing wider than the screen"},
+        {"shot": "comp-specimen-piece-wide"},
+        {"note": "(location.href = 'workbench.html#/', 1)", "as": "to_workbench_wide"},
+        {"wait_until": "document.documentElement.dataset.comp === 'workbench' && document.querySelectorAll('[data-tile]').length === 22", "ms": 5000},
+        {"expect": "window.compErrors.length === 0 && document.documentElement.scrollWidth <= innerWidth", "says": "comp B's home loads at this width with no error, nothing wider than the screen"},
+        {"shot": "comp-workbench-home-wide"}
       ]
     },
     {
@@ -94,7 +102,34 @@
         {"expect": "getComputedStyle(document.querySelector('.frame[data-theme] .btn')).getPropertyValue('--dur-state').trim() === '180ms'", "says": "under calm state changes keep the theme's 180ms"},
         {"click": "#motion-off"},
         {"wait_until": "document.querySelector('.frame[data-theme]').dataset.motion === 'off'", "ms": 5000},
-        {"expect": "getComputedStyle(document.querySelector('.frame[data-theme] .btn')).getPropertyValue('--dur-state').trim() === '0ms'", "says": "under off the state duration token is 0ms"}
+        {"expect": "getComputedStyle(document.querySelector('.frame[data-theme] .btn')).getPropertyValue('--dur-state').trim() === '0ms'", "says": "under off the state duration token is 0ms"},
+
+        {"note": "(location.href = 'comps/specimen.html#/', 1)", "as": "to_specimen"},
+        {"wait_until": "document.documentElement.dataset.comp === 'specimen' && document.querySelectorAll('[data-tile]').length > 0", "ms": 5000},
+        {"expect": "document.querySelectorAll('[data-screen=home] [data-tile]').length === 22 && window.compErrors.length === 0 && document.documentElement.scrollWidth <= innerWidth", "says": "comp A, Specimen book: the home loads at phone width with all 22 tiles, no error, nothing wider than the screen"},
+        {"shot": "comp-specimen-home"},
+        {"note": "(location.hash = '#/piece/meter', 1)", "as": "specimen_piece"},
+        {"wait_until": "!!document.querySelector('[data-screen=piece] [data-stage=meter] [role=progressbar]')", "ms": 2000},
+        {"expect": "!!document.querySelector('[data-theme-values]') && window.compErrors.length === 0 && document.documentElement.scrollWidth <= innerWidth", "says": "comp A: a piece's page opens with the live piece and the theme's values, no error, nothing wider than the screen"},
+        {"shot": "comp-specimen-piece"},
+
+        {"note": "(location.href = 'workbench.html#/', 1)", "as": "to_workbench"},
+        {"wait_until": "document.documentElement.dataset.comp === 'workbench' && document.querySelectorAll('[data-tile]').length > 0", "ms": 5000},
+        {"expect": "document.querySelectorAll('[data-screen=home] [data-tile]').length === 22 && window.compErrors.length === 0 && document.documentElement.scrollWidth <= innerWidth", "says": "comp B, Workbench: the home loads at phone width with all 22 tiles, no error, nothing wider than the screen"},
+        {"shot": "comp-workbench-home"},
+        {"note": "(location.hash = '#/piece/button', 1)", "as": "workbench_piece"},
+        {"wait_until": "!!document.querySelector('[data-screen=piece] [data-stage=button] .btn')", "ms": 2000},
+        {"expect": "!!document.querySelector('[data-theme-values]') && window.compErrors.length === 0 && document.documentElement.scrollWidth <= innerWidth", "says": "comp B: a piece's page opens with the live piece and its inspector, no error, nothing wider than the screen"},
+        {"shot": "comp-workbench-piece"},
+
+        {"note": "(location.href = 'shop-window.html#/', 1)", "as": "to_shop"},
+        {"wait_until": "document.documentElement.dataset.comp === 'shop-window' && document.querySelectorAll('[data-tile]').length > 0", "ms": 5000},
+        {"expect": "document.querySelectorAll('[data-screen=home] [data-tile]').length === 22 && window.compErrors.length === 0 && document.documentElement.scrollWidth <= innerWidth", "says": "comp C, Shop window: the home loads at phone width with all 22 tiles, no error, nothing wider than the screen"},
+        {"shot": "comp-shop-home"},
+        {"note": "(location.hash = '#/piece/filament-orb', 1)", "as": "shop_piece"},
+        {"wait_until": "(e => !!e && e.frames > 1 && getComputedStyle(e).opacity === '1')(document.querySelector('[data-screen=piece] [data-stage=filament-orb] labkit-filament-orb'))", "ms": 6000},
+        {"expect": "!!document.querySelector('[data-theme-values]') && window.compErrors.length === 0 && document.documentElement.scrollWidth <= innerWidth", "says": "comp C: a piece's page opens with the live piece, no error, nothing wider than the screen"},
+        {"shot": "comp-shop-piece"}
       ]
     },
     {

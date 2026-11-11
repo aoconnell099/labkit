@@ -280,6 +280,11 @@ them, one each, placed with `orbitPlace` at the element's `loops` in the gallery
 animation frame: in front of the filament orb on the near half, behind it on the far.
 Both elements stay in the panel whichever is picked.
 
+`gallery/comps/` holds three looks for a library site, to pick one from (#83): a home
+with every piece live by shelf, and a piece's own page, each drawn three ways. They use
+the real pieces and themes; pieces not built yet are marked as stand-ins. Open
+`comps/index.html` in the built gallery. They are comps, not the site.
+
 ## Licence
 
 MIT.
