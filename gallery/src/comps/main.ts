@@ -6,6 +6,7 @@ import { mount, type Component } from 'svelte';
 // ⚠️ The real stylesheet and the real effects, as in the gallery (vite.config.ts).
 import 'labkit/tokens.css';
 import 'labkit/effects';
+import { webglContexts, webglShared } from 'labkit/effects';
 import Specimen from './Specimen.svelte';
 import Workbench from './Workbench.svelte';
 import ShopWindow from './ShopWindow.svelte';
@@ -25,6 +26,8 @@ console.error = (...args: unknown[]) => {
 // A home shows up to eight effects at once: they share one WebGL context
 // (labkit/effects base.ts) rather than ask the browser for eight.
 document.documentElement.dataset.labkitGl = 'shared';
+/** The WebGL contexts the page's pieces hold, as the gallery's `labkitWebgl`. */
+Object.assign(window, { labkitWebgl: () => ({ contexts: webglContexts(), shared: webglShared() }) });
 
 const COMPS: Record<string, Component> = { specimen: Specimen, workbench: Workbench, 'shop-window': ShopWindow };
 const name = document.body.dataset.comp ?? 'specimen';

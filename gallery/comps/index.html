@@ -18,6 +18,8 @@
       .go { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 8px; }
       a { font-weight: 600; }
       small { opacity: .7; }
+      .mark { font-size: .72rem; font-weight: 600; border: 1px solid #8888; border-radius: 999px; padding: 1px 8px; margin-left: 6px; vertical-align: middle; }
+      .picked { border-width: 2px; border-color: currentColor; }
     </style>
   </head>
   <body>
@@ -25,21 +27,22 @@
       <h1>Three looks for the library</h1>
       <p>
         Each is the same library drawn a different way: a home with every piece live, by
-        shelf, and a piece's own page. Pick one, or say what to change.
+        shelf, and a piece's own page. Workbench is the pick; the other two stay as they
+        were, for comparison.
       </p>
       <ol>
+        <li class="picked">
+          <h2>B · Workbench <span class="mark">picked</span></h2>
+          <p>Dense and practical. Grey chrome in light or dark round a themed canvas; an index down the side, paint cards for the themes, and an inspector beside the stage. A piece's page shows it in all themes at once, and a sample screen shows the pieces as one app page.</p>
+          <div class="go"><a href="workbench.html#/">Home</a><a href="workbench.html#/piece/button">A piece: Button</a><a href="workbench.html#/piece/tendrils">A piece: Tendrils</a><a href="workbench.html#/sample">Sample screen</a></div>
+        </li>
         <li>
-          <h2>A · Specimen book</h2>
+          <h2>A · Specimen book <span class="mark">not picked</span></h2>
           <p>Quiet, one column. The whole page wears the theme you pick; the pieces do the talking, with the theme's values beside the stage.</p>
           <div class="go"><a href="specimen.html#/">Home</a><a href="specimen.html#/piece/meter">A piece: Meter</a><a href="specimen.html#/piece/planet-orb">A piece: Planet orb</a></div>
         </li>
         <li>
-          <h2>B · Workbench</h2>
-          <p>Dense and practical. Grey chrome in light or dark round a themed canvas; an index down the side and an inspector beside the stage.</p>
-          <div class="go"><a href="workbench.html#/">Home</a><a href="workbench.html#/piece/button">A piece: Button</a><a href="workbench.html#/piece/tendrils">A piece: Tendrils</a></div>
-        </li>
-        <li>
-          <h2>C · Shop window</h2>
+          <h2>C · Shop window <span class="mark">not picked</span></h2>
           <p>Loud and roomy. Big type, big cards, a strip of paint cards for the themes, and a full-width window for the piece.</p>
           <div class="go"><a href="shop-window.html#/">Home</a><a href="shop-window.html#/piece/statrow">A piece: StatRow</a><a href="shop-window.html#/piece/filament-orb">A piece: Filament orb</a></div>
         </li>

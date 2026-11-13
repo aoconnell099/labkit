@@ -1,5 +1,6 @@
-/** The comps' two screens, by hash: `#/` the home, `#/piece/<id>` a piece's
- *  page. A hash, so each comp stays one static page in the preview. */
+/** The comps' screens, by hash: `#/` the home, `#/piece/<id>` a piece's page,
+ *  and Workbench's `#/sample`. A hash, so each comp stays one static page in the
+ *  preview. */
 import { piece } from './catalog';
 
 let hash = $state(location.hash);
@@ -14,6 +15,11 @@ export const route = {
     const id = /^#\/piece\/([\w-]+)/.exec(hash)?.[1];
     return id && piece(id) ? id : null;
   },
+  /** Workbench's sample screen, `#/sample`: the pieces as one app page. */
+  get sample(): boolean {
+    return hash === SAMPLE;
+  },
 };
 
 export const hrefOf = (id: string | null) => (id ? `#/piece/${id}` : '#/');
+export const SAMPLE = '#/sample';

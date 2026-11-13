@@ -64,19 +64,28 @@ loops of Cold core's pace is 17.4 s), and added no step: its checks ride existin
 The library comps (#83) ride two existing scenes, since the file has its ten. Each comp
 is its own page in `gallery/comps/` (`specimen.html`, `workbench.html`,
 `shop-window.html`), built beside the bench by `vite.config.ts`'s `input`; the preview's
-entry stays the bench. At the end of "calm motion", at phone width, the steps go to each
-comp in turn by setting `location.href`, wait for its home (`<html data-comp>` names the
-comp; tiles carry `data-tile`), expect all 22 tiles, no error and nothing wider than the
-screen, and take a shot; then set the hash to a piece's page (`#/piece/<id>`, the stage
-carries `data-stage`), expect it and the theme's values (`data-theme-values`), and take
-a second. Shop window's piece is the filament orb, so its wait also holds until the orb
-has drawn and finished fading in. "No error" reads `window.compErrors`, which each comp
-page fills from its own `error` and `unhandledrejection` events and `console.error`. The
-second "motion tokens" scene, at the tool's default width, ends by loading Specimen
-book's piece page and Workbench's home there, for a look at the wide layouts.
-The comps added 35 s of waits. With them the file uses 233.4 s of the 240 s (the
+entry stays the bench. Workbench is the pick (`docs/library-look.md`), so only its steps
+run: Specimen book's and Shop window's were dropped to fit Workbench's new ones in the
+budget. At the end of "calm motion", at phone width, the steps set `location.href` to
+Workbench's home and wait for it (`<html data-comp>` names the comp; tiles carry
+`data-tile`): all 22 tiles, no error, nothing wider than the screen, and the controls
+folded (no `data-controls` on the page, `#controls-toggle` not expanded); a shot. They
+click the toggle, find the 13 paint cards (`data-paint`) under it, and take a shot. Then
+a piece's page (`#/piece/button`, the stage carries `data-stage`): the theme's values
+(`data-theme-values`) are there, the stage, the states (`.states-box`) and the inspector
+run top to bottom, its `details` all folded; a shot. A click on `#all-themes` shows the
+button live in 13 tiles (`data-all-tile`); a shot. The hash moves to the filament orb
+with All themes still on: 13 tiles, one orb among them, drawn, at most 8 effect
+elements on the page and `window.labkitWebgl().contexts` at most 8; a shot. Last the
+sample screen (`#/sample`, `data-sample`): a table, a field and a notice, no error,
+nothing wider than the screen; a shot. "No error" reads `window.compErrors`, which each
+comp page fills from its own `error` and `unhandledrejection` events and
+`console.error`; `labkitWebgl` is the gallery's, put on the comp pages too. The second
+"motion tokens" scene, at the tool's default width, ends by loading Workbench's home
+(its paint cards in the side panel) and a piece's page there, for a look at the wide
+layouts. The comps' waits are 22 s. With them the file uses 220.4 s of the 240 s (the
 growing-in wait of #62 and later effects had already brought it to 198.4 s), so
-6.6 s are left.
+19.6 s are left.
 
 The effects scenes run at phone width. "effects" picks Cold core in the effects panel,
 waits for the filament orb's first frames, finds its loop running, and takes a
