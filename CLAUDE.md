@@ -71,6 +71,7 @@ back into it. `preview.json` builds the gallery for review; the build's type che
 | `src/mode.ts` | the persisted light/dark choice |
 | `src/effects/` | the `labkit/effects` entry: one file per element, shared `base.ts`, `drift.ts`, `bloom.ts`, `pace.ts`, and the GLSL in `shaders/` |
 | `gallery/` | the Svelte app that shows every piece in every theme and state; `gallery/src/palettes.ts` lists the themes it shows |
+| `gallery/comps/`, `gallery/src/comps/` | three looks for a library site, one page each, sharing one list of pieces (`catalog.ts`); Workbench is the pick, with its sample screen (`Sample.svelte`); not the site |
 | `docs/` | working notes and research (below) |
 | `scripts/`, `tests/` | the README check and its tests |
 | `render.json`, `preview.json` | the render check's play script; how the desktop worker builds the gallery for review |
@@ -81,5 +82,6 @@ back into it. `preview.json` builds the gallery for review; the build's type che
 |---|---|
 | `README.md` | what labkit offers apps: use, the rules, the parts, themes, the effects table |
 | `docs/effects.md` | each effect's build, drift, bloom and pace rules, and every knob in full |
+| `docs/library-look.md` | the library's picked look (Workbench) and what its build must hold |
 | `docs/render-check.md` | `preview.json`, `render.json`, the scenes, the gallery helpers and the timing budget |
 | `docs/research/` | the research set behind the tokens: colour, type and spacing, motion, behaviour, tables, charts |

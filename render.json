@@ -20,7 +20,15 @@
         {"note": "getComputedStyle(document.querySelector('.btn')).getPropertyValue('--dur-state').trim()", "as": "token"},
         {"note": "getComputedStyle(document.querySelector('.btn')).transitionDuration", "as": "btn"},
         {"expect": "notes.token === '180ms'", "says": "the state duration token is 180ms"},
-        {"expect": "notes.btn.split(', ').every(d => d === '0.18s')", "says": "a button's transitions take 180ms"}
+        {"expect": "notes.btn.split(', ').every(d => d === '0.18s')", "says": "a button's transitions take 180ms"},
+        {"note": "(location.href = 'comps/workbench.html#/', 1)", "as": "to_workbench_wide"},
+        {"wait_until": "document.documentElement.dataset.comp === 'workbench' && document.querySelectorAll('[data-tile]').length === 22", "ms": 5000},
+        {"expect": "window.compErrors.length === 0 && document.documentElement.scrollWidth <= innerWidth && document.querySelectorAll('.side [data-paint]').length === 13", "says": "Workbench's home loads at this width with no error, its 13 paint cards in the side panel"},
+        {"shot": "comp-workbench-home-wide"},
+        {"note": "(location.hash = '#/piece/meter', 1)", "as": "workbench_piece_wide"},
+        {"wait_until": "!!document.querySelector('[data-screen=piece] [data-stage=meter] [role=progressbar]')", "ms": 2000},
+        {"expect": "window.compErrors.length === 0 && document.documentElement.scrollWidth <= innerWidth", "says": "Workbench's piece page loads at this width with no error, nothing wider than the screen"},
+        {"shot": "comp-workbench-piece-wide"}
       ]
     },
     {
@@ -94,7 +102,34 @@
         {"expect": "getComputedStyle(document.querySelector('.frame[data-theme] .btn')).getPropertyValue('--dur-state').trim() === '180ms'", "says": "under calm state changes keep the theme's 180ms"},
         {"click": "#motion-off"},
         {"wait_until": "document.querySelector('.frame[data-theme]').dataset.motion === 'off'", "ms": 5000},
-        {"expect": "getComputedStyle(document.querySelector('.frame[data-theme] .btn')).getPropertyValue('--dur-state').trim() === '0ms'", "says": "under off the state duration token is 0ms"}
+        {"expect": "getComputedStyle(document.querySelector('.frame[data-theme] .btn')).getPropertyValue('--dur-state').trim() === '0ms'", "says": "under off the state duration token is 0ms"},
+
+        {"note": "(location.href = 'comps/workbench.html#/', 1)", "as": "to_workbench"},
+        {"wait_until": "document.documentElement.dataset.comp === 'workbench' && document.querySelectorAll('[data-tile]').length > 0", "ms": 5000},
+        {"expect": "document.querySelectorAll('[data-screen=home] [data-tile]').length === 22 && window.compErrors.length === 0 && document.documentElement.scrollWidth <= innerWidth", "says": "Workbench: the home loads at phone width with all 22 tiles, no error, nothing wider than the screen"},
+        {"expect": "!document.querySelector('[data-controls]') && document.querySelector('#controls-toggle').getAttribute('aria-expanded') === 'false'", "says": "Workbench at phone width: the controls are folded into the one line above the canvas"},
+        {"shot": "comp-workbench-home"},
+        {"click": "#controls-toggle"},
+        {"wait_until": "document.querySelectorAll('.drop [data-controls] [data-paint]').length === 13", "ms": 1000},
+        {"expect": "window.compErrors.length === 0 && document.documentElement.scrollWidth <= innerWidth", "says": "Workbench: tapping the line opens the 13 paint cards, nothing wider than the screen"},
+        {"shot": "comp-workbench-controls"},
+        {"note": "(location.hash = '#/piece/button', 1)", "as": "workbench_piece"},
+        {"wait_until": "!!document.querySelector('[data-screen=piece] [data-stage=button] .btn')", "ms": 2000},
+        {"expect": "!!document.querySelector('[data-theme-values]') && window.compErrors.length === 0 && document.documentElement.scrollWidth <= innerWidth", "says": "Workbench: a piece's page opens with the live piece and its inspector, no error, nothing wider than the screen"},
+        {"expect": "(s => s.stage.bottom <= s.states.top && s.states.bottom <= s.insp.top)(Object.fromEntries([['stage', '.stage'], ['states', '.states-box'], ['insp', '.inspector']].map(([k, q]) => [k, document.querySelector(q).getBoundingClientRect()]))) && [...document.querySelectorAll('.inspector details')].every(d => !d.open)", "says": "Workbench at phone width: the stage, then the states, then the inspector, folded"},
+        {"shot": "comp-workbench-piece"},
+        {"click": "#all-themes"},
+        {"wait_until": "document.querySelectorAll('[data-all-tile] .btn').length === 13", "ms": 1000},
+        {"expect": "window.compErrors.length === 0 && document.documentElement.scrollWidth <= innerWidth", "says": "Workbench: All themes shows the button live in all 13 themes, no error"},
+        {"shot": "comp-workbench-all-themes"},
+        {"note": "(location.hash = '#/piece/filament-orb', 1)", "as": "workbench_all_effect"},
+        {"wait_until": "document.querySelectorAll('[data-all-tile]').length === 13 && (e => !!e && e.frames > 0)(document.querySelector('[data-all-tile] labkit-filament-orb'))", "ms": 4000},
+        {"expect": "window.labkitWebgl().contexts <= 8 && document.querySelectorAll('labkit-filament-orb, labkit-planet-orb, labkit-orbit-rings, labkit-dials, labkit-tendrils, labkit-star-dust, labkit-orbits, labkit-planet-inside').length <= 8 && document.querySelectorAll('[data-all-tile] labkit-filament-orb').length === 1 && window.compErrors.length === 0", "says": "All themes on an effect at phone width: at most 8 WebGL contexts, one theme live, no error"},
+        {"shot": "comp-workbench-all-effect"},
+        {"note": "(location.hash = '#/sample', 1)", "as": "workbench_sample"},
+        {"wait_until": "!!document.querySelector('[data-screen=sample] [data-sample] table')", "ms": 2000},
+        {"expect": "window.compErrors.length === 0 && document.documentElement.scrollWidth <= innerWidth && !!document.querySelector('[data-sample] .notice') && !!document.querySelector('[data-sample] .ctl')", "says": "Workbench: the sample screen loads with no error, nothing wider than the screen"},
+        {"shot": "comp-workbench-sample"}
       ]
     },
     {

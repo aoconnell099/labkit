@@ -22,5 +22,18 @@ export default defineConfig({
   },
 
   server: { port: 5178, host: '127.0.0.1' },
-  build: { outDir: 'dist', cssMinify: false },
+  build: {
+    outDir: 'dist',
+    cssMinify: false,
+    // The bench, and the three library comps (labkit #83) beside it.
+    rollupOptions: {
+      input: {
+        bench: fileURLToPath(new URL('index.html', import.meta.url)),
+        comps: fileURLToPath(new URL('comps/index.html', import.meta.url)),
+        specimen: fileURLToPath(new URL('comps/specimen.html', import.meta.url)),
+        workbench: fileURLToPath(new URL('comps/workbench.html', import.meta.url)),
+        'shop-window': fileURLToPath(new URL('comps/shop-window.html', import.meta.url)),
+      },
+    },
+  },
 });
