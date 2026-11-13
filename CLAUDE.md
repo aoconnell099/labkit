@@ -51,7 +51,7 @@ are in `docs/render-check.md`.
 ## Checks
 
 ```bash
-python -m unittest discover tests     # the README check's own tests
+python -m unittest discover tests     # the README check's and the vendor script's tests
 python scripts/check_readme.py        # README at most 300 lines; nothing from main's README lost
 ```
 
@@ -72,7 +72,8 @@ back into it. `preview.json` builds the gallery for review; the build's type che
 | `src/effects/` | the `labkit/effects` entry: one file per element, shared `base.ts`, `drift.ts`, `bloom.ts`, `pace.ts`, and the GLSL in `shaders/` |
 | `gallery/` | the Svelte app that shows every piece in every theme and state; `gallery/src/palettes.ts` lists the themes it shows |
 | `docs/` | working notes and research (below) |
-| `scripts/`, `tests/` | the README check and its tests |
+| `scripts/vendor.py` | copies labkit's files at a pinned commit into an app with no build, and `--check`s the copy |
+| `scripts/`, `tests/` | the README check, the vendor script, and their tests |
 | `render.json`, `preview.json` | the render check's play script; how the desktop worker builds the gallery for review |
 
 ## Docs that describe this code
@@ -82,4 +83,5 @@ back into it. `preview.json` builds the gallery for review; the build's type che
 | `README.md` | what labkit offers apps: use, the rules, the parts, themes, the effects table |
 | `docs/effects.md` | each effect's build, drift, bloom and pace rules, and every knob in full |
 | `docs/render-check.md` | `preview.json`, `render.json`, the scenes, the gallery helpers and the timing budget |
+| `docs/vendoring.md` | `scripts/vendor.py`: how an app with no build takes labkit, checks it and moves its pin |
 | `docs/research/` | the research set behind the tokens: colour, type and spacing, motion, behaviour, tables, charts |

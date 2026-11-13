@@ -40,6 +40,9 @@ applyPalette('dark', MY_PALETTE);   // or omit for DEFAULT_PALETTE
 You supply your own fonts (`--font-ui`, `--font-fig`) and your own palette
 values. labkit owns the *shape*, not the choices.
 
+An app with no build copies labkit's files in at a pinned commit with
+`scripts/vendor.py`: see [docs/vendoring.md](docs/vendoring.md).
+
 ## The four rules it enforces
 
 1. **Colour is computed, not chosen.** Every default was run through a validator
